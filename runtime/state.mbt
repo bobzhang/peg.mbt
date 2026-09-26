@@ -333,18 +333,18 @@ pub fn[T] ActionContext::new(
 }
 
 ///|
-/// The value bound to `label`. Aborts if the label is not in scope (a
-/// `ReferenceError` in PEG.js).
+/// The value bound to `label`. Raises `ReferenceError` if the label is not
+/// in scope, like the generated JavaScript would.
 pub fn[T] ActionContext::label(
   self : ActionContext[T],
   label : String,
-) -> Value[T] {
+) -> Value[T] raise ReferenceError {
   for i, p in self.params {
     if p == label {
       return self.args[i]
     }
   }
-  abort("label \"\{label}\" is not defined")
+  raise ReferenceError(label)
 }
 
 ///|

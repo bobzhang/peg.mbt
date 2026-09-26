@@ -105,3 +105,137 @@ test "grammar parser matches PEG.js" {
   fs.writeFileSync(path.join(root, "parser", "meta_fixture_test.mbt"), out.join("\n"));
   console.log("meta cases:", metas.length);
 }
+
+// ---- compiler passes --------------------------------------------------------
+{
+  const passes = unique(corpus.filter(r => r.kind === "pass"),
+    r => JSON.stringify([r.name, r.grammar, r.options, r.ruleProps]));
+  const out = [header("Differential tests of individual compiler passes against PEG.js.")];
+  out.push("///|", "let pass_cases : Array[(String, String, Array[String]?, Array[Bool?], String)] = [");
+  for (const r of passes) {
+    const start = r.options && Array.isArray(r.options.allowedStartRules)
+      ? "Some([" + r.options.allowedStartRules.map(mbtString).join(", ") + "])" : "None";
+    const props = "[" + r.ruleProps.map(p => p.reportFailures === undefined ? "None" : "Some(" + p.reportFailures + ")").join(", ") + "]";
+    const expected = r.ok
+      ? { ok: r.result, warnings: r.warnings.map(w => w.message) }
+      : { error: errorJson(r.error), warnings: r.warnings.map(w => w.message) };
+    out.push("  (" + mbtString(r.name) + ", " + mbtString(r.grammar) + ", " + start + ", " + props + ", " + jsonLit(expected) + "),");
+  }
+  out.push("]", "");
+  out.push(`///|
+fn find_pass(name : String) -> @compiler.Pass[Unit] {
+  let passes : @compiler.Passes[Unit] = @compiler.default_passes()
+  for stage in [passes.check, passes.transform, passes.generate] {
+    for pass in stage {
+      if pass.name == name {
+        return pass
+      }
+    }
+  }
+  abort("unknown pass \\{name}")
+}
+
+///|
+fn error_json(e : Error) -> Json {
+  match e {
+    @compiler.GrammarError(message~, location~) =>
+      { "name": "GrammarError", "message": message, "location": location.to_json() }
+    @compiler.CompilerError(message) => { "name": "Error", "message": message }
+    _ => { "name": "unexpected", "message": "\\{e}" }
+  }
+}
+
+///|
+test "compiler passes match PEG.js" {
+  let mut failures = 0
+  for i, c in pass_cases {
+    let (name, grammar_text, start_rules, rule_props, expected_text) = c
+    let expected = @json.parse(expected_text)
+    let warnings : Array[Json] = []
+    let session : @compiler.Session[Unit] = @compiler.Session::new(
+      parser=(input, _) => @parser.parse(input),
+      warn=(message, _) => warnings.push(message.to_json()),
+    )
+    let options : @compiler.Options[Unit] = @compiler.Options::new()
+    options.allowed_start_rules = start_rules
+    let grammar = @parser.parse(grammar_text)
+    for j, rule in grammar.rules {
+      rule.report_failures = rule_props[j]
+    }
+    let actual : Json = try (find_pass(name).run)(grammar, session, options) catch {
+      e => { "error": error_json(e), "warnings": Json::array(warnings) }
+    } noraise {
+      _ => { "ok": grammar.to_json(), "warnings": Json::array(warnings) }
+    }
+    let actual = @fixture.normalize(actual)
+    if actual != expected {
+      failures += 1
+      if failures <= 5 {
+        println("case \\{i} (\\{name}) differs: \\{grammar_text}")
+        println("  expected: \\{expected.stringify()}")
+        println("  actual:   \\{actual.stringify()}")
+      }
+    }
+  }
+  assert_eq(failures, 0)
+}
+`);
+  fs.writeFileSync(path.join(root, "compiler", "pass_fixture_test.mbt"), out.join("\n"));
+  console.log("pass cases:", passes.length);
+}
+
+// ---- generate + parse ---------------------------------------------------------
+// Grammar code blocks are implemented by the hand-written MoonBit bindings in
+// fixture_bindings_test.mbt (keyed by the JavaScript code text).
+{
+  const gens = corpus.filter(r => r.kind === "generate");
+  const parses = corpus.filter(r => r.kind === "parse");
+  const skip = o => o && typeof o === "object" && !("$" in o) &&
+    (o.plugins !== undefined || o.output !== undefined || o.context !== undefined);
+  const cases = new Map();
+  let skipped = 0;
+  for (const g of gens) {
+    const o = g.options && typeof g.options === "object" && !("$" in g.options) ? g.options : {};
+    if (skip(o)) { skipped++; continue; }
+    const key = JSON.stringify([g.grammar, o.allowedStartRules, !!o.cache, !!o.trace, o.optimize || "speed"]);
+    if (!cases.has(key)) {
+      cases.set(key, {
+        grammar: g.grammar,
+        start: o.allowedStartRules,
+        cache: !!o.cache,
+        trace: !!o.trace,
+        optimize: o.optimize || "speed",
+        expected: g.ok ? { ok: true } : { error: errorJson(g.error) },
+        parses: new Map(),
+      });
+    }
+    const c = cases.get(key);
+    for (const p of parses.filter(p => p.gen === g.id)) {
+      const po = p.options && typeof p.options === "object" && !("$" in p.options) ? p.options : {};
+      const k = JSON.stringify([p.input, po]);
+      if (!c.parses.has(k)) {
+        c.parses.set(k, { input: p.input, options: po, expected: p.ok ? { ok: p.result } : { error: errorJson(p.error) } });
+      }
+    }
+  }
+  const out = [header("Differential tests of generate() and generated parsers against PEG.js.")];
+  out.push("///|", "let generate_cases : Array[GenerateCase] = [");
+  let parseCount = 0;
+  for (const c of cases.values()) {
+    const start = Array.isArray(c.start) ? "Some([" + c.start.map(mbtString).join(", ") + "])" : "None";
+    out.push("  {");
+    out.push("    grammar: " + mbtString(c.grammar) + ",");
+    out.push("    start: " + start + ", cache: " + c.cache + ", trace: " + c.trace + ", size: " + (c.optimize === "size") + ",");
+    out.push("    expected: " + jsonLit(c.expected) + ",");
+    out.push("    parses: [");
+    for (const p of c.parses.values()) {
+      parseCount++;
+      out.push("      (" + mbtString(p.input) + ", " + jsonLit(p.options) + ", " + jsonLit(p.expected) + "),");
+    }
+    out.push("    ],");
+    out.push("  },");
+  }
+  out.push("]");
+  fs.writeFileSync(path.join(root, "generate_fixture_test.mbt"), out.join("\n") + "\n");
+  console.log("generate cases:", cases.size, "parse cases:", parseCount, "skipped (plugins/source/context):", skipped);
+}

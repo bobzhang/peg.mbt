@@ -76,3 +76,23 @@ pub fn PosCache::pos(self : PosCache, offset : Int) -> Pos {
 pub fn PosCache::location(self : PosCache, start : Int, end : Int) -> Location {
   { filename: self.filename, start: self.pos(start), end: self.pos(end), }
 }
+
+///|
+/// The location as a `Value` object, shaped like PEG.js' location objects.
+pub fn[T] Location::to_value(self : Location) -> Value[T] {
+  fn pos(p : Pos) -> Value[T] {
+    Obj({
+      "offset": Num(p.offset.to_double()),
+      "line": Num(p.line.to_double()),
+      "column": Num(p.column.to_double()),
+    })
+  }
+
+  let obj : Map[String, Value[T]] = Map([])
+  if self.filename is Some(f) {
+    obj["filename"] = Str(f)
+  }
+  obj["start"] = pos(self.start)
+  obj["end"] = pos(self.end)
+  Obj(obj)
+}

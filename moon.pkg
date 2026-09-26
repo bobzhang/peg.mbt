@@ -3,9 +3,12 @@ import {
   "dii/peg/bytecode",
   "dii/peg/ast",
   "dii/peg/vm",
+  "dii/peg/parser",
+  "dii/peg/compiler",
 }
 
 import {
-  "dii/peg/parser",
   "dii/peg/internal/fixture",
+  "moonbitlang/core/string",
+  "moonbitlang/core/double",
 } for "test"

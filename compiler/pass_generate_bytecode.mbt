@@ -310,7 +310,9 @@ pub fn[T] generate_bytecode(
             ]
           }
           if context.action is Some(action) {
-            guard action.kind is Action(_, code~)
+            guard action.kind is Action(_, code~) else {
+              abort("sequence action context must be an action node")
+            }
             return [
               op.load_saved_pos,
               total,

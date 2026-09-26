@@ -66,3 +66,17 @@ pub impl Show for FeatureDisabled with fn output(self, logger) {
   logger.write_string(name)
   logger.write_string(" is not a function")
 }
+
+///|
+/// Raised when an action refers to a label that is not in scope (a
+/// `ReferenceError` in PEG.js-generated JavaScript).
+pub(all) suberror ReferenceError {
+  ReferenceError(String)
+} derive(Debug)
+
+///|
+pub impl Show for ReferenceError with fn output(self, logger) {
+  let ReferenceError(name) = self
+  logger.write_string(name)
+  logger.write_string(" is not defined")
+}
