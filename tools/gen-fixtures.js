@@ -87,18 +87,19 @@ function header(what) {
 {
   const metas = unique(corpus.filter(r => r.kind === "meta"),
     r => JSON.stringify([r.input, r.options]));
-  const out = [header("Differential tests of the grammar parser against PEG.js.")];
-  out.push("///|", "let meta_cases : Array[(String, Bool, String)] = [");
+  const data = [header("Grammar-parser fixtures: (input, extractComments, expected JSON).")];
+  data.push("///|", "pub let meta_cases : Array[(String, Bool, String)] = [");
   for (const r of metas) {
     const opts = r.options && typeof r.options === "object" && !("$" in r.options) ? r.options : {};
     const expected = r.ok ? { ok: r.result } : { error: errorJson(r.error) };
-    out.push("  (" + mbtString(r.input) + ", " + !!opts.extractComments + ", " + jsonLit(expected) + "),");
+    data.push("  (" + mbtString(r.input) + ", " + !!opts.extractComments + ", " + jsonLit(expected) + "),");
   }
-  out.push("]", "");
-  out.push(`///|
+  data.push("]", "");
+  fs.writeFileSync(path.join(root, "internal", "fixture", "meta_cases.mbt"), data.join("\n"));
+  fs.writeFileSync(path.join(root, "parser", "meta_fixture_test.mbt"), [header("Differential tests of the grammar parser against PEG.js."), `///|
 test "grammar parser matches PEG.js" {
   let mut failures = 0
-  for i, c in meta_cases {
+  for i, c in @fixture.meta_cases {
     let (input, extract_comments, expected_text) = c
     let expected = @json.parse(expected_text)
     let actual : Json = try @parser.parse(input, extract_comments~) catch {
@@ -119,8 +120,7 @@ test "grammar parser matches PEG.js" {
   }
   assert_eq(failures, 0)
 }
-`);
-  fs.writeFileSync(path.join(root, "parser", "meta_fixture_test.mbt"), out.join("\n"));
+`].join("\n"));
   console.log("meta cases:", metas.length);
 }
 
