@@ -1,0 +1,24 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dii/peg/parser"
+
+import {
+  "dii/peg/ast",
+  "dii/peg/bytecode",
+}
+
+// Values
+pub let js_reserved_words : ReadOnlyArray[String]
+
+pub let meta_grammar_source : String
+
+pub fn meta_program_for_testing() -> @bytecode.Program
+
+pub fn parse(String, reserved_words? : Array[String], extract_comments? : Bool, filename? : String) -> @ast.Grammar raise
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

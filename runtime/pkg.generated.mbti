@@ -1,0 +1,225 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dii/peg/runtime"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn build_message(Array[Expectation], String?) -> String
+
+pub fn code_unit_is(String, Int, Int) -> Bool
+
+pub fn[T] drive(String, Map[String, Value[T]], Tracer[T]?, allowed_start_rules~ : ArrayView[String], trace~ : Bool, features~ : Features, run~ : (State[T], String) -> Slot[T] raise) -> Value[T] raise
+
+pub fn js_canonicalize(Int) -> Int
+
+pub fn js_case_variants_any(Int, (Int) -> Bool) -> Bool
+
+pub fn js_compare(String, String) -> Int
+
+pub fn js_substr(String, Int, Int) -> String
+
+pub fn js_substring(String, Int, Int) -> String
+
+pub fn js_to_lower(StringView) -> String
+
+pub fn matches_ignore_case_at(String, Int, String) -> Bool
+
+pub fn[T] slot_append(Slot[T], Slot[T]) -> Unit
+
+pub fn[T] slot_pos(Slot[T]) -> Int
+
+pub fn[T] slot_value(Slot[T]) -> Value[T]
+
+pub fn starts_with_at(String, Int, String) -> Bool
+
+pub fn string_of_code_units(ArrayView[Int]) -> String
+
+pub fn[R : Truthy] truthy(R) -> Bool
+
+// Errors
+pub(all) suberror FeatureDisabled {
+  FeatureDisabled(String)
+} derive(@debug.Debug)
+pub impl Show for FeatureDisabled
+
+pub(all) suberror InvalidStartRule {
+  InvalidStartRule(String)
+} derive(@debug.Debug)
+pub impl Show for InvalidStartRule
+
+pub(all) suberror ReferenceError {
+  ReferenceError(String)
+} derive(@debug.Debug)
+pub impl Show for ReferenceError
+
+pub(all) suberror SyntaxError {
+  SyntaxError(message~ : String, expected~ : Array[Expectation]?, found~ : String?, location~ : Location)
+} derive(@debug.Debug)
+pub fn SyntaxError::to_json(Self) -> Json
+pub impl Show for SyntaxError
+pub impl ToJson for SyntaxError
+
+// Types and methods
+pub struct ActionContext[T] {
+  state : State[T]
+  params : ArrayView[String]
+  args : ArrayView[Value[T]]
+}
+pub fn[T, R] ActionContext::error(Self[T], String, location? : Location) -> R raise
+pub fn[T, R] ActionContext::expected(Self[T], String, location? : Location) -> R raise
+pub fn[T] ActionContext::input(Self[T]) -> String
+pub fn[T] ActionContext::label(Self[T], String) -> Value[T] raise ReferenceError
+pub fn[T] ActionContext::label_opt(Self[T], String) -> Value[T]?
+pub fn[T] ActionContext::location(Self[T]) -> Location raise
+pub fn[T] ActionContext::new(State[T], ArrayView[String], ArrayView[Value[T]]) -> Self[T]
+pub fn[T] ActionContext::offset(Self[T]) -> Int raise
+pub fn[T] ActionContext::options(Self[T]) -> Map[String, Value[T]]
+pub fn[T] ActionContext::range(Self[T]) -> (Int, Int) raise
+pub fn[T] ActionContext::text(Self[T]) -> String raise
+
+pub(all) struct CacheEntry[T] {
+  next_pos : Int
+  result : Slot[T]
+  expectations : Array[Expectation]
+}
+
+pub struct ClassMatcher {
+  // private fields
+}
+pub fn ClassMatcher::matches(Self, Int) -> Bool
+pub fn ClassMatcher::matches_at(Self, String, Int) -> Bool
+pub fn ClassMatcher::new(ArrayView[ClassPart], inverted~ : Bool, ignore_case~ : Bool) -> Self
+
+pub(all) enum ClassPart {
+  Char(String)
+  Range(String, String)
+} derive(Eq, @debug.Debug)
+pub fn ClassPart::to_json(Self) -> Json
+pub impl ToJson for ClassPart
+
+pub(all) enum Expectation {
+  Literal(text~ : String, ignore_case~ : Bool)
+  Class(parts~ : Array[ClassPart], inverted~ : Bool, ignore_case~ : Bool)
+  Any
+  End
+  Other(description~ : String)
+  Not(Expectation)
+} derive(Eq, @debug.Debug)
+pub fn Expectation::describe(Self) -> String
+pub fn Expectation::to_json(Self) -> Json
+pub impl ToJson for Expectation
+
+pub(all) struct Features {
+  text : Bool
+  offset : Bool
+  range : Bool
+  location : Bool
+  expected : Bool
+  error : Bool
+  filename : Bool
+  default_tracer : Bool
+} derive(Eq, @debug.Debug)
+pub fn Features::all() -> Self
+
+pub(all) struct Location {
+  filename : String?
+  start : Pos
+  end : Pos
+} derive(Eq, @debug.Debug)
+pub fn Location::to_json(Self) -> Json
+pub fn[T] Location::to_value(Self) -> Value[T]
+pub impl ToJson for Location
+
+pub(all) struct Pos {
+  offset : Int
+  line : Int
+  column : Int
+} derive(Eq, @debug.Debug)
+pub fn Pos::to_json(Self) -> Json
+pub impl ToJson for Pos
+
+pub struct PosCache {
+  input : String
+  details : Map[Int, (Int, Int)]
+  filename : String?
+}
+pub fn PosCache::location(Self, Int, Int) -> Location
+pub fn PosCache::new(String, filename? : String) -> Self
+pub fn PosCache::pos(Self, Int) -> Pos
+
+pub(all) enum Slot[T] {
+  Failed
+  Pos(Int)
+  Val(Value[T])
+} derive(Eq, @debug.Debug)
+
+pub(all) struct State[T] {
+  input : String
+  mut curr_pos : Int
+  mut saved_pos : Int
+  mut silent_fails : Int
+  tracer : Tracer[T]?
+  options : Map[String, Value[T]]
+  features : Features
+  // private fields
+}
+pub fn[T] State::begin(Self[T]) -> Unit
+pub fn[T] State::cache_lookup(Self[T], Int) -> CacheEntry[T]?
+pub fn[T] State::cache_store(Self[T], Int, Int, Slot[T], Array[Expectation]) -> Unit
+pub fn[T] State::compute_location(Self[T], Int, Int) -> Location
+pub fn[T] State::end(Self[T], Bool) -> Unit
+pub fn[T] State::expect(Self[T], Expectation) -> Unit
+pub fn[T] State::finish(Self[T], Slot[T]) -> Value[T] raise
+pub fn[T] State::new(String, options~ : Map[String, Value[T]], features~ : Features, tracer? : Tracer[T]) -> Self[T]
+pub fn[T] State::rule_expects(Self[T], Expectation) -> Unit
+pub fn[T] State::trace(Self[T], TraceType, String, Int, result? : Slot[T]) -> Unit raise
+
+pub(all) struct TraceEvent[T] {
+  type_ : TraceType
+  rule : String
+  result : Value[T]?
+  location : Location
+} derive(Eq, @debug.Debug)
+
+pub(all) enum TraceType {
+  RuleEnter
+  RuleMatch
+  RuleFail
+} derive(Eq, @debug.Debug)
+pub fn TraceType::name(Self) -> String
+
+pub(all) struct Tracer[T] {
+  trace : (TraceEvent[T]) -> Unit raise
+}
+pub fn[T] Tracer::default(log? : (String) -> Unit) -> Self[T]
+
+pub(all) enum Value[T] {
+  Undefined
+  Null
+  Bool(Bool)
+  Num(Double)
+  Str(String)
+  Arr(Array[Value[T]])
+  Obj(Map[String, Value[T]])
+  Custom(T)
+} derive(Eq, @debug.Debug)
+pub fn[T] Value::as_arr(Self[T]) -> Array[Self[T]]?
+pub fn[T] Value::as_str(Self[T]) -> String?
+pub fn[T] Value::js_string(Self[T]) -> String
+pub fn[T] Value::to_json_with(Self[T], (T) -> Json) -> Json
+pub fn[T] Value::truthy(Self[T]) -> Bool
+pub impl[T] Truthy for Value[T]
+pub impl[T : ToJson] ToJson for Value[T]
+
+// Type aliases
+pub type ActionFn[T] = (ActionContext[T]) -> Value[T] raise
+
+pub type InitFn[T] = (ActionContext[T]) -> Map[String, (ActionContext[T]) -> Value[T] raise] raise
+
+// Traits
+pub(open) trait Truthy {
+  fn truthy(Self) -> Bool
+}
+pub impl Truthy for Bool

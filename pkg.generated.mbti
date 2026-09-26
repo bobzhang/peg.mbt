@@ -1,0 +1,60 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dii/peg"
+
+import {
+  "dii/peg/compiler",
+  "dii/peg/runtime",
+  "dii/peg/vm",
+}
+
+// Values
+pub fn[T] generate(String, options? : @compiler.Options[T], plugins? : Array[(@compiler.Session[T], @compiler.Options[T]) -> Unit raise]) -> @vm.Parser[T] raise
+
+pub fn[T] generate_source(String, options? : @compiler.Options[T], plugins? : Array[(@compiler.Session[T], @compiler.Options[T]) -> Unit raise]) -> String raise
+
+pub fn[T] new_session() -> @compiler.Session[T]
+
+pub let version : String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+pub using @runtime {type ActionContext}
+
+pub type ActionFn[T] = (@runtime.ActionContext[T]) -> @runtime.Value[T] raise
+
+pub using @compiler {type CompilerError}
+
+pub using @runtime {type Expectation}
+
+pub using @compiler {type GrammarError}
+
+pub type InitFn[T] = (@runtime.ActionContext[T]) -> Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise] raise
+
+pub using @runtime {type Location}
+
+pub using @compiler {type Optimize}
+
+pub using @compiler {type Options}
+
+pub using @compiler {type Output}
+
+pub using @vm {type Parser}
+
+pub type Plugin[T] = (@compiler.Session[T], @compiler.Options[T]) -> Unit raise
+
+pub using @runtime {type Pos}
+
+pub using @compiler {type Session}
+
+pub using @runtime {type SyntaxError}
+
+pub using @runtime {type TraceEvent}
+
+pub using @runtime {type Tracer}
+
+pub using @runtime {type Value}
+
+// Traits

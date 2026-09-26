@@ -1,0 +1,9 @@
+import {
+  "dii/peg/runtime",
+  "dii/peg/vm",
+  "moonbitlang/core/string",
+}
+
+import {
+  "moonbitlang/core/json" @core_json,
+} for "test"

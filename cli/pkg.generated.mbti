@@ -1,0 +1,48 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dii/peg/cli"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn describe_error(Error) -> String
+
+pub fn generate(CliOptions, String) -> String raise
+
+pub fn parse_args(Array[String], read_file~ : (String) -> String raise) -> Command raise CliError
+
+pub fn replace_extension(String, String) -> String
+
+pub let usage : String
+
+// Errors
+pub(all) suberror CliError {
+  CliError(String)
+} derive(@debug.Debug)
+
+// Types and methods
+pub(all) struct CliOptions {
+  mut input_file : String?
+  mut output_file : String?
+  mut allowed_start_rules : Array[String]?
+  mut cache : Bool
+  mut optimize : String
+  mut trace : Bool
+  mut value_type : String
+  mut name_prefix : String
+  mut header : Array[String]
+  mut features : Map[String, Bool]
+  mut reserved_words : Array[String]?
+  mut rest : Array[String]
+} derive(@debug.Debug)
+
+pub(all) enum Command {
+  Help
+  Version
+  Generate(CliOptions)
+} derive(@debug.Debug)
+
+// Type aliases
+
+// Traits

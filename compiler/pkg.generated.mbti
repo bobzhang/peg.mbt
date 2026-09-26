@@ -1,0 +1,125 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dii/peg/compiler"
+
+import {
+  "dii/peg/ast",
+  "dii/peg/bytecode",
+  "dii/peg/runtime",
+  "dii/peg/vm",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn[T] calc_report_failures(@ast.Grammar, Session[T], Options[T]) -> Unit raise
+
+pub fn[T] compile(@ast.Grammar, Session[T], Options[T]) -> Compiled[T] raise
+
+pub fn[T] default_passes() -> Passes[T]
+
+pub fn fatal(String, location? : @runtime.Location) -> Unit raise
+
+pub fn[T] generate_bytecode(@ast.Grammar, Session[T], Options[T]) -> Unit raise
+
+pub fn[T] inference_match_result(@ast.Grammar, Session[T], Options[T]) -> Unit raise
+
+pub fn[T] interpreter_backend(@ast.Grammar, Session[T], Options[T]) -> @vm.Parser[T] raise
+
+pub fn[T] program_of(@ast.Grammar, Session[T], Options[T]) -> @bytecode.Program raise
+
+pub fn[T] remove_proxy_rules(@ast.Grammar, Session[T], Options[T]) -> Unit raise
+
+pub fn[T] report_duplicate_labels(@ast.Grammar, Session[T], Options[T]) -> Unit raise
+
+pub fn[T] report_duplicate_rules(@ast.Grammar, Session[T], Options[T]) -> Unit raise
+
+pub fn[T] report_incorrect_plucking(@ast.Grammar, Session[T], Options[T]) -> Unit raise
+
+pub fn[T] report_infinite_recursion(@ast.Grammar, Session[T], Options[T]) -> Unit raise
+
+pub fn[T] report_infinite_repetition(@ast.Grammar, Session[T], Options[T]) -> Unit raise
+
+pub fn[T] report_undefined_rules(@ast.Grammar, Session[T], Options[T]) -> Unit raise
+
+pub fn[T] report_unused_rules(@ast.Grammar, Session[T], Options[T]) -> Unit raise
+
+// Errors
+pub(all) suberror CompilerError {
+  CompilerError(String)
+} derive(@debug.Debug)
+pub impl Show for CompilerError
+
+pub(all) suberror GrammarError {
+  GrammarError(message~ : String, location~ : @runtime.Location)
+} derive(@debug.Debug)
+pub impl Show for GrammarError
+
+// Types and methods
+pub(all) enum Compiled[T] {
+  Parser(@vm.Parser[T])
+  Source(String)
+}
+
+pub(all) enum Optimize {
+  Speed
+  Size
+} derive(Eq, @debug.Debug)
+
+pub(all) struct Options[T] {
+  mut allowed_start_rules : Array[String]?
+  mut cache : Bool
+  mut optimize : Optimize
+  mut output : Output
+  mut trace : Bool
+  mut features : Map[String, Bool]
+  mut header : Array[String]
+  mut parser : ParserOptions
+  mut actions : Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise]
+  mut initializer : ((@runtime.ActionContext[T]) -> Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise] raise)?
+  mut value_type : String
+  mut name_prefix : String
+  extra : Map[String, Json]
+}
+pub fn[T] Options::new(allowed_start_rules? : Array[String], cache? : Bool, optimize? : Optimize, output? : Output, trace? : Bool, features? : Map[String, Bool], header? : Array[String], parser? : ParserOptions, actions? : Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise], initializer? : (@runtime.ActionContext[T]) -> Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise] raise, value_type? : String, name_prefix? : String, extra? : Map[String, Json]) -> Self[T]
+pub fn[T] Options::runtime_features(Self[T]) -> @runtime.Features
+pub fn[T] Options::start_rules(Self[T], @ast.Grammar) -> Array[String]
+pub fn[T] Options::use_feature(Self[T], String) -> Bool
+
+pub(all) enum Output {
+  Parser
+  Source
+} derive(Eq, @debug.Debug)
+
+pub(all) struct ParserOptions {
+  mut reserved_words : Array[String]?
+  mut extract_comments : Bool
+  mut filename : String?
+} derive(@debug.Debug)
+pub fn ParserOptions::new(reserved_words? : Array[String], extract_comments? : Bool, filename? : String) -> Self
+
+pub(all) struct Pass[T] {
+  name : String
+  run : (@ast.Grammar, Session[T], Options[T]) -> Unit raise
+}
+
+pub(all) struct Passes[T] {
+  mut check : Array[Pass[T]]
+  mut transform : Array[Pass[T]]
+  mut generate : Array[Pass[T]]
+}
+
+pub(all) struct Session[T] {
+  mut parser : (String, ParserOptions) -> @ast.Grammar raise
+  mut passes : Passes[T]
+  mut opcodes : @bytecode.Opcodes
+  mut warn : (String, @runtime.Location?) -> Unit
+  mut error : (String, @runtime.Location?) -> Unit raise
+  mut backend : (@ast.Grammar, Session[T], Options[T]) -> @vm.Parser[T] raise
+}
+pub fn[T] Session::new(parser~ : (String, ParserOptions) -> @ast.Grammar raise, passes? : Passes[T], opcodes? : @bytecode.Opcodes, warn? : (String, @runtime.Location?) -> Unit, error? : (String, @runtime.Location?) -> Unit raise, backend? : (@ast.Grammar, Self[T], Options[T]) -> @vm.Parser[T] raise) -> Self[T]
+pub fn[T] Session::parse(Self[T], String, ParserOptions) -> @ast.Grammar raise
+pub fn[T] Session::report_error(Self[T], String, location? : @runtime.Location) -> Unit raise
+pub fn[T] Session::report_warning(Self[T], String, location? : @runtime.Location) -> Unit
+
+// Type aliases
+
+// Traits

@@ -1,0 +1,27 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dii/peg/internal/self_host"
+
+import {
+  "dii/peg/ast",
+  "dii/peg/runtime",
+}
+
+// Values
+pub fn parse(String, start_rule? : String, filename? : String, tracer? : @runtime.Tracer[Meta], options? : Map[String, @runtime.Value[Meta]]) -> @runtime.Value[Meta] raise
+
+pub fn parse_grammar(String, extract_comments? : Bool) -> @ast.Grammar raise
+
+// Errors
+
+// Types and methods
+pub(all) enum Meta {
+  N(@ast.Node)
+  R(@ast.Rule)
+  I(@ast.Initializer)
+  G(@ast.Grammar)
+}
+
+// Type aliases
+pub type PegValue = @runtime.Value[Meta]
+
+// Traits

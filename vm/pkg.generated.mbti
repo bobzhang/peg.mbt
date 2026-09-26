@@ -1,0 +1,39 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "dii/peg/vm"
+
+import {
+  "dii/peg/bytecode",
+  "dii/peg/runtime",
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn[V] lookup_binding(Map[String, V], Int, String) -> V?
+
+// Errors
+pub(all) suberror UnboundCode {
+  UnboundCode(kind~ : String, code~ : String)
+} derive(@debug.Debug)
+pub impl Show for UnboundCode
+
+// Types and methods
+pub struct Parser[T] {
+  program : @bytecode.Program?
+  // private fields
+}
+pub fn[T] Parser::from_fn((String, Map[String, @runtime.Value[T]], @runtime.Tracer[T]?) -> @runtime.Value[T] raise) -> Self[T]
+pub fn[T] Parser::from_program(@bytecode.Program, actions? : Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise], initializer? : (@runtime.ActionContext[T]) -> Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise] raise) -> Self[T] raise UnboundCode
+pub fn[T] Parser::parse(Self[T], String, start_rule? : String, filename? : String, tracer? : @runtime.Tracer[T], options? : Map[String, @runtime.Value[T]]) -> @runtime.Value[T] raise
+
+// Type aliases
+pub type ActionFn[T] = (@runtime.ActionContext[T]) -> @runtime.Value[T] raise
+
+pub type InitFn[T] = (@runtime.ActionContext[T]) -> Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise] raise
+
+pub using @runtime {type SyntaxError}
+
+pub using @runtime {type Tracer}
+
+pub using @runtime {type Value}
+
+// Traits
