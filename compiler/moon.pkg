@@ -8,4 +8,5 @@ import {
 import {
   "dii/peg/parser",
   "dii/peg/internal/fixture",
+  "moonbitlang/core/json",
 } for "test"

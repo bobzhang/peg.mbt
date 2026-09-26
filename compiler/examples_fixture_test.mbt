@@ -2,23 +2,2989 @@
 // The compiler must produce the same programs as PEG.js for examples/*.pegjs.
 
 ///|
+let example_arithmetics_source : String =
+  #|// Simple Arithmetics Grammar
+  #|// ==========================
+  #|//
+  #|// Accepts expressions like "2 * (3 + 4)" and computes their value.
+  #|
+  #|Expression
+  #|  = head:Term tail:(_ @("+" / "-") _ @Term)* {
+  #|      return tail.reduce(function(result, element) {
+  #|        if (element[0] === "+") return result + element[1];
+  #|        if (element[0] === "-") return result - element[1];
+  #|      }, head);
+  #|    }
+  #|
+  #|Term
+  #|  = head:Factor tail:(_ @("*" / "/") _ @Factor)* {
+  #|      return tail.reduce(function(result, element) {
+  #|        if (element[0] === "*") return result * element[1];
+  #|        if (element[0] === "/") return result / element[1];
+  #|      }, head);
+  #|    }
+  #|
+  #|Factor
+  #|  = "(" _ @Expression _ ")"
+  #|  / Integer
+  #|
+  #|Integer "integer"
+  #|  = _ [0-9]+ { return parseInt(text(), 10); }
+  #|
+  #|_ "whitespace"
+  #|  = [ \t\n\r]*
+  #|
+
+///|
+let example_arithmetics_program : String =
+  #|{
+  #|"rules": [
+  #|  {"name":"Expression","bytecode":[5,27,1,15,109,3,4,5,27,4,23,0,18,0,2,1,22,0,3,14,10,0,6,23,1,18,1,2,1,22,1,3,15,16,4,27,4,27,1,15,5,4,41,5,2,2,0,8,4,7,3,8,2,7,3,16,49,10,5,27,4,23,0,18,0,2,1,22,0,3,14,10,0,6,23,1,18,1,2,1,22,1,3,15,16,4,27,4,27,1,15,5,4,41,5,2,2,0,8,4,7,3,8,2,7,3,6,24,2,26,0,3,2,1,0,6,7,3]},
+  #|  {"name":"Term","bytecode":[5,27,2,15,109,3,4,5,27,4,23,2,18,2,2,1,22,2,3,14,10,0,6,23,3,18,3,2,1,22,3,3,15,16,4,27,4,27,2,15,5,4,41,5,2,2,0,8,4,7,3,8,2,7,3,16,49,10,5,27,4,23,2,18,2,2,1,22,2,3,14,10,0,6,23,3,18,3,2,1,22,3,3,15,16,4,27,4,27,2,15,5,4,41,5,2,2,0,8,4,7,3,8,2,7,3,6,24,2,26,1,3,2,1,0,6,7,3]},
+  #|  {"name":"Factor","bytecode":[5,23,4,18,4,2,1,22,4,3,15,33,3,27,4,27,0,15,22,4,27,4,23,5,18,5,2,1,22,5,3,15,4,4,41,6,1,2,8,5,7,3,8,3,7,3,6,7,3,14,3,0,6,27,3]},
+  #|  {"name":"Integer","bytecode":[23,6,28,5,27,4,4,20,0,2,1,21,1,3,15,11,3,16,8,10,20,0,2,1,21,1,3,6,6,6,3,15,6,4,24,2,26,2,3,0,8,2,7,3,29]},
+  #|  {"name":"_","bytecode":[23,7,28,4,20,1,2,1,21,1,3,16,8,10,20,1,2,1,21,1,3,6,29]}
+  #|],
+  #|"literals": [
+  #|  "+",
+  #|  "-",
+  #|  "*",
+  #|  "/",
+  #|  "(",
+  #|  ")"
+  #|],
+  #|"classes": [
+  #|  {"value":[["0","9"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":[" ","\t","\n","\r"],"inverted":false,"ignoreCase":false}
+  #|],
+  #|"expectations": [
+  #|  {"type":"literal","value":"+","ignoreCase":false},
+  #|  {"type":"literal","value":"-","ignoreCase":false},
+  #|  {"type":"literal","value":"*","ignoreCase":false},
+  #|  {"type":"literal","value":"/","ignoreCase":false},
+  #|  {"type":"literal","value":"(","ignoreCase":false},
+  #|  {"type":"literal","value":")","ignoreCase":false},
+  #|  {"type":"rule","value":"integer"},
+  #|  {"type":"rule","value":"whitespace"}
+  #|],
+  #|"functions": [
+  #|  {"predicate":false,"params":["head","tail"],"body":"\n      return tail.reduce(function(result, element) {\n        if (element[0] === \"+\") return result + element[1];\n        if (element[0] === \"-\") return result - element[1];\n      }, head);\n    "},
+  #|  {"predicate":false,"params":["head","tail"],"body":"\n      return tail.reduce(function(result, element) {\n        if (element[0] === \"*\") return result * element[1];\n        if (element[0] === \"/\") return result / element[1];\n      }, head);\n    "},
+  #|  {"predicate":false,"params":[],"body":" return parseInt(text(), 10); "}
+  #|]
+  #|}
+
+///|
+let example_json_source : String =
+  #|// JSON Grammar
+  #|// ============
+  #|//
+  #|// Based on the grammar from RFC 7159 [1].
+  #|//
+  #|// Note that JSON is also specified in ECMA-262 [2], ECMA-404 [3], and on the
+  #|// JSON website [4] (somewhat informally). The RFC seems the most authoritative
+  #|// source, which is confirmed e.g. by [5].
+  #|//
+  #|// [1] http://tools.ietf.org/html/rfc7159
+  #|// [2] http://www.ecma-international.org/publications/standards/Ecma-262.htm
+  #|// [3] http://www.ecma-international.org/publications/standards/Ecma-404.htm
+  #|// [4] http://json.org/
+  #|// [5] https://www.tbray.org/ongoing/When/201x/2014/03/05/RFC7159-JSON
+  #|
+  #|// ----- 2. JSON Grammar -----
+  #|
+  #|JSON_text
+  #|  = ws value:value ws { return value; }
+  #|
+  #|begin_array     = ws "[" ws
+  #|begin_object    = ws "{" ws
+  #|end_array       = ws "]" ws
+  #|end_object      = ws "}" ws
+  #|name_separator  = ws ":" ws
+  #|value_separator = ws "," ws
+  #|
+  #|ws "whitespace" = [ \t\n\r]*
+  #|
+  #|// ----- 3. Values -----
+  #|
+  #|value
+  #|  = false
+  #|  / null
+  #|  / true
+  #|  / object
+  #|  / array
+  #|  / number
+  #|  / string
+  #|
+  #|false = "false" { return false; }
+  #|null  = "null"  { return null;  }
+  #|true  = "true"  { return true;  }
+  #|
+  #|// ----- 4. Objects -----
+  #|
+  #|object
+  #|  = begin_object
+  #|    members:(
+  #|      head:member
+  #|      tail:(value_separator m:member { return m; })*
+  #|      {
+  #|        var result = {};
+  #|
+  #|        [head].concat(tail).forEach(function(element) {
+  #|          result[element.name] = element.value;
+  #|        });
+  #|
+  #|        return result;
+  #|      }
+  #|    )?
+  #|    end_object
+  #|    { return members !== null ? members: {}; }
+  #|
+  #|member
+  #|  = name:string name_separator value:value {
+  #|      return { name: name, value: value };
+  #|    }
+  #|
+  #|// ----- 5. Arrays -----
+  #|
+  #|array
+  #|  = begin_array
+  #|    values:(
+  #|      head:value
+  #|      tail:(value_separator v:value { return v; })*
+  #|      { return [head].concat(tail); }
+  #|    )?
+  #|    end_array
+  #|    { return values !== null ? values : []; }
+  #|
+  #|// ----- 6. Numbers -----
+  #|
+  #|number "number"
+  #|  = minus? int frac? exp? { return parseFloat(text()); }
+  #|
+  #|decimal_point
+  #|  = "."
+  #|
+  #|digit1_9
+  #|  = [1-9]
+  #|
+  #|e
+  #|  = [eE]
+  #|
+  #|exp
+  #|  = e (minus / plus)? DIGIT+
+  #|
+  #|frac
+  #|  = decimal_point DIGIT+
+  #|
+  #|int
+  #|  = zero / (digit1_9 DIGIT*)
+  #|
+  #|minus
+  #|  = "-"
+  #|
+  #|plus
+  #|  = "+"
+  #|
+  #|zero
+  #|  = "0"
+  #|
+  #|// ----- 7. Strings -----
+  #|
+  #|string "string"
+  #|  = quotation_mark chars:char* quotation_mark { return chars.join(""); }
+  #|
+  #|char
+  #|  = unescaped
+  #|  / escape
+  #|    sequence:(
+  #|        '"'
+  #|      / "\\"
+  #|      / "/"
+  #|      / "b" { return "\b"; }
+  #|      / "f" { return "\f"; }
+  #|      / "n" { return "\n"; }
+  #|      / "r" { return "\r"; }
+  #|      / "t" { return "\t"; }
+  #|      / "u" digits:$(HEXDIG HEXDIG HEXDIG HEXDIG) {
+  #|          return String.fromCharCode(parseInt(digits, 16));
+  #|        }
+  #|    )
+  #|    { return sequence; }
+  #|
+  #|escape
+  #|  = "\\"
+  #|
+  #|quotation_mark
+  #|  = '"'
+  #|
+  #|unescaped
+  #|  = [^\0-\x1F\x22\x5C]
+  #|
+  #|// ----- Core ABNF Rules -----
+  #|
+  #|// See RFC 4234, Appendix B (http://tools.ietf.org/html/rfc4234).
+  #|DIGIT  = [0-9]
+  #|HEXDIG = [0-9a-f]i
+  #|
+
+///|
+let example_json_program : String =
+  #|{
+  #|"rules": [
+  #|  {"name":"JSON_text","bytecode":[5,27,7,27,8,15,9,4,27,7,24,3,26,0,4,1,1,8,2,7,3]},
+  #|  {"name":"begin_array","bytecode":[5,27,7,23,0,18,0,2,1,22,0,3,15,5,4,27,7,11,3,9,8,2,7,3]},
+  #|  {"name":"begin_object","bytecode":[5,27,7,23,1,18,1,2,1,22,1,3,15,5,4,27,7,11,3,9,8,2,7,3]},
+  #|  {"name":"end_array","bytecode":[5,27,7,23,2,18,2,2,1,22,2,3,15,5,4,27,7,11,3,9,8,2,7,3]},
+  #|  {"name":"end_object","bytecode":[5,27,7,23,3,18,3,2,1,22,3,3,15,5,4,27,7,11,3,9,8,2,7,3]},
+  #|  {"name":"name_separator","bytecode":[5,27,7,23,4,18,4,2,1,22,4,3,15,5,4,27,7,11,3,9,8,2,7,3]},
+  #|  {"name":"value_separator","bytecode":[5,27,7,23,5,18,5,2,1,22,5,3,15,5,4,27,7,11,3,9,8,2,7,3]},
+  #|  {"name":"ws","bytecode":[23,6,28,4,20,0,2,1,21,1,3,16,8,10,20,0,2,1,21,1,3,6,29]},
+  #|  {"name":"value","bytecode":[27,9,14,33,0,6,27,10,14,27,0,6,27,11,14,21,0,6,27,12,14,15,0,6,27,14,14,9,0,6,27,15,14,3,0,6,27,25]},
+  #|  {"name":"false","bytecode":[5,23,7,18,6,2,1,22,6,3,15,6,0,24,1,26,1,1,0,9]},
+  #|  {"name":"null","bytecode":[5,23,8,18,7,2,1,22,7,3,15,6,0,24,1,26,2,1,0,9]},
+  #|  {"name":"true","bytecode":[5,23,9,18,8,2,1,22,8,3,15,6,0,24,1,26,3,1,0,9]},
+  #|  {"name":"object","bytecode":[5,27,2,15,95,3,5,27,13,15,65,3,4,5,27,6,15,17,3,27,13,15,8,4,24,2,26,4,3,2,4,0,8,2,7,3,6,7,3,16,27,10,5,27,6,15,17,3,27,13,15,8,4,24,2,26,4,3,2,4,0,8,2,7,3,6,7,3,6,24,2,26,5,3,2,1,0,6,7,3,14,2,0,6,2,27,4,15,7,4,24,3,26,6,4,1,1,8,3,7,3,6,7,3]},
+  #|  {"name":"member","bytecode":[5,27,25,15,26,3,27,5,15,17,4,27,8,15,8,4,24,3,26,7,4,2,2,0,8,3,7,3,8,2,7,3,6,7,3]},
+  #|  {"name":"array","bytecode":[5,27,1,15,95,3,5,27,8,15,65,3,4,5,27,6,15,17,3,27,8,15,8,4,24,2,26,8,3,2,4,0,8,2,7,3,6,7,3,16,27,10,5,27,6,15,17,3,27,8,15,8,4,24,2,26,8,3,2,4,0,8,2,7,3,6,7,3,6,24,2,26,9,3,2,1,0,6,7,3,14,2,0,6,2,27,3,15,7,4,24,3,26,10,4,1,1,8,3,7,3,6,7,3]},
+  #|  {"name":"number","bytecode":[23,10,28,5,27,22,14,2,0,6,2,27,21,15,20,4,27,20,14,2,0,6,2,27,19,14,2,0,6,2,24,4,26,11,5,0,8,2,7,3,29]},
+  #|  {"name":"decimal_point","bytecode":[18,9,2,1,22,9,3]},
+  #|  {"name":"digit1_9","bytecode":[20,1,2,1,21,1,3]},
+  #|  {"name":"e","bytecode":[20,2,2,1,21,1,3]},
+  #|  {"name":"exp","bytecode":[5,27,18,15,38,3,27,22,14,3,0,6,27,23,14,2,0,6,2,4,27,30,15,6,3,16,3,10,27,30,6,6,6,3,15,3,4,11,3,9,8,3,7,3,6,7,3]},
+  #|  {"name":"frac","bytecode":[5,27,16,15,25,3,4,27,30,15,6,3,16,3,10,27,30,6,6,6,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"int","bytecode":[27,24,14,22,0,6,5,27,17,15,12,3,4,27,30,16,3,10,27,30,6,11,2,9,6,7,3]},
+  #|  {"name":"minus","bytecode":[18,10,2,1,22,10,3]},
+  #|  {"name":"plus","bytecode":[18,11,2,1,22,11,3]},
+  #|  {"name":"zero","bytecode":[18,12,2,1,22,12,3]},
+  #|  {"name":"string","bytecode":[23,11,28,5,27,28,15,25,3,4,27,26,16,3,10,27,26,6,27,28,15,7,4,24,3,26,12,4,1,1,8,3,7,3,6,7,3,29]},
+  #|  {"name":"char","bytecode":[27,29,14,241,0,6,5,27,27,15,231,3,18,13,2,1,22,13,3,14,207,0,6,18,14,2,1,22,14,3,14,196,0,6,18,15,2,1,22,15,3,14,185,0,6,5,18,16,2,1,22,16,3,15,6,0,24,1,26,13,1,0,9,14,163,0,6,5,18,17,2,1,22,17,3,15,6,0,24,1,26,14,1,0,9,14,141,0,6,5,18,18,2,1,22,18,3,15,6,0,24,1,26,15,1,0,9,14,119,0,6,5,18,19,2,1,22,19,3,15,6,0,24,1,26,16,1,0,9,14,97,0,6,5,18,20,2,1,22,20,3,15,6,0,24,1,26,17,1,0,9,14,75,0,6,5,18,21,2,1,22,21,3,15,60,3,5,5,27,31,15,30,3,27,31,15,21,4,27,31,15,12,4,27,31,15,3,4,11,4,9,8,4,7,3,8,3,7,3,8,2,7,3,6,7,3,15,2,1,6,12,9,15,7,4,24,2,26,18,3,1,0,8,2,7,3,6,7,3,15,7,4,24,2,26,19,3,1,0,8,2,7,3,6,7,3]},
+  #|  {"name":"escape","bytecode":[18,14,2,1,22,14,3]},
+  #|  {"name":"quotation_mark","bytecode":[18,13,2,1,22,13,3]},
+  #|  {"name":"unescaped","bytecode":[20,3,2,1,21,1,3]},
+  #|  {"name":"DIGIT","bytecode":[20,4,2,1,21,1,3]},
+  #|  {"name":"HEXDIG","bytecode":[20,5,2,1,21,1,3]}
+  #|],
+  #|"literals": [
+  #|  "[",
+  #|  "{",
+  #|  "]",
+  #|  "}",
+  #|  ":",
+  #|  ",",
+  #|  "false",
+  #|  "null",
+  #|  "true",
+  #|  ".",
+  #|  "-",
+  #|  "+",
+  #|  "0",
+  #|  "\"",
+  #|  "\\",
+  #|  "/",
+  #|  "b",
+  #|  "f",
+  #|  "n",
+  #|  "r",
+  #|  "t",
+  #|  "u"
+  #|],
+  #|"classes": [
+  #|  {"value":[" ","\t","\n","\r"],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["1","9"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":["e","E"],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["\u0000","\u001f"],"\"","\\"],"inverted":true,"ignoreCase":false},
+  #|  {"value":[["0","9"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["0","9"],["a","f"]],"inverted":false,"ignoreCase":true}
+  #|],
+  #|"expectations": [
+  #|  {"type":"literal","value":"[","ignoreCase":false},
+  #|  {"type":"literal","value":"{","ignoreCase":false},
+  #|  {"type":"literal","value":"]","ignoreCase":false},
+  #|  {"type":"literal","value":"}","ignoreCase":false},
+  #|  {"type":"literal","value":":","ignoreCase":false},
+  #|  {"type":"literal","value":",","ignoreCase":false},
+  #|  {"type":"rule","value":"whitespace"},
+  #|  {"type":"literal","value":"false","ignoreCase":false},
+  #|  {"type":"literal","value":"null","ignoreCase":false},
+  #|  {"type":"literal","value":"true","ignoreCase":false},
+  #|  {"type":"rule","value":"number"},
+  #|  {"type":"rule","value":"string"}
+  #|],
+  #|"functions": [
+  #|  {"predicate":false,"params":["value"],"body":" return value; "},
+  #|  {"predicate":false,"params":[],"body":" return false; "},
+  #|  {"predicate":false,"params":[],"body":" return null;  "},
+  #|  {"predicate":false,"params":[],"body":" return true;  "},
+  #|  {"predicate":false,"params":["head","m"],"body":" return m; "},
+  #|  {"predicate":false,"params":["head","tail"],"body":"\n        var result = {};\n\n        [head].concat(tail).forEach(function(element) {\n          result[element.name] = element.value;\n        });\n\n        return result;\n      "},
+  #|  {"predicate":false,"params":["members"],"body":" return members !== null ? members: {}; "},
+  #|  {"predicate":false,"params":["name","value"],"body":"\n      return { name: name, value: value };\n    "},
+  #|  {"predicate":false,"params":["head","v"],"body":" return v; "},
+  #|  {"predicate":false,"params":["head","tail"],"body":" return [head].concat(tail); "},
+  #|  {"predicate":false,"params":["values"],"body":" return values !== null ? values : []; "},
+  #|  {"predicate":false,"params":[],"body":" return parseFloat(text()); "},
+  #|  {"predicate":false,"params":["chars"],"body":" return chars.join(\"\"); "},
+  #|  {"predicate":false,"params":[],"body":" return \"\\b\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"\\f\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"\\n\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"\\r\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"\\t\"; "},
+  #|  {"predicate":false,"params":["digits"],"body":"\n          return String.fromCharCode(parseInt(digits, 16));\n        "},
+  #|  {"predicate":false,"params":["sequence"],"body":" return sequence; "}
+  #|]
+  #|}
+
+///|
+let example_css_source : String =
+  #|// CSS Grammar
+  #|// ===========
+  #|//
+  #|// Based on grammar from CSS 2.1 specification [1] (including the errata [2]).
+  #|// Generated parser builds a syntax tree composed of nested JavaScript objects,
+  #|// vaguely inspired by CSS DOM [3]. The CSS DOM itself wasn't used as it is not
+  #|// expressive enough (e.g. selectors are reflected as text, not structured
+  #|// objects) and somewhat cumbersome.
+  #|//
+  #|// Limitations:
+  #|//
+  #|//   * Many errors which should be recovered from according to the specification
+  #|//     (e.g. malformed declarations or unexpected end of stylesheet) are fatal.
+  #|//     This is a result of straightforward rewrite of the CSS grammar to PEG.js.
+  #|//
+  #|// [1] http://www.w3.org/TR/2011/REC-CSS2-20110607
+  #|// [2] http://www.w3.org/Style/css2-updates/REC-CSS2-20110607-errata.html
+  #|// [3] http://www.w3.org/TR/DOM-Level-2-Style/css.html
+  #|
+  #|{
+  #|  function extractOptional(optional, index) {
+  #|    return optional ? optional[index] : null;
+  #|  }
+  #|
+  #|  function extractList(list, index) {
+  #|    return list.map(function(element) { return element[index]; });
+  #|  }
+  #|
+  #|  function buildList(head, tail, index) {
+  #|    return [head].concat(extractList(tail, index))
+  #|      .filter(function(element) { return element !== null; });
+  #|  }
+  #|
+  #|  function buildExpression(head, tail) {
+  #|    return tail.reduce(function(result, element) {
+  #|      return {
+  #|        type: "Expression",
+  #|        operator: element[0],
+  #|        left: result,
+  #|        right: element[1]
+  #|      };
+  #|    }, head);
+  #|  }
+  #|}
+  #|
+  #|start
+  #|  = stylesheet:stylesheet comment* { return stylesheet; }
+  #|
+  #|// ----- G.1 Grammar -----
+  #|
+  #|stylesheet
+  #|  = charset:(CHARSET_SYM STRING ";")? (S / CDO / CDC)*
+  #|    imports:(import (CDO S* / CDC S*)*)*
+  #|    rules:((ruleset / media / page) (CDO S* / CDC S*)*)*
+  #|    {
+  #|      return {
+  #|        type: "StyleSheet",
+  #|        charset: extractOptional(charset, 1),
+  #|        imports: extractList(imports, 0),
+  #|        rules: extractList(rules, 0)
+  #|      };
+  #|    }
+  #|
+  #|import
+  #|  = IMPORT_SYM S* href:(STRING / URI) S* media:media_list? ";" S* {
+  #|      return {
+  #|        type: "ImportRule",
+  #|        href: href,
+  #|        media: media !== null ? media : []
+  #|      };
+  #|    }
+  #|
+  #|media
+  #|  = MEDIA_SYM S* media:media_list "{" S* rules:ruleset* "}" S* {
+  #|      return {
+  #|        type: "MediaRule",
+  #|        media: media,
+  #|        rules: rules
+  #|      };
+  #|    }
+  #|
+  #|media_list
+  #|  = head:medium tail:("," S* medium)* { return buildList(head, tail, 2); }
+  #|
+  #|medium
+  #|  = name:IDENT S* { return name; }
+  #|
+  #|page
+  #|  = PAGE_SYM S* selector:pseudo_page?
+  #|    "{" S*
+  #|    declarationsHead:declaration?
+  #|    declarationsTail:(";" S* declaration?)*
+  #|    "}" S*
+  #|    {
+  #|      return {
+  #|        type: "PageRule",
+  #|        selector: selector,
+  #|        declarations: buildList(declarationsHead, declarationsTail, 2)
+  #|      };
+  #|    }
+  #|
+  #|pseudo_page
+  #|  = ":" value:IDENT S* { return { type: "PseudoSelector", value: value }; }
+  #|
+  #|operator
+  #|  = "/" S* { return "/"; }
+  #|  / "," S* { return ","; }
+  #|
+  #|combinator
+  #|  = "+" S* { return "+"; }
+  #|  / ">" S* { return ">"; }
+  #|
+  #|property
+  #|  = name:IDENT S* { return name; }
+  #|
+  #|ruleset
+  #|  = selectorsHead:selector
+  #|    selectorsTail:("," S* selector)*
+  #|    "{" S*
+  #|    declarationsHead:declaration?
+  #|    declarationsTail:(";" S* declaration?)*
+  #|    "}" S*
+  #|    {
+  #|      return {
+  #|        type: "RuleSet",
+  #|        selectors: buildList(selectorsHead, selectorsTail, 2),
+  #|        declarations: buildList(declarationsHead, declarationsTail, 2)
+  #|      };
+  #|    }
+  #|
+  #|selector
+  #|  = left:simple_selector S* combinator:combinator right:selector {
+  #|      return {
+  #|        type: "Selector",
+  #|        combinator: combinator,
+  #|        left: left,
+  #|        right: right
+  #|      };
+  #|    }
+  #|  / left:simple_selector S+ right:selector {
+  #|      return {
+  #|        type: "Selector",
+  #|        combinator: " ",
+  #|        left: left,
+  #|        right: right
+  #|      };
+  #|    }
+  #|  / selector:simple_selector S* { return selector; }
+  #|
+  #|simple_selector
+  #|  = element:element_name qualifiers:(id / class / attrib / pseudo)* {
+  #|      return {
+  #|        type: "SimpleSelector",
+  #|        element: element,
+  #|        qualifiers: qualifiers
+  #|      };
+  #|    }
+  #|  / qualifiers:(id / class / attrib / pseudo)+ {
+  #|      return {
+  #|        type: "SimpleSelector",
+  #|        element: "*",
+  #|        qualifiers: qualifiers
+  #|      };
+  #|    }
+  #|
+  #|id
+  #|  = id:HASH { return { type: "IDSelector", id: id }; }
+  #|
+  #|class
+  #|  = "." class_:IDENT { return { type: "ClassSelector", "class": class_ }; }
+  #|
+  #|element_name
+  #|  = IDENT
+  #|  / "*"
+  #|
+  #|attrib
+  #|  = "[" S*
+  #|    attribute:IDENT S*
+  #|    operatorAndValue:(("=" / INCLUDES / DASHMATCH) S* (IDENT / STRING) S*)?
+  #|    "]"
+  #|    {
+  #|      return {
+  #|        type: "AttributeSelector",
+  #|        attribute: attribute,
+  #|        operator: extractOptional(operatorAndValue, 0),
+  #|        value: extractOptional(operatorAndValue, 2)
+  #|      };
+  #|    }
+  #|
+  #|pseudo
+  #|  = ":"
+  #|    value:(
+  #|        name:FUNCTION S* params:(IDENT S*)? ")" {
+  #|          return {
+  #|            type: "Function",
+  #|            name: name,
+  #|            params: params !== null ? [params[0]] : []
+  #|          };
+  #|        }
+  #|      / IDENT
+  #|    )
+  #|    { return { type: "PseudoSelector", value: value }; }
+  #|
+  #|declaration
+  #|  = name:property ':' S* value:expr prio:prio? {
+  #|      return {
+  #|        type: "Declaration",
+  #|        name: name,
+  #|        value: value,
+  #|        important: prio !== null
+  #|      };
+  #|    }
+  #|
+  #|prio
+  #|  = IMPORTANT_SYM S*
+  #|
+  #|expr
+  #|  = head:term tail:(operator? term)* { return buildExpression(head, tail); }
+  #|
+  #|term
+  #|  = quantity:(PERCENTAGE / LENGTH / EMS / EXS / ANGLE / TIME / FREQ / NUMBER)
+  #|    S*
+  #|    {
+  #|      return {
+  #|        type: "Quantity",
+  #|        value: quantity.value,
+  #|        unit: quantity.unit
+  #|      };
+  #|    }
+  #|  / value:STRING S* { return { type: "String", value: value }; }
+  #|  / value:URI S*    { return { type: "URI",    value: value }; }
+  #|  / function
+  #|  / hexcolor
+  #|  / value:IDENT S*  { return { type: "Ident",  value: value }; }
+  #|
+  #|function
+  #|  = name:FUNCTION S* params:expr ")" S* {
+  #|      return { type: "Function", name: name, params: params };
+  #|    }
+  #|
+  #|hexcolor
+  #|  = value:HASH S* { return { type: "Hexcolor", value: value }; }
+  #|
+  #|// ----- G.2 Lexical scanner -----
+  #|
+  #|// Macros
+  #|
+  #|h
+  #|  = [0-9a-f]i
+  #|
+  #|nonascii
+  #|  = [\x80-\uFFFF]
+  #|
+  #|unicode
+  #|  = "\\" digits:$(h h? h? h? h? h?) ("\r\n" / [ \t\r\n\f])? {
+  #|      return String.fromCharCode(parseInt(digits, 16));
+  #|    }
+  #|
+  #|escape
+  #|  = unicode
+  #|  / "\\" ch:[^\r\n\f0-9a-f]i { return ch; }
+  #|
+  #|nmstart
+  #|  = [_a-z]i
+  #|  / nonascii
+  #|  / escape
+  #|
+  #|nmchar
+  #|  = [_a-z0-9-]i
+  #|  / nonascii
+  #|  / escape
+  #|
+  #|string1
+  #|  = '"' chars:([^\n\r\f\\"] / "\\" nl:nl { return ""; } / escape)* '"' {
+  #|      return chars.join("");
+  #|    }
+  #|
+  #|string2
+  #|  = "'" chars:([^\n\r\f\\'] / "\\" nl:nl { return ""; } / escape)* "'" {
+  #|      return chars.join("");
+  #|    }
+  #|
+  #|comment
+  #|  = "/*" [^*]* "*"+ ([^/*] [^*]* "*"+)* "/"
+  #|
+  #|ident
+  #|  = prefix:$"-"? start:nmstart chars:nmchar* {
+  #|      return prefix + start + chars.join("");
+  #|    }
+  #|
+  #|name
+  #|  = chars:nmchar+ { return chars.join(""); }
+  #|
+  #|num
+  #|  = [+-]? ([0-9]* "." [0-9]+ / [0-9]+) ("e" [+-]? [0-9]+)? {
+  #|      return parseFloat(text());
+  #|    }
+  #|
+  #|string
+  #|  = string1
+  #|  / string2
+  #|
+  #|url
+  #|  = chars:([!#$%&*-\[\]-~] / nonascii / escape)* { return chars.join(""); }
+  #|
+  #|s
+  #|  = [ \t\r\n\f]+
+  #|
+  #|w
+  #|  = s?
+  #|
+  #|nl
+  #|  = "\n"
+  #|  / "\r\n"
+  #|  / "\r"
+  #|  / "\f"
+  #|
+  #|A  = "a"i / "\\" "0"? "0"? "0"? "0"? [\x41\x61] ("\r\n" / [ \t\r\n\f])? { return "a"; }
+  #|C  = "c"i / "\\" "0"? "0"? "0"? "0"? [\x43\x63] ("\r\n" / [ \t\r\n\f])? { return "c"; }
+  #|D  = "d"i / "\\" "0"? "0"? "0"? "0"? [\x44\x64] ("\r\n" / [ \t\r\n\f])? { return "d"; }
+  #|E  = "e"i / "\\" "0"? "0"? "0"? "0"? [\x45\x65] ("\r\n" / [ \t\r\n\f])? { return "e"; }
+  #|G  = "g"i / "\\" "0"? "0"? "0"? "0"? [\x47\x67] ("\r\n" / [ \t\r\n\f])? / "\\g"i { return "g"; }
+  #|H  = "h"i / "\\" "0"? "0"? "0"? "0"? [\x48\x68] ("\r\n" / [ \t\r\n\f])? / "\\h"i { return "h"; }
+  #|I  = "i"i / "\\" "0"? "0"? "0"? "0"? [\x49\x69] ("\r\n" / [ \t\r\n\f])? / "\\i"i { return "i"; }
+  #|K  = "k"i / "\\" "0"? "0"? "0"? "0"? [\x4b\x6b] ("\r\n" / [ \t\r\n\f])? / "\\k"i { return "k"; }
+  #|L  = "l"i / "\\" "0"? "0"? "0"? "0"? [\x4c\x6c] ("\r\n" / [ \t\r\n\f])? / "\\l"i { return "l"; }
+  #|M  = "m"i / "\\" "0"? "0"? "0"? "0"? [\x4d\x6d] ("\r\n" / [ \t\r\n\f])? / "\\m"i { return "m"; }
+  #|N  = "n"i / "\\" "0"? "0"? "0"? "0"? [\x4e\x6e] ("\r\n" / [ \t\r\n\f])? / "\\n"i { return "n"; }
+  #|O  = "o"i / "\\" "0"? "0"? "0"? "0"? [\x4f\x6f] ("\r\n" / [ \t\r\n\f])? / "\\o"i { return "o"; }
+  #|P  = "p"i / "\\" "0"? "0"? "0"? "0"? [\x50\x70] ("\r\n" / [ \t\r\n\f])? / "\\p"i { return "p"; }
+  #|R  = "r"i / "\\" "0"? "0"? "0"? "0"? [\x52\x72] ("\r\n" / [ \t\r\n\f])? / "\\r"i { return "r"; }
+  #|S_ = "s"i / "\\" "0"? "0"? "0"? "0"? [\x53\x73] ("\r\n" / [ \t\r\n\f])? / "\\s"i { return "s"; }
+  #|T  = "t"i / "\\" "0"? "0"? "0"? "0"? [\x54\x74] ("\r\n" / [ \t\r\n\f])? / "\\t"i { return "t"; }
+  #|U  = "u"i / "\\" "0"? "0"? "0"? "0"? [\x55\x75] ("\r\n" / [ \t\r\n\f])? / "\\u"i { return "u"; }
+  #|X  = "x"i / "\\" "0"? "0"? "0"? "0"? [\x58\x78] ("\r\n" / [ \t\r\n\f])? / "\\x"i { return "x"; }
+  #|Z  = "z"i / "\\" "0"? "0"? "0"? "0"? [\x5a\x7a] ("\r\n" / [ \t\r\n\f])? / "\\z"i { return "z"; }
+  #|
+  #|// Tokens
+  #|
+  #|S "whitespace"
+  #|  = comment* s
+  #|
+  #|CDO "<!--"
+  #|  = comment* "<!--"
+  #|
+  #|CDC "-->"
+  #|  = comment* "-->"
+  #|
+  #|INCLUDES "~="
+  #|  = comment* "~="
+  #|
+  #|DASHMATCH "|="
+  #|  = comment* "|="
+  #|
+  #|STRING "string"
+  #|  = comment* string:string { return string; }
+  #|
+  #|IDENT "identifier"
+  #|  = comment* ident:ident { return ident; }
+  #|
+  #|HASH "hash"
+  #|  = comment* "#" name:name { return "#" + name; }
+  #|
+  #|IMPORT_SYM "@import"
+  #|  = comment* "@" I M P O R T
+  #|
+  #|PAGE_SYM "@page"
+  #|  = comment* "@" P A G E
+  #|
+  #|MEDIA_SYM "@media"
+  #|  = comment* "@" M E D I A
+  #|
+  #|CHARSET_SYM "@charset"
+  #|  = comment* "@charset "
+  #|
+  #|// We use |s| instead of |w| here to avoid infinite recursion.
+  #|IMPORTANT_SYM "!important"
+  #|  = comment* "!" (s / comment)* I M P O R T A N T
+  #|
+  #|EMS "length"
+  #|  = comment* value:num E M { return { value: value, unit: "em" }; }
+  #|
+  #|EXS "length"
+  #|  = comment* value:num E X { return { value: value, unit: "ex" }; }
+  #|
+  #|LENGTH "length"
+  #|  = comment* value:num P X { return { value: value, unit: "px" }; }
+  #|  / comment* value:num C M { return { value: value, unit: "cm" }; }
+  #|  / comment* value:num M M { return { value: value, unit: "mm" }; }
+  #|  / comment* value:num I N { return { value: value, unit: "in" }; }
+  #|  / comment* value:num P T { return { value: value, unit: "pt" }; }
+  #|  / comment* value:num P C { return { value: value, unit: "pc" }; }
+  #|
+  #|ANGLE "angle"
+  #|  = comment* value:num D E G   { return { value: value, unit: "deg"  }; }
+  #|  / comment* value:num R A D   { return { value: value, unit: "rad"  }; }
+  #|  / comment* value:num G R A D { return { value: value, unit: "grad" }; }
+  #|
+  #|TIME "time"
+  #|  = comment* value:num M S_ { return { value: value, unit: "ms" }; }
+  #|  / comment* value:num S_   { return { value: value, unit: "s"  }; }
+  #|
+  #|FREQ "frequency"
+  #|  = comment* value:num H Z   { return { value: value, unit: "hz" }; }
+  #|  / comment* value:num K H Z { return { value: value, unit: "kh" }; }
+  #|
+  #|PERCENTAGE "percentage"
+  #|  = comment* value:num "%" { return { value: value, unit: "%" }; }
+  #|
+  #|NUMBER "number"
+  #|  = comment* value:num { return { value: value, unit: null }; }
+  #|
+  #|URI "uri"
+  #|  = comment* U R L "("i w url:string w ")" { return url; }
+  #|  / comment* U R L "("i w url:url w ")"    { return url; }
+  #|
+  #|FUNCTION "function"
+  #|  = comment* name:ident "(" { return name; }
+  #|
+
+///|
+let example_css_program : String =
+  #|{
+  #|"rules": [
+  #|  {"name":"start","bytecode":[5,27,1,4,27,33,16,3,10,27,33,6,24,2,26,0,3,1,1]},
+  #|  {"name":"stylesheet","bytecode":[5,5,27,72,15,28,3,27,66,15,19,4,23,0,18,0,2,1,22,0,3,15,3,4,11,3,9,8,3,7,3,8,2,7,3,6,7,3,14,2,0,6,2,4,27,61,14,9,0,6,27,62,14,3,0,6,27,63,16,15,10,27,61,14,9,0,6,27,62,14,3,0,6,27,63,6,4,5,27,2,15,100,3,4,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,16,47,10,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,6,11,2,9,6,7,3,16,110,10,5,27,2,15,100,3,4,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,16,47,10,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,6,11,2,9,6,7,3,6,4,5,27,11,14,9,0,6,27,3,14,3,0,6,27,6,15,100,3,4,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,16,47,10,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,6,11,2,9,6,7,3,16,122,10,5,27,11,14,9,0,6,27,3,14,3,0,6,27,6,15,100,3,4,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,16,47,10,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,6,11,2,9,6,7,3,6,24,4,26,1,5,3,3,1,0]},
+  #|  {"name":"import","bytecode":[5,27,69,15,73,3,4,27,61,16,3,10,27,61,6,27,66,14,3,0,6,27,82,15,49,4,4,27,61,16,3,10,27,61,6,27,4,14,2,0,6,2,23,0,18,0,2,1,22,0,3,15,17,4,4,27,61,16,3,10,27,61,6,24,7,26,2,8,2,4,2,8,6,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"media","bytecode":[5,27,71,15,85,3,4,27,61,16,3,10,27,61,6,27,4,15,67,4,23,1,18,1,2,1,22,1,3,15,51,4,4,27,61,16,3,10,27,61,6,4,27,11,16,3,10,27,11,6,23,2,18,2,2,1,22,2,3,15,17,4,4,27,61,16,3,10,27,61,6,24,8,26,3,9,2,5,2,8,7,7,3,8,4,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"media_list","bytecode":[5,27,5,15,87,3,4,5,23,3,18,3,2,1,22,3,3,15,21,3,4,27,61,16,3,10,27,61,6,27,5,15,3,4,11,3,9,8,3,7,3,6,7,3,16,38,10,5,23,3,18,3,2,1,22,3,3,15,21,3,4,27,61,16,3,10,27,61,6,27,5,15,3,4,11,3,9,8,3,7,3,6,7,3,6,24,2,26,4,3,2,1,0,6,7,3]},
+  #|  {"name":"medium","bytecode":[5,27,67,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,5,3,1,1,6,7,3]},
+  #|  {"name":"page","bytecode":[5,27,70,15,157,3,4,27,61,16,3,10,27,61,6,27,7,14,2,0,6,2,23,1,18,1,2,1,22,1,3,15,125,4,4,27,61,16,3,10,27,61,6,27,19,14,2,0,6,2,4,5,23,0,18,0,2,1,22,0,3,15,19,3,4,27,61,16,3,10,27,61,6,27,19,14,2,0,6,2,11,3,9,6,7,3,16,36,10,5,23,0,18,0,2,1,22,0,3,15,19,3,4,27,61,16,3,10,27,61,6,27,19,14,2,0,6,2,11,3,9,6,7,3,6,23,2,18,2,2,1,22,2,3,15,18,4,4,27,61,16,3,10,27,61,6,24,9,26,6,10,3,6,3,2,8,8,7,3,8,4,7,3,6,7,3]},
+  #|  {"name":"pseudo_page","bytecode":[5,23,4,18,4,2,1,22,4,3,15,25,3,27,67,15,16,4,4,27,61,16,3,10,27,61,6,24,3,26,7,4,1,1,8,2,7,3,6,7,3]},
+  #|  {"name":"operator","bytecode":[5,23,5,18,5,2,1,22,5,3,15,15,3,4,27,61,16,3,10,27,61,6,24,2,26,8,3,0,6,7,3,14,32,0,6,5,23,3,18,3,2,1,22,3,3,15,15,3,4,27,61,16,3,10,27,61,6,24,2,26,9,3,0,6,7,3]},
+  #|  {"name":"combinator","bytecode":[5,23,6,18,6,2,1,22,6,3,15,15,3,4,27,61,16,3,10,27,61,6,24,2,26,10,3,0,6,7,3,14,32,0,6,5,23,7,18,7,2,1,22,7,3,15,15,3,4,27,61,16,3,10,27,61,6,24,2,26,11,3,0,6,7,3]},
+  #|  {"name":"property","bytecode":[5,27,67,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,5,3,1,1,6,7,3]},
+  #|  {"name":"ruleset","bytecode":[5,27,12,15,221,3,4,5,23,3,18,3,2,1,22,3,3,15,21,3,4,27,61,16,3,10,27,61,6,27,12,15,3,4,11,3,9,8,3,7,3,6,7,3,16,38,10,5,23,3,18,3,2,1,22,3,3,15,21,3,4,27,61,16,3,10,27,61,6,27,12,15,3,4,11,3,9,8,3,7,3,6,7,3,6,23,1,18,1,2,1,22,1,3,15,126,4,4,27,61,16,3,10,27,61,6,27,19,14,2,0,6,2,4,5,23,0,18,0,2,1,22,0,3,15,19,3,4,27,61,16,3,10,27,61,6,27,19,14,2,0,6,2,11,3,9,6,7,3,16,36,10,5,23,0,18,0,2,1,22,0,3,15,19,3,4,27,61,16,3,10,27,61,6,27,19,14,2,0,6,2,11,3,9,6,7,3,6,23,2,18,2,2,1,22,2,3,15,19,4,4,27,61,16,3,10,27,61,6,24,8,26,12,9,4,7,6,3,2,8,7,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"selector","bytecode":[5,27,13,15,36,3,4,27,61,16,3,10,27,61,6,27,9,15,18,4,27,12,15,9,4,24,4,26,13,5,3,3,1,0,8,4,7,3,8,3,7,3,6,7,3,14,78,0,6,5,27,13,15,39,3,4,27,61,15,6,3,16,3,10,27,61,6,6,6,3,15,17,4,27,12,15,8,4,24,3,26,14,4,2,2,0,8,3,7,3,8,2,7,3,6,7,3,14,26,0,6,5,27,13,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,15,3,1,1,6,7,3]},
+  #|  {"name":"simple_selector","bytecode":[5,27,16,15,53,3,4,27,14,14,15,0,6,27,15,14,9,0,6,27,17,14,3,0,6,27,18,16,21,10,27,14,14,15,0,6,27,15,14,9,0,6,27,17,14,3,0,6,27,18,6,24,2,26,16,3,2,1,0,6,7,3,14,64,0,6,5,4,27,14,14,15,0,6,27,15,14,9,0,6,27,17,14,3,0,6,27,18,15,24,3,16,21,10,27,14,14,15,0,6,27,15,14,9,0,6,27,17,14,3,0,6,27,18,6,6,6,3,15,7,0,24,1,26,17,1,1,0,9]},
+  #|  {"name":"id","bytecode":[5,27,68,15,7,0,24,1,26,18,1,1,0,9]},
+  #|  {"name":"class","bytecode":[5,23,8,18,8,2,1,22,8,3,15,16,3,27,67,15,7,4,24,2,26,19,3,1,0,8,2,7,3,6,7,3]},
+  #|  {"name":"element_name","bytecode":[27,67,14,10,0,6,23,9,18,9,2,1,22,9,3]},
+  #|  {"name":"attrib","bytecode":[5,23,10,18,10,2,1,22,10,3,15,120,3,4,27,61,16,3,10,27,61,6,27,67,15,102,4,4,27,61,16,3,10,27,61,6,5,23,11,18,11,2,1,22,11,3,14,9,0,6,27,64,14,3,0,6,27,65,15,36,3,4,27,61,16,3,10,27,61,6,27,67,14,3,0,6,27,66,15,12,4,4,27,61,16,3,10,27,61,6,11,4,9,8,3,7,3,6,7,3,14,2,0,6,2,23,12,18,12,2,1,22,12,3,15,8,4,24,6,26,20,7,2,3,1,8,6,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"pseudo","bytecode":[5,23,4,18,4,2,1,22,4,3,15,88,3,5,27,83,15,59,3,4,27,61,16,3,10,27,61,6,5,27,67,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,2,0,6,2,23,13,18,13,2,1,22,13,3,15,8,4,24,4,26,21,5,2,3,1,8,4,7,3,6,7,3,14,3,0,6,27,67,15,7,4,24,2,26,7,3,1,0,8,2,7,3,6,7,3]},
+  #|  {"name":"declaration","bytecode":[5,27,10,15,50,3,23,4,18,4,2,1,22,4,3,15,34,4,4,27,61,16,3,10,27,61,6,27,21,15,16,4,27,20,14,2,0,6,2,24,5,26,22,6,3,4,1,0,8,4,7,3,8,2,7,3,6,7,3]},
+  #|  {"name":"prio","bytecode":[5,27,73,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3]},
+  #|  {"name":"expr","bytecode":[5,27,22,15,53,3,4,5,27,8,14,2,0,6,2,27,22,15,3,4,11,2,9,8,2,7,3,16,21,10,5,27,8,14,2,0,6,2,27,22,15,3,4,11,2,9,8,2,7,3,6,24,2,26,23,3,2,1,0,6,7,3]},
+  #|  {"name":"term","bytecode":[5,27,80,14,39,0,6,27,76,14,33,0,6,27,74,14,27,0,6,27,75,14,21,0,6,27,77,14,15,0,6,27,78,14,9,0,6,27,79,14,3,0,6,27,81,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,24,3,1,1,6,7,3,14,96,0,6,5,27,66,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,25,3,1,1,6,7,3,14,67,0,6,5,27,82,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,26,3,1,1,6,7,3,14,38,0,6,27,23,14,32,0,6,27,24,14,26,0,6,5,27,67,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,27,3,1,1,6,7,3]},
+  #|  {"name":"function","bytecode":[5,27,83,15,51,3,4,27,61,16,3,10,27,61,6,27,21,15,33,4,23,13,18,13,2,1,22,13,3,15,17,4,4,27,61,16,3,10,27,61,6,24,5,26,28,6,2,4,2,8,4,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"hexcolor","bytecode":[5,27,68,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,29,3,1,1,6,7,3]},
+  #|  {"name":"h","bytecode":[20,0,2,1,21,1,3]},
+  #|  {"name":"nonascii","bytecode":[20,1,2,1,21,1,3]},
+  #|  {"name":"unicode","bytecode":[5,18,14,2,1,22,14,3,15,91,3,5,5,27,25,15,38,3,27,25,14,2,0,6,2,27,25,14,2,0,6,2,27,25,14,2,0,6,2,27,25,14,2,0,6,2,27,25,14,2,0,6,2,11,6,9,6,7,3,15,2,1,6,12,9,15,30,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,24,3,26,30,4,1,1,8,2,7,3,6,7,3]},
+  #|  {"name":"escape","bytecode":[27,27,14,36,0,6,5,18,14,2,1,22,14,3,15,21,3,20,3,2,1,21,1,3,15,7,4,24,2,26,31,3,1,0,8,2,7,3,6,7,3]},
+  #|  {"name":"nmstart","bytecode":[20,4,2,1,21,1,3,14,9,0,6,27,26,14,3,0,6,27,28]},
+  #|  {"name":"nmchar","bytecode":[20,5,2,1,21,1,3,14,9,0,6,27,26,14,3,0,6,27,28]},
+  #|  {"name":"string1","bytecode":[5,18,16,2,1,22,16,3,15,120,3,4,20,6,2,1,21,1,3,14,37,0,6,5,18,14,2,1,22,14,3,15,16,3,27,41,15,7,4,24,2,26,32,3,1,0,8,2,7,3,6,7,3,14,3,0,6,27,28,16,48,10,20,6,2,1,21,1,3,14,37,0,6,5,18,14,2,1,22,14,3,15,16,3,27,41,15,7,4,24,2,26,32,3,1,0,8,2,7,3,6,7,3,14,3,0,6,27,28,6,18,16,2,1,22,16,3,15,7,4,24,3,26,33,4,1,1,8,3,7,3,6,7,3]},
+  #|  {"name":"string2","bytecode":[5,18,17,2,1,22,17,3,15,120,3,4,20,7,2,1,21,1,3,14,37,0,6,5,18,14,2,1,22,14,3,15,16,3,27,41,15,7,4,24,2,26,32,3,1,0,8,2,7,3,6,7,3,14,3,0,6,27,28,16,48,10,20,7,2,1,21,1,3,14,37,0,6,5,18,14,2,1,22,14,3,15,16,3,27,41,15,7,4,24,2,26,32,3,1,0,8,2,7,3,6,7,3,14,3,0,6,27,28,6,18,17,2,1,22,17,3,15,7,4,24,3,26,33,4,1,1,8,3,7,3,6,7,3]},
+  #|  {"name":"comment","bytecode":[5,23,14,18,18,2,1,22,18,3,15,239,3,4,23,15,20,8,2,1,21,1,3,16,10,10,23,15,20,8,2,1,21,1,3,6,4,23,9,18,9,2,1,22,9,3,15,13,3,16,10,10,23,9,18,9,2,1,22,9,3,6,6,6,3,15,180,4,4,5,23,16,20,9,2,1,21,1,3,15,62,3,4,23,15,20,8,2,1,21,1,3,16,10,10,23,15,20,8,2,1,21,1,3,6,4,23,9,18,9,2,1,22,9,3,15,13,3,16,10,10,23,9,18,9,2,1,22,9,3,6,6,6,3,15,3,4,11,3,9,8,3,7,3,6,7,3,16,79,10,5,23,16,20,9,2,1,21,1,3,15,62,3,4,23,15,20,8,2,1,21,1,3,16,10,10,23,15,20,8,2,1,21,1,3,6,4,23,9,18,9,2,1,22,9,3,15,13,3,16,10,10,23,9,18,9,2,1,22,9,3,6,6,6,3,15,3,4,11,3,9,8,3,7,3,6,7,3,6,23,5,18,5,2,1,22,5,3,15,3,4,11,5,9,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"ident","bytecode":[5,5,18,19,2,1,22,19,3,14,2,0,6,2,6,12,27,29,15,18,4,4,27,30,16,3,10,27,30,6,24,3,26,34,4,3,2,1,0,8,2,7,3]},
+  #|  {"name":"name","bytecode":[5,4,27,30,15,6,3,16,3,10,27,30,6,6,6,3,15,7,0,24,1,26,35,1,1,0,9]},
+  #|  {"name":"num","bytecode":[5,20,10,2,1,21,1,3,14,2,0,6,2,5,4,20,11,2,1,21,1,3,16,8,10,20,11,2,1,21,1,3,6,18,8,2,1,22,8,3,15,35,4,4,20,11,2,1,21,1,3,15,11,3,16,8,10,20,11,2,1,21,1,3,6,6,6,3,15,3,4,11,3,9,8,3,7,3,8,2,7,3,14,26,0,6,4,20,11,2,1,21,1,3,15,11,3,16,8,10,20,11,2,1,21,1,3,6,6,6,3,15,72,4,5,18,20,2,1,22,20,3,15,47,3,20,10,2,1,21,1,3,14,2,0,6,2,4,20,11,2,1,21,1,3,15,11,3,16,8,10,20,11,2,1,21,1,3,6,6,6,3,15,3,4,11,3,9,8,3,7,3,6,7,3,14,2,0,6,2,24,3,26,36,4,0,8,2,7,3]},
+  #|  {"name":"string","bytecode":[27,31,14,3,0,6,27,32]},
+  #|  {"name":"url","bytecode":[5,4,20,12,2,1,21,1,3,14,9,0,6,27,26,14,3,0,6,27,28,16,20,10,20,12,2,1,21,1,3,14,9,0,6,27,26,14,3,0,6,27,28,6,24,1,26,35,1,1,0,9]},
+  #|  {"name":"s","bytecode":[4,20,2,2,1,21,1,3,15,11,3,16,8,10,20,2,2,1,21,1,3,6,6,6,3]},
+  #|  {"name":"w","bytecode":[27,39,14,2,0,6,2]},
+  #|  {"name":"nl","bytecode":[18,21,2,1,22,21,3,14,30,0,6,18,15,2,1,22,15,3,14,19,0,6,18,22,2,1,22,22,3,14,8,0,6,18,23,2,1,22,23,3]},
+  #|  {"name":"A","bytecode":[19,24,2,1,21,1,3,14,106,0,6,5,18,14,2,1,22,14,3,15,91,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,13,2,1,21,1,3,15,29,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,24,7,26,37,8,0,8,6,7,3,6,7,3]},
+  #|  {"name":"C","bytecode":[19,26,2,1,21,1,3,14,106,0,6,5,18,14,2,1,22,14,3,15,91,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,14,2,1,21,1,3,15,29,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,24,7,26,38,8,0,8,6,7,3,6,7,3]},
+  #|  {"name":"D","bytecode":[19,27,2,1,21,1,3,14,106,0,6,5,18,14,2,1,22,14,3,15,91,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,15,2,1,21,1,3,15,29,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,24,7,26,39,8,0,8,6,7,3,6,7,3]},
+  #|  {"name":"E","bytecode":[19,20,2,1,21,1,3,14,106,0,6,5,18,14,2,1,22,14,3,15,91,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,16,2,1,21,1,3,15,29,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,24,7,26,40,8,0,8,6,7,3,6,7,3]},
+  #|  {"name":"G","bytecode":[19,28,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,17,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,29,2,1,21,2,3,15,6,0,24,1,26,41,1,0,9]},
+  #|  {"name":"H","bytecode":[19,30,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,18,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,31,2,1,21,2,3,15,6,0,24,1,26,42,1,0,9]},
+  #|  {"name":"I","bytecode":[19,32,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,19,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,33,2,1,21,2,3,15,6,0,24,1,26,43,1,0,9]},
+  #|  {"name":"K","bytecode":[19,34,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,20,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,35,2,1,21,2,3,15,6,0,24,1,26,44,1,0,9]},
+  #|  {"name":"L","bytecode":[19,36,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,21,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,37,2,1,21,2,3,15,6,0,24,1,26,45,1,0,9]},
+  #|  {"name":"M","bytecode":[19,38,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,22,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,39,2,1,21,2,3,15,6,0,24,1,26,46,1,0,9]},
+  #|  {"name":"N","bytecode":[19,40,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,23,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,41,2,1,21,2,3,15,6,0,24,1,26,47,1,0,9]},
+  #|  {"name":"O","bytecode":[19,42,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,24,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,43,2,1,21,2,3,15,6,0,24,1,26,48,1,0,9]},
+  #|  {"name":"P","bytecode":[19,44,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,25,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,45,2,1,21,2,3,15,6,0,24,1,26,49,1,0,9]},
+  #|  {"name":"R","bytecode":[19,46,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,26,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,47,2,1,21,2,3,15,6,0,24,1,26,50,1,0,9]},
+  #|  {"name":"S_","bytecode":[19,48,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,27,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,49,2,1,21,2,3,15,6,0,24,1,26,51,1,0,9]},
+  #|  {"name":"T","bytecode":[19,50,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,28,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,51,2,1,21,2,3,15,6,0,24,1,26,52,1,0,9]},
+  #|  {"name":"U","bytecode":[19,52,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,29,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,53,2,1,21,2,3,15,6,0,24,1,26,53,1,0,9]},
+  #|  {"name":"X","bytecode":[19,54,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,30,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,55,2,1,21,2,3,15,6,0,24,1,26,54,1,0,9]},
+  #|  {"name":"Z","bytecode":[19,56,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,31,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,57,2,1,21,2,3,15,6,0,24,1,26,55,1,0,9]},
+  #|  {"name":"S","bytecode":[23,17,28,5,4,27,33,16,3,10,27,33,6,27,39,15,3,4,11,2,9,8,2,7,3,29]},
+  #|  {"name":"CDO","bytecode":[23,18,28,5,4,27,33,16,3,10,27,33,6,18,58,2,1,22,58,3,15,3,4,11,2,9,8,2,7,3,29]},
+  #|  {"name":"CDC","bytecode":[23,19,28,5,4,27,33,16,3,10,27,33,6,18,59,2,1,22,59,3,15,3,4,11,2,9,8,2,7,3,29]},
+  #|  {"name":"INCLUDES","bytecode":[23,20,28,5,4,27,33,16,3,10,27,33,6,18,60,2,1,22,60,3,15,3,4,11,2,9,8,2,7,3,29]},
+  #|  {"name":"DASHMATCH","bytecode":[23,21,28,5,4,27,33,16,3,10,27,33,6,18,61,2,1,22,61,3,15,3,4,11,2,9,8,2,7,3,29]},
+  #|  {"name":"STRING","bytecode":[23,22,28,5,4,27,33,16,3,10,27,33,6,27,37,15,7,4,24,2,26,56,3,1,0,8,2,7,3,29]},
+  #|  {"name":"IDENT","bytecode":[23,23,28,5,4,27,33,16,3,10,27,33,6,27,34,15,7,4,24,2,26,57,3,1,0,8,2,7,3,29]},
+  #|  {"name":"HASH","bytecode":[23,24,28,5,4,27,33,16,3,10,27,33,6,18,62,2,1,22,62,3,15,16,4,27,35,15,7,4,24,3,26,58,4,1,0,8,3,7,3,8,2,7,3,29]},
+  #|  {"name":"IMPORT_SYM","bytecode":[23,25,28,5,4,27,33,16,3,10,27,33,6,18,63,2,1,22,63,3,15,57,4,27,48,15,48,4,27,51,15,39,4,27,54,15,30,4,27,53,15,21,4,27,55,15,12,4,27,57,15,3,4,11,8,9,8,8,7,3,8,7,7,3,8,6,7,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,29]},
+  #|  {"name":"PAGE_SYM","bytecode":[23,26,28,5,4,27,33,16,3,10,27,33,6,18,63,2,1,22,63,3,15,39,4,27,54,15,30,4,27,42,15,21,4,27,46,15,12,4,27,45,15,3,4,11,6,9,8,6,7,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,29]},
+  #|  {"name":"MEDIA_SYM","bytecode":[23,27,28,5,4,27,33,16,3,10,27,33,6,18,63,2,1,22,63,3,15,48,4,27,51,15,39,4,27,45,15,30,4,27,44,15,21,4,27,48,15,12,4,27,42,15,3,4,11,7,9,8,7,7,3,8,6,7,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,29]},
+  #|  {"name":"CHARSET_SYM","bytecode":[23,28,28,5,4,27,33,16,3,10,27,33,6,18,64,2,1,22,64,3,15,3,4,11,2,9,8,2,7,3,29]},
+  #|  {"name":"IMPORTANT_SYM","bytecode":[23,29,28,5,4,27,33,16,3,10,27,33,6,18,65,2,1,22,65,3,15,105,4,4,27,39,14,3,0,6,27,33,16,9,10,27,39,14,3,0,6,27,33,6,27,48,15,75,4,27,51,15,66,4,27,54,15,57,4,27,53,15,48,4,27,55,15,39,4,27,57,15,30,4,27,42,15,21,4,27,52,15,12,4,27,57,15,3,4,11,12,9,8,12,7,3,8,11,7,3,8,10,7,3,8,9,7,3,8,8,7,3,8,7,7,3,8,6,7,3,8,5,7,3,8,4,7,3,8,2,7,3,29]},
+  #|  {"name":"EMS","bytecode":[23,30,28,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,45,15,16,4,27,51,15,7,4,24,4,26,59,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,29]},
+  #|  {"name":"EXS","bytecode":[23,30,28,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,45,15,16,4,27,59,15,7,4,24,4,26,60,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,29]},
+  #|  {"name":"LENGTH","bytecode":[23,30,28,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,54,15,16,4,27,59,15,7,4,24,4,26,61,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,237,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,43,15,16,4,27,51,15,7,4,24,4,26,62,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,189,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,51,15,16,4,27,51,15,7,4,24,4,26,63,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,141,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,48,15,16,4,27,52,15,7,4,24,4,26,64,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,93,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,54,15,16,4,27,57,15,7,4,24,4,26,65,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,45,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,54,15,16,4,27,43,15,7,4,24,4,26,66,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,29]},
+  #|  {"name":"ANGLE","bytecode":[23,31,28,5,4,27,33,16,3,10,27,33,6,27,36,15,34,4,27,44,15,25,4,27,45,15,16,4,27,46,15,7,4,24,5,26,67,6,1,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,14,120,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,34,4,27,55,15,25,4,27,42,15,16,4,27,44,15,7,4,24,5,26,68,6,1,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,14,63,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,43,4,27,46,15,34,4,27,55,15,25,4,27,42,15,16,4,27,44,15,7,4,24,6,26,69,7,1,4,8,6,7,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,29]},
+  #|  {"name":"TIME","bytecode":[23,32,28,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,51,15,16,4,27,56,15,7,4,24,4,26,70,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,36,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,16,4,27,56,15,7,4,24,3,26,71,4,1,1,8,3,7,3,8,2,7,3,29]},
+  #|  {"name":"FREQ","bytecode":[23,33,28,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,47,15,16,4,27,60,15,7,4,24,4,26,72,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,54,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,34,4,27,49,15,25,4,27,47,15,16,4,27,60,15,7,4,24,5,26,73,6,1,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,29]},
+  #|  {"name":"PERCENTAGE","bytecode":[23,34,28,5,4,27,33,16,3,10,27,33,6,27,36,15,21,4,18,66,2,1,22,66,3,15,7,4,24,3,26,74,4,1,1,8,3,7,3,8,2,7,3,29]},
+  #|  {"name":"NUMBER","bytecode":[23,35,28,5,4,27,33,16,3,10,27,33,6,27,36,15,7,4,24,2,26,75,3,1,0,8,2,7,3,29]},
+  #|  {"name":"URI","bytecode":[23,36,28,5,4,27,33,16,3,10,27,33,6,27,58,15,66,4,27,55,15,57,4,27,50,15,48,4,19,67,2,1,21,1,3,15,34,4,27,40,27,37,15,23,4,27,40,18,13,2,1,22,13,3,15,7,4,24,9,26,76,10,1,2,8,9,7,3,8,7,7,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,14,79,0,6,5,4,27,33,16,3,10,27,33,6,27,58,15,59,4,27,55,15,50,4,27,50,15,41,4,19,67,2,1,21,1,3,15,27,4,27,40,27,38,27,40,18,13,2,1,22,13,3,15,7,4,24,9,26,76,10,1,2,8,9,7,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,29]},
+  #|  {"name":"FUNCTION","bytecode":[23,37,28,5,4,27,33,16,3,10,27,33,6,27,34,15,21,4,18,67,2,1,22,67,3,15,7,4,24,3,26,5,4,1,1,8,3,7,3,8,2,7,3,29]}
+  #|],
+  #|"literals": [
+  #|  ";",
+  #|  "{",
+  #|  "}",
+  #|  ",",
+  #|  ":",
+  #|  "/",
+  #|  "+",
+  #|  ">",
+  #|  ".",
+  #|  "*",
+  #|  "[",
+  #|  "=",
+  #|  "]",
+  #|  ")",
+  #|  "\\",
+  #|  "\r\n",
+  #|  "\"",
+  #|  "'",
+  #|  "/*",
+  #|  "-",
+  #|  "e",
+  #|  "\n",
+  #|  "\r",
+  #|  "\f",
+  #|  "a",
+  #|  "0",
+  #|  "c",
+  #|  "d",
+  #|  "g",
+  #|  "\\g",
+  #|  "h",
+  #|  "\\h",
+  #|  "i",
+  #|  "\\i",
+  #|  "k",
+  #|  "\\k",
+  #|  "l",
+  #|  "\\l",
+  #|  "m",
+  #|  "\\m",
+  #|  "n",
+  #|  "\\n",
+  #|  "o",
+  #|  "\\o",
+  #|  "p",
+  #|  "\\p",
+  #|  "r",
+  #|  "\\r",
+  #|  "s",
+  #|  "\\s",
+  #|  "t",
+  #|  "\\t",
+  #|  "u",
+  #|  "\\u",
+  #|  "x",
+  #|  "\\x",
+  #|  "z",
+  #|  "\\z",
+  #|  "<!--",
+  #|  "-->",
+  #|  "~=",
+  #|  "|=",
+  #|  "#",
+  #|  "@",
+  #|  "@charset ",
+  #|  "!",
+  #|  "%",
+  #|  "("
+  #|],
+  #|"classes": [
+  #|  {"value":[["0","9"],["a","f"]],"inverted":false,"ignoreCase":true},
+  #|  {"value":[["","￿"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":[" ","\t","\r","\n","\f"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["\r","\n","\f",["0","9"],["a","f"]],"inverted":true,"ignoreCase":true},
+  #|  {"value":["_",["a","z"]],"inverted":false,"ignoreCase":true},
+  #|  {"value":["_",["a","z"],["0","9"],"-"],"inverted":false,"ignoreCase":true},
+  #|  {"value":["\n","\r","\f","\\","\""],"inverted":true,"ignoreCase":false},
+  #|  {"value":["\n","\r","\f","\\","'"],"inverted":true,"ignoreCase":false},
+  #|  {"value":["*"],"inverted":true,"ignoreCase":false},
+  #|  {"value":["/","*"],"inverted":true,"ignoreCase":false},
+  #|  {"value":["+","-"],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["0","9"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":["!","#","$","%","&",["*","["],["]","~"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":["A","a"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["C","c"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["D","d"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["E","e"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["G","g"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["H","h"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["I","i"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["K","k"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["L","l"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["M","m"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["N","n"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["O","o"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["P","p"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["R","r"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["S","s"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["T","t"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["U","u"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["X","x"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["Z","z"],"inverted":false,"ignoreCase":false}
+  #|],
+  #|"expectations": [
+  #|  {"type":"literal","value":";","ignoreCase":false},
+  #|  {"type":"literal","value":"{","ignoreCase":false},
+  #|  {"type":"literal","value":"}","ignoreCase":false},
+  #|  {"type":"literal","value":",","ignoreCase":false},
+  #|  {"type":"literal","value":":","ignoreCase":false},
+  #|  {"type":"literal","value":"/","ignoreCase":false},
+  #|  {"type":"literal","value":"+","ignoreCase":false},
+  #|  {"type":"literal","value":">","ignoreCase":false},
+  #|  {"type":"literal","value":".","ignoreCase":false},
+  #|  {"type":"literal","value":"*","ignoreCase":false},
+  #|  {"type":"literal","value":"[","ignoreCase":false},
+  #|  {"type":"literal","value":"=","ignoreCase":false},
+  #|  {"type":"literal","value":"]","ignoreCase":false},
+  #|  {"type":"literal","value":")","ignoreCase":false},
+  #|  {"type":"literal","value":"/*","ignoreCase":false},
+  #|  {"type":"class","value":["*"],"inverted":true,"ignoreCase":false},
+  #|  {"type":"class","value":["/","*"],"inverted":true,"ignoreCase":false},
+  #|  {"type":"rule","value":"whitespace"},
+  #|  {"type":"rule","value":"<!--"},
+  #|  {"type":"rule","value":"-->"},
+  #|  {"type":"rule","value":"~="},
+  #|  {"type":"rule","value":"|="},
+  #|  {"type":"rule","value":"string"},
+  #|  {"type":"rule","value":"identifier"},
+  #|  {"type":"rule","value":"hash"},
+  #|  {"type":"rule","value":"@import"},
+  #|  {"type":"rule","value":"@page"},
+  #|  {"type":"rule","value":"@media"},
+  #|  {"type":"rule","value":"@charset"},
+  #|  {"type":"rule","value":"!important"},
+  #|  {"type":"rule","value":"length"},
+  #|  {"type":"rule","value":"angle"},
+  #|  {"type":"rule","value":"time"},
+  #|  {"type":"rule","value":"frequency"},
+  #|  {"type":"rule","value":"percentage"},
+  #|  {"type":"rule","value":"number"},
+  #|  {"type":"rule","value":"uri"},
+  #|  {"type":"rule","value":"function"}
+  #|],
+  #|"functions": [
+  #|  {"predicate":false,"params":["stylesheet"],"body":" return stylesheet; "},
+  #|  {"predicate":false,"params":["charset","imports","rules"],"body":"\n      return {\n        type: \"StyleSheet\",\n        charset: extractOptional(charset, 1),\n        imports: extractList(imports, 0),\n        rules: extractList(rules, 0)\n      };\n    "},
+  #|  {"predicate":false,"params":["href","media"],"body":"\n      return {\n        type: \"ImportRule\",\n        href: href,\n        media: media !== null ? media : []\n      };\n    "},
+  #|  {"predicate":false,"params":["media","rules"],"body":"\n      return {\n        type: \"MediaRule\",\n        media: media,\n        rules: rules\n      };\n    "},
+  #|  {"predicate":false,"params":["head","tail"],"body":" return buildList(head, tail, 2); "},
+  #|  {"predicate":false,"params":["name"],"body":" return name; "},
+  #|  {"predicate":false,"params":["selector","declarationsHead","declarationsTail"],"body":"\n      return {\n        type: \"PageRule\",\n        selector: selector,\n        declarations: buildList(declarationsHead, declarationsTail, 2)\n      };\n    "},
+  #|  {"predicate":false,"params":["value"],"body":" return { type: \"PseudoSelector\", value: value }; "},
+  #|  {"predicate":false,"params":[],"body":" return \"/\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \",\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"+\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \">\"; "},
+  #|  {"predicate":false,"params":["selectorsHead","selectorsTail","declarationsHead","declarationsTail"],"body":"\n      return {\n        type: \"RuleSet\",\n        selectors: buildList(selectorsHead, selectorsTail, 2),\n        declarations: buildList(declarationsHead, declarationsTail, 2)\n      };\n    "},
+  #|  {"predicate":false,"params":["left","combinator","right"],"body":"\n      return {\n        type: \"Selector\",\n        combinator: combinator,\n        left: left,\n        right: right\n      };\n    "},
+  #|  {"predicate":false,"params":["left","right"],"body":"\n      return {\n        type: \"Selector\",\n        combinator: \" \",\n        left: left,\n        right: right\n      };\n    "},
+  #|  {"predicate":false,"params":["selector"],"body":" return selector; "},
+  #|  {"predicate":false,"params":["element","qualifiers"],"body":"\n      return {\n        type: \"SimpleSelector\",\n        element: element,\n        qualifiers: qualifiers\n      };\n    "},
+  #|  {"predicate":false,"params":["qualifiers"],"body":"\n      return {\n        type: \"SimpleSelector\",\n        element: \"*\",\n        qualifiers: qualifiers\n      };\n    "},
+  #|  {"predicate":false,"params":["id"],"body":" return { type: \"IDSelector\", id: id }; "},
+  #|  {"predicate":false,"params":["class_"],"body":" return { type: \"ClassSelector\", \"class\": class_ }; "},
+  #|  {"predicate":false,"params":["attribute","operatorAndValue"],"body":"\n      return {\n        type: \"AttributeSelector\",\n        attribute: attribute,\n        operator: extractOptional(operatorAndValue, 0),\n        value: extractOptional(operatorAndValue, 2)\n      };\n    "},
+  #|  {"predicate":false,"params":["name","params"],"body":"\n          return {\n            type: \"Function\",\n            name: name,\n            params: params !== null ? [params[0]] : []\n          };\n        "},
+  #|  {"predicate":false,"params":["name","value","prio"],"body":"\n      return {\n        type: \"Declaration\",\n        name: name,\n        value: value,\n        important: prio !== null\n      };\n    "},
+  #|  {"predicate":false,"params":["head","tail"],"body":" return buildExpression(head, tail); "},
+  #|  {"predicate":false,"params":["quantity"],"body":"\n      return {\n        type: \"Quantity\",\n        value: quantity.value,\n        unit: quantity.unit\n      };\n    "},
+  #|  {"predicate":false,"params":["value"],"body":" return { type: \"String\", value: value }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { type: \"URI\",    value: value }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { type: \"Ident\",  value: value }; "},
+  #|  {"predicate":false,"params":["name","params"],"body":"\n      return { type: \"Function\", name: name, params: params };\n    "},
+  #|  {"predicate":false,"params":["value"],"body":" return { type: \"Hexcolor\", value: value }; "},
+  #|  {"predicate":false,"params":["digits"],"body":"\n      return String.fromCharCode(parseInt(digits, 16));\n    "},
+  #|  {"predicate":false,"params":["ch"],"body":" return ch; "},
+  #|  {"predicate":false,"params":["nl"],"body":" return \"\"; "},
+  #|  {"predicate":false,"params":["chars"],"body":"\n      return chars.join(\"\");\n    "},
+  #|  {"predicate":false,"params":["prefix","start","chars"],"body":"\n      return prefix + start + chars.join(\"\");\n    "},
+  #|  {"predicate":false,"params":["chars"],"body":" return chars.join(\"\"); "},
+  #|  {"predicate":false,"params":[],"body":"\n      return parseFloat(text());\n    "},
+  #|  {"predicate":false,"params":[],"body":" return \"a\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"c\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"d\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"e\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"g\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"h\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"i\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"k\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"l\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"m\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"n\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"o\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"p\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"r\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"s\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"t\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"u\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"x\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"z\"; "},
+  #|  {"predicate":false,"params":["string"],"body":" return string; "},
+  #|  {"predicate":false,"params":["ident"],"body":" return ident; "},
+  #|  {"predicate":false,"params":["name"],"body":" return \"#\" + name; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"em\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"ex\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"px\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"cm\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"mm\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"in\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"pt\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"pc\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"deg\"  }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"rad\"  }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"grad\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"ms\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"s\"  }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"hz\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"kh\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: \"%\" }; "},
+  #|  {"predicate":false,"params":["value"],"body":" return { value: value, unit: null }; "},
+  #|  {"predicate":false,"params":["url"],"body":" return url; "}
+  #|]
+  #|}
+
+///|
+let example_javascript_source : String =
+  #|// JavaScript Grammar
+  #|// ==================
+  #|//
+  #|// Based on grammar from ECMA-262, 5.1 Edition [1]. Generated parser builds a
+  #|// syntax tree compatible with the ESTree spec [2].
+  #|//
+  #|// Limitations:
+  #|//
+  #|//   * Non-BMP characters are completely ignored to avoid surrogate pair
+  #|//     handling.
+  #|//
+  #|//   * One can create identifiers containing illegal characters using Unicode
+  #|//     escape sequences. For example, "abcd\u0020efgh" is not a valid
+  #|//     identifier, but it is accepted by the parser.
+  #|//
+  #|//   * Strict mode is not recognized. This means that within strict mode code,
+  #|//     "implements", "interface", "let", "package", "private", "protected",
+  #|//     "public", "static" and "yield" can be used as names. Many other
+  #|//     restrictions and exceptions from Annex C are also not applied.
+  #|//
+  #|// All the limitations could be resolved, but the costs would likely outweigh
+  #|// the benefits.
+  #|//
+  #|// Many thanks to inimino [3] for his grammar [4] which helped me to solve some
+  #|// problems (such as automatic semicolon insertion) and also served to double
+  #|// check that I converted the original grammar correctly.
+  #|//
+  #|// [1] http://www.ecma-international.org/publications/standards/Ecma-262.htm
+  #|// [2] https://github.com/estree/estree
+  #|// [3] http://inimino.org/~inimino/blog/
+  #|// [4] http://boshi.inimino.org/3box/asof/1270029991384/PEG/ECMAScript_unified.peg
+  #|
+  #|{
+  #|  var TYPES_TO_PROPERTY_NAMES = {
+  #|    CallExpression:   "callee",
+  #|    MemberExpression: "object",
+  #|  };
+  #|
+  #|  function filledArray(count, value) {
+  #|    return Array.apply(null, new Array(count))
+  #|      .map(function() { return value; });
+  #|  }
+  #|
+  #|  function extractOptional(optional, index) {
+  #|    return optional ? optional[index] : null;
+  #|  }
+  #|
+  #|  function extractList(list, index) {
+  #|    return list.map(function(element) { return element[index]; });
+  #|  }
+  #|
+  #|  function buildList(head, tail, index) {
+  #|    return [head].concat(extractList(tail, index));
+  #|  }
+  #|
+  #|  function buildBinaryExpression(head, tail) {
+  #|    return tail.reduce(function(result, element) {
+  #|      return {
+  #|        type: "BinaryExpression",
+  #|        operator: element[1],
+  #|        left: result,
+  #|        right: element[3]
+  #|      };
+  #|    }, head);
+  #|  }
+  #|
+  #|  function buildLogicalExpression(head, tail) {
+  #|    return tail.reduce(function(result, element) {
+  #|      return {
+  #|        type: "LogicalExpression",
+  #|        operator: element[1],
+  #|        left: result,
+  #|        right: element[3]
+  #|      };
+  #|    }, head);
+  #|  }
+  #|
+  #|  function optionalList(value) {
+  #|    return value !== null ? value : [];
+  #|  }
+  #|}
+  #|
+  #|Start
+  #|  = __ program:Program __ { return program; }
+  #|
+  #|// ----- A.1 Lexical Grammar -----
+  #|
+  #|SourceCharacter
+  #|  = .
+  #|
+  #|WhiteSpace "whitespace"
+  #|  = "\t"
+  #|  / "\v"
+  #|  / "\f"
+  #|  / " "
+  #|  / "\u00A0"
+  #|  / "\uFEFF"
+  #|  / Zs
+  #|
+  #|LineTerminator
+  #|  = [\n\r\u2028\u2029]
+  #|
+  #|LineTerminatorSequence "end of line"
+  #|  = "\n"
+  #|  / "\r\n"
+  #|  / "\r"
+  #|  / "\u2028"
+  #|  / "\u2029"
+  #|
+  #|Comment "comment"
+  #|  = MultiLineComment
+  #|  / SingleLineComment
+  #|
+  #|MultiLineComment
+  #|  = "/*" (!"*/" SourceCharacter)* "*/"
+  #|
+  #|MultiLineCommentNoLineTerminator
+  #|  = "/*" (!("*/" / LineTerminator) SourceCharacter)* "*/"
+  #|
+  #|SingleLineComment
+  #|  = "//" (!LineTerminator SourceCharacter)*
+  #|
+  #|Identifier
+  #|  = !ReservedWord name:IdentifierName { return name; }
+  #|
+  #|IdentifierName "identifier"
+  #|  = head:IdentifierStart tail:IdentifierPart* {
+  #|      return {
+  #|        type: "Identifier",
+  #|        name: head + tail.join("")
+  #|      };
+  #|    }
+  #|
+  #|IdentifierStart
+  #|  = UnicodeLetter
+  #|  / "$"
+  #|  / "_"
+  #|  / "\\" sequence:UnicodeEscapeSequence { return sequence; }
+  #|
+  #|IdentifierPart
+  #|  = IdentifierStart
+  #|  / UnicodeCombiningMark
+  #|  / UnicodeDigit
+  #|  / UnicodeConnectorPunctuation
+  #|  / "\u200C"
+  #|  / "\u200D"
+  #|
+  #|UnicodeLetter
+  #|  = Lu
+  #|  / Ll
+  #|  / Lt
+  #|  / Lm
+  #|  / Lo
+  #|  / Nl
+  #|
+  #|UnicodeCombiningMark
+  #|  = Mn
+  #|  / Mc
+  #|
+  #|UnicodeDigit
+  #|  = Nd
+  #|
+  #|UnicodeConnectorPunctuation
+  #|  = Pc
+  #|
+  #|ReservedWord
+  #|  = Keyword
+  #|  / FutureReservedWord
+  #|  / NullLiteral
+  #|  / BooleanLiteral
+  #|
+  #|Keyword
+  #|  = BreakToken
+  #|  / CaseToken
+  #|  / CatchToken
+  #|  / ContinueToken
+  #|  / DebuggerToken
+  #|  / DefaultToken
+  #|  / DeleteToken
+  #|  / DoToken
+  #|  / ElseToken
+  #|  / FinallyToken
+  #|  / ForToken
+  #|  / FunctionToken
+  #|  / IfToken
+  #|  / InstanceofToken
+  #|  / InToken
+  #|  / NewToken
+  #|  / ReturnToken
+  #|  / SwitchToken
+  #|  / ThisToken
+  #|  / ThrowToken
+  #|  / TryToken
+  #|  / TypeofToken
+  #|  / VarToken
+  #|  / VoidToken
+  #|  / WhileToken
+  #|  / WithToken
+  #|
+  #|FutureReservedWord
+  #|  = ClassToken
+  #|  / ConstToken
+  #|  / EnumToken
+  #|  / ExportToken
+  #|  / ExtendsToken
+  #|  / ImportToken
+  #|  / SuperToken
+  #|
+  #|Literal
+  #|  = NullLiteral
+  #|  / BooleanLiteral
+  #|  / NumericLiteral
+  #|  / StringLiteral
+  #|  / RegularExpressionLiteral
+  #|
+  #|NullLiteral
+  #|  = NullToken { return { type: "Literal", value: null }; }
+  #|
+  #|BooleanLiteral
+  #|  = TrueToken  { return { type: "Literal", value: true  }; }
+  #|  / FalseToken { return { type: "Literal", value: false }; }
+  #|
+  #|// The "!(IdentifierStart / DecimalDigit)" predicate is not part of the official
+  #|// grammar, it comes from text in section 7.8.3.
+  #|NumericLiteral "number"
+  #|  = literal:HexIntegerLiteral !(IdentifierStart / DecimalDigit) {
+  #|      return literal;
+  #|    }
+  #|  / literal:DecimalLiteral !(IdentifierStart / DecimalDigit) {
+  #|      return literal;
+  #|    }
+  #|
+  #|DecimalLiteral
+  #|  = DecimalIntegerLiteral "." DecimalDigit* ExponentPart? {
+  #|      return { type: "Literal", value: parseFloat(text()) };
+  #|    }
+  #|  / "." DecimalDigit+ ExponentPart? {
+  #|      return { type: "Literal", value: parseFloat(text()) };
+  #|    }
+  #|  / DecimalIntegerLiteral ExponentPart? {
+  #|      return { type: "Literal", value: parseFloat(text()) };
+  #|    }
+  #|
+  #|DecimalIntegerLiteral
+  #|  = "0"
+  #|  / NonZeroDigit DecimalDigit*
+  #|
+  #|DecimalDigit
+  #|  = [0-9]
+  #|
+  #|NonZeroDigit
+  #|  = [1-9]
+  #|
+  #|ExponentPart
+  #|  = ExponentIndicator SignedInteger
+  #|
+  #|ExponentIndicator
+  #|  = "e"i
+  #|
+  #|SignedInteger
+  #|  = [+-]? DecimalDigit+
+  #|
+  #|HexIntegerLiteral
+  #|  = "0x"i digits:$HexDigit+ {
+  #|      return { type: "Literal", value: parseInt(digits, 16) };
+  #|     }
+  #|
+  #|HexDigit
+  #|  = [0-9a-f]i
+  #|
+  #|StringLiteral "string"
+  #|  = '"' chars:DoubleStringCharacter* '"' {
+  #|      return { type: "Literal", value: chars.join("") };
+  #|    }
+  #|  / "'" chars:SingleStringCharacter* "'" {
+  #|      return { type: "Literal", value: chars.join("") };
+  #|    }
+  #|
+  #|DoubleStringCharacter
+  #|  = !('"' / "\\" / LineTerminator) SourceCharacter { return text(); }
+  #|  / "\\" sequence:EscapeSequence { return sequence; }
+  #|  / LineContinuation
+  #|
+  #|SingleStringCharacter
+  #|  = !("'" / "\\" / LineTerminator) SourceCharacter { return text(); }
+  #|  / "\\" sequence:EscapeSequence { return sequence; }
+  #|  / LineContinuation
+  #|
+  #|LineContinuation
+  #|  = "\\" LineTerminatorSequence { return ""; }
+  #|
+  #|EscapeSequence
+  #|  = CharacterEscapeSequence
+  #|  / "0" !DecimalDigit { return "\0"; }
+  #|  / HexEscapeSequence
+  #|  / UnicodeEscapeSequence
+  #|
+  #|CharacterEscapeSequence
+  #|  = SingleEscapeCharacter
+  #|  / NonEscapeCharacter
+  #|
+  #|SingleEscapeCharacter
+  #|  = "'"
+  #|  / '"'
+  #|  / "\\"
+  #|  / "b"  { return "\b"; }
+  #|  / "f"  { return "\f"; }
+  #|  / "n"  { return "\n"; }
+  #|  / "r"  { return "\r"; }
+  #|  / "t"  { return "\t"; }
+  #|  / "v"  { return "\v"; }
+  #|
+  #|NonEscapeCharacter
+  #|  = !(EscapeCharacter / LineTerminator) SourceCharacter { return text(); }
+  #|
+  #|EscapeCharacter
+  #|  = SingleEscapeCharacter
+  #|  / DecimalDigit
+  #|  / "x"
+  #|  / "u"
+  #|
+  #|HexEscapeSequence
+  #|  = "x" digits:$(HexDigit HexDigit) {
+  #|      return String.fromCharCode(parseInt(digits, 16));
+  #|    }
+  #|
+  #|UnicodeEscapeSequence
+  #|  = "u" digits:$(HexDigit HexDigit HexDigit HexDigit) {
+  #|      return String.fromCharCode(parseInt(digits, 16));
+  #|    }
+  #|
+  #|RegularExpressionLiteral "regular expression"
+  #|  = "/" pattern:$RegularExpressionBody "/" flags:$RegularExpressionFlags {
+  #|      var value;
+  #|
+  #|      try {
+  #|        value = new RegExp(pattern, flags);
+  #|      } catch (e) {
+  #|        error(e.message);
+  #|      }
+  #|
+  #|      return { type: "Literal", value: value };
+  #|    }
+  #|
+  #|RegularExpressionBody
+  #|  = RegularExpressionFirstChar RegularExpressionChar*
+  #|
+  #|RegularExpressionFirstChar
+  #|  = ![*\\/[] RegularExpressionNonTerminator
+  #|  / RegularExpressionBackslashSequence
+  #|  / RegularExpressionClass
+  #|
+  #|RegularExpressionChar
+  #|  = ![\\/[] RegularExpressionNonTerminator
+  #|  / RegularExpressionBackslashSequence
+  #|  / RegularExpressionClass
+  #|
+  #|RegularExpressionBackslashSequence
+  #|  = "\\" RegularExpressionNonTerminator
+  #|
+  #|RegularExpressionNonTerminator
+  #|  = !LineTerminator SourceCharacter
+  #|
+  #|RegularExpressionClass
+  #|  = "[" RegularExpressionClassChar* "]"
+  #|
+  #|RegularExpressionClassChar
+  #|  = ![\]\\] RegularExpressionNonTerminator
+  #|  / RegularExpressionBackslashSequence
+  #|
+  #|RegularExpressionFlags
+  #|  = IdentifierPart*
+  #|
+  #|// Unicode Character Categories
+  #|//
+  #|// Extracted from the following Unicode Character Database file:
+  #|//
+  #|//   http://www.unicode.org/Public/11.0.0/ucd/extracted/DerivedGeneralCategory.txt
+  #|//
+  #|// Unix magic used:
+  #|//
+  #|//   grep "; $CATEGORY" DerivedGeneralCategory.txt |   # Filter characters
+  #|//     cut -f1 -d " " |                                # Extract code points
+  #|//     grep -v '[0-9a-fA-F]\{5\}' |                    # Exclude non-BMP characters
+  #|//     sed -e 's/\.\./-/' |                            # Adjust formatting
+  #|//     sed -e 's/\([0-9a-fA-F]\{4\}\)/\\u\1/g' |       # Adjust formatting
+  #|//     tr -d '\n'                                      # Join lines
+  #|//
+  #|// ECMA-262 allows using Unicode 3.0 or later, version 8.0.0 was the latest one
+  #|// at the time of writing.
+  #|//
+  #|// Non-BMP characters are completely ignored to avoid surrogate pair handling
+  #|// (detecting surrogate pairs isn't possible with a simple character class and
+  #|// other methods would degrade performance). I don't consider it a big deal as
+  #|// even parsers in JavaScript engines of common browsers seem to ignore them.
+  #|
+  #|// Letter, Lowercase
+  #|Ll = [\u0061-\u007A\u00B5\u00DF-\u00F6\u00F8-\u00FF\u0101\u0103\u0105\u0107\u0109\u010B\u010D\u010F\u0111\u0113\u0115\u0117\u0119\u011B\u011D\u011F\u0121\u0123\u0125\u0127\u0129\u012B\u012D\u012F\u0131\u0133\u0135\u0137-\u0138\u013A\u013C\u013E\u0140\u0142\u0144\u0146\u0148-\u0149\u014B\u014D\u014F\u0151\u0153\u0155\u0157\u0159\u015B\u015D\u015F\u0161\u0163\u0165\u0167\u0169\u016B\u016D\u016F\u0171\u0173\u0175\u0177\u017A\u017C\u017E-\u0180\u0183\u0185\u0188\u018C-\u018D\u0192\u0195\u0199-\u019B\u019E\u01A1\u01A3\u01A5\u01A8\u01AA-\u01AB\u01AD\u01B0\u01B4\u01B6\u01B9-\u01BA\u01BD-\u01BF\u01C6\u01C9\u01CC\u01CE\u01D0\u01D2\u01D4\u01D6\u01D8\u01DA\u01DC-\u01DD\u01DF\u01E1\u01E3\u01E5\u01E7\u01E9\u01EB\u01ED\u01EF-\u01F0\u01F3\u01F5\u01F9\u01FB\u01FD\u01FF\u0201\u0203\u0205\u0207\u0209\u020B\u020D\u020F\u0211\u0213\u0215\u0217\u0219\u021B\u021D\u021F\u0221\u0223\u0225\u0227\u0229\u022B\u022D\u022F\u0231\u0233-\u0239\u023C\u023F-\u0240\u0242\u0247\u0249\u024B\u024D\u024F-\u0293\u0295-\u02AF\u0371\u0373\u0377\u037B-\u037D\u0390\u03AC-\u03CE\u03D0-\u03D1\u03D5-\u03D7\u03D9\u03DB\u03DD\u03DF\u03E1\u03E3\u03E5\u03E7\u03E9\u03EB\u03ED\u03EF-\u03F3\u03F5\u03F8\u03FB-\u03FC\u0430-\u045F\u0461\u0463\u0465\u0467\u0469\u046B\u046D\u046F\u0471\u0473\u0475\u0477\u0479\u047B\u047D\u047F\u0481\u048B\u048D\u048F\u0491\u0493\u0495\u0497\u0499\u049B\u049D\u049F\u04A1\u04A3\u04A5\u04A7\u04A9\u04AB\u04AD\u04AF\u04B1\u04B3\u04B5\u04B7\u04B9\u04BB\u04BD\u04BF\u04C2\u04C4\u04C6\u04C8\u04CA\u04CC\u04CE-\u04CF\u04D1\u04D3\u04D5\u04D7\u04D9\u04DB\u04DD\u04DF\u04E1\u04E3\u04E5\u04E7\u04E9\u04EB\u04ED\u04EF\u04F1\u04F3\u04F5\u04F7\u04F9\u04FB\u04FD\u04FF\u0501\u0503\u0505\u0507\u0509\u050B\u050D\u050F\u0511\u0513\u0515\u0517\u0519\u051B\u051D\u051F\u0521\u0523\u0525\u0527\u0529\u052B\u052D\u052F\u0560-\u0588\u10D0-\u10FA\u10FD-\u10FF\u13F8-\u13FD\u1C80-\u1C88\u1D00-\u1D2B\u1D6B-\u1D77\u1D79-\u1D9A\u1E01\u1E03\u1E05\u1E07\u1E09\u1E0B\u1E0D\u1E0F\u1E11\u1E13\u1E15\u1E17\u1E19\u1E1B\u1E1D\u1E1F\u1E21\u1E23\u1E25\u1E27\u1E29\u1E2B\u1E2D\u1E2F\u1E31\u1E33\u1E35\u1E37\u1E39\u1E3B\u1E3D\u1E3F\u1E41\u1E43\u1E45\u1E47\u1E49\u1E4B\u1E4D\u1E4F\u1E51\u1E53\u1E55\u1E57\u1E59\u1E5B\u1E5D\u1E5F\u1E61\u1E63\u1E65\u1E67\u1E69\u1E6B\u1E6D\u1E6F\u1E71\u1E73\u1E75\u1E77\u1E79\u1E7B\u1E7D\u1E7F\u1E81\u1E83\u1E85\u1E87\u1E89\u1E8B\u1E8D\u1E8F\u1E91\u1E93\u1E95-\u1E9D\u1E9F\u1EA1\u1EA3\u1EA5\u1EA7\u1EA9\u1EAB\u1EAD\u1EAF\u1EB1\u1EB3\u1EB5\u1EB7\u1EB9\u1EBB\u1EBD\u1EBF\u1EC1\u1EC3\u1EC5\u1EC7\u1EC9\u1ECB\u1ECD\u1ECF\u1ED1\u1ED3\u1ED5\u1ED7\u1ED9\u1EDB\u1EDD\u1EDF\u1EE1\u1EE3\u1EE5\u1EE7\u1EE9\u1EEB\u1EED\u1EEF\u1EF1\u1EF3\u1EF5\u1EF7\u1EF9\u1EFB\u1EFD\u1EFF-\u1F07\u1F10-\u1F15\u1F20-\u1F27\u1F30-\u1F37\u1F40-\u1F45\u1F50-\u1F57\u1F60-\u1F67\u1F70-\u1F7D\u1F80-\u1F87\u1F90-\u1F97\u1FA0-\u1FA7\u1FB0-\u1FB4\u1FB6-\u1FB7\u1FBE\u1FC2-\u1FC4\u1FC6-\u1FC7\u1FD0-\u1FD3\u1FD6-\u1FD7\u1FE0-\u1FE7\u1FF2-\u1FF4\u1FF6-\u1FF7\u210A\u210E-\u210F\u2113\u212F\u2134\u2139\u213C-\u213D\u2146-\u2149\u214E\u2184\u2C30-\u2C5E\u2C61\u2C65-\u2C66\u2C68\u2C6A\u2C6C\u2C71\u2C73-\u2C74\u2C76-\u2C7B\u2C81\u2C83\u2C85\u2C87\u2C89\u2C8B\u2C8D\u2C8F\u2C91\u2C93\u2C95\u2C97\u2C99\u2C9B\u2C9D\u2C9F\u2CA1\u2CA3\u2CA5\u2CA7\u2CA9\u2CAB\u2CAD\u2CAF\u2CB1\u2CB3\u2CB5\u2CB7\u2CB9\u2CBB\u2CBD\u2CBF\u2CC1\u2CC3\u2CC5\u2CC7\u2CC9\u2CCB\u2CCD\u2CCF\u2CD1\u2CD3\u2CD5\u2CD7\u2CD9\u2CDB\u2CDD\u2CDF\u2CE1\u2CE3-\u2CE4\u2CEC\u2CEE\u2CF3\u2D00-\u2D25\u2D27\u2D2D\uA641\uA643\uA645\uA647\uA649\uA64B\uA64D\uA64F\uA651\uA653\uA655\uA657\uA659\uA65B\uA65D\uA65F\uA661\uA663\uA665\uA667\uA669\uA66B\uA66D\uA681\uA683\uA685\uA687\uA689\uA68B\uA68D\uA68F\uA691\uA693\uA695\uA697\uA699\uA69B\uA723\uA725\uA727\uA729\uA72B\uA72D\uA72F-\uA731\uA733\uA735\uA737\uA739\uA73B\uA73D\uA73F\uA741\uA743\uA745\uA747\uA749\uA74B\uA74D\uA74F\uA751\uA753\uA755\uA757\uA759\uA75B\uA75D\uA75F\uA761\uA763\uA765\uA767\uA769\uA76B\uA76D\uA76F\uA771-\uA778\uA77A\uA77C\uA77F\uA781\uA783\uA785\uA787\uA78C\uA78E\uA791\uA793-\uA795\uA797\uA799\uA79B\uA79D\uA79F\uA7A1\uA7A3\uA7A5\uA7A7\uA7A9\uA7AF\uA7B5\uA7B7\uA7B9\uA7FA\uAB30-\uAB5A\uAB60-\uAB65\uAB70-\uABBF\uFB00-\uFB06\uFB13-\uFB17\uFF41-\uFF5A]
+  #|
+  #|// Letter, Modifier
+  #|Lm = [\u02B0-\u02C1\u02C6-\u02D1\u02E0-\u02E4\u02EC\u02EE\u0374\u037A\u0559\u0640\u06E5-\u06E6\u07F4-\u07F5\u07FA\u081A\u0824\u0828\u0971\u0E46\u0EC6\u10FC\u17D7\u1843\u1AA7\u1C78-\u1C7D\u1D2C-\u1D6A\u1D78\u1D9B-\u1DBF\u2071\u207F\u2090-\u209C\u2C7C-\u2C7D\u2D6F\u2E2F\u3005\u3031-\u3035\u303B\u309D-\u309E\u30FC-\u30FE\uA015\uA4F8-\uA4FD\uA60C\uA67F\uA69C-\uA69D\uA717-\uA71F\uA770\uA788\uA7F8-\uA7F9\uA9CF\uA9E6\uAA70\uAADD\uAAF3-\uAAF4\uAB5C-\uAB5F\uFF70\uFF9E-\uFF9F]
+  #|
+  #|// Letter, Other
+  #|Lo = [\u00AA\u00BA\u01BB\u01C0-\u01C3\u0294\u05D0-\u05EA\u05EF-\u05F2\u0620-\u063F\u0641-\u064A\u066E-\u066F\u0671-\u06D3\u06D5\u06EE-\u06EF\u06FA-\u06FC\u06FF\u0710\u0712-\u072F\u074D-\u07A5\u07B1\u07CA-\u07EA\u0800-\u0815\u0840-\u0858\u0860-\u086A\u08A0-\u08B4\u08B6-\u08BD\u0904-\u0939\u093D\u0950\u0958-\u0961\u0972-\u0980\u0985-\u098C\u098F-\u0990\u0993-\u09A8\u09AA-\u09B0\u09B2\u09B6-\u09B9\u09BD\u09CE\u09DC-\u09DD\u09DF-\u09E1\u09F0-\u09F1\u09FC\u0A05-\u0A0A\u0A0F-\u0A10\u0A13-\u0A28\u0A2A-\u0A30\u0A32-\u0A33\u0A35-\u0A36\u0A38-\u0A39\u0A59-\u0A5C\u0A5E\u0A72-\u0A74\u0A85-\u0A8D\u0A8F-\u0A91\u0A93-\u0AA8\u0AAA-\u0AB0\u0AB2-\u0AB3\u0AB5-\u0AB9\u0ABD\u0AD0\u0AE0-\u0AE1\u0AF9\u0B05-\u0B0C\u0B0F-\u0B10\u0B13-\u0B28\u0B2A-\u0B30\u0B32-\u0B33\u0B35-\u0B39\u0B3D\u0B5C-\u0B5D\u0B5F-\u0B61\u0B71\u0B83\u0B85-\u0B8A\u0B8E-\u0B90\u0B92-\u0B95\u0B99-\u0B9A\u0B9C\u0B9E-\u0B9F\u0BA3-\u0BA4\u0BA8-\u0BAA\u0BAE-\u0BB9\u0BD0\u0C05-\u0C0C\u0C0E-\u0C10\u0C12-\u0C28\u0C2A-\u0C39\u0C3D\u0C58-\u0C5A\u0C60-\u0C61\u0C80\u0C85-\u0C8C\u0C8E-\u0C90\u0C92-\u0CA8\u0CAA-\u0CB3\u0CB5-\u0CB9\u0CBD\u0CDE\u0CE0-\u0CE1\u0CF1-\u0CF2\u0D05-\u0D0C\u0D0E-\u0D10\u0D12-\u0D3A\u0D3D\u0D4E\u0D54-\u0D56\u0D5F-\u0D61\u0D7A-\u0D7F\u0D85-\u0D96\u0D9A-\u0DB1\u0DB3-\u0DBB\u0DBD\u0DC0-\u0DC6\u0E01-\u0E30\u0E32-\u0E33\u0E40-\u0E45\u0E81-\u0E82\u0E84\u0E87-\u0E88\u0E8A\u0E8D\u0E94-\u0E97\u0E99-\u0E9F\u0EA1-\u0EA3\u0EA5\u0EA7\u0EAA-\u0EAB\u0EAD-\u0EB0\u0EB2-\u0EB3\u0EBD\u0EC0-\u0EC4\u0EDC-\u0EDF\u0F00\u0F40-\u0F47\u0F49-\u0F6C\u0F88-\u0F8C\u1000-\u102A\u103F\u1050-\u1055\u105A-\u105D\u1061\u1065-\u1066\u106E-\u1070\u1075-\u1081\u108E\u1100-\u1248\u124A-\u124D\u1250-\u1256\u1258\u125A-\u125D\u1260-\u1288\u128A-\u128D\u1290-\u12B0\u12B2-\u12B5\u12B8-\u12BE\u12C0\u12C2-\u12C5\u12C8-\u12D6\u12D8-\u1310\u1312-\u1315\u1318-\u135A\u1380-\u138F\u1401-\u166C\u166F-\u167F\u1681-\u169A\u16A0-\u16EA\u16F1-\u16F8\u1700-\u170C\u170E-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176C\u176E-\u1770\u1780-\u17B3\u17DC\u1820-\u1842\u1844-\u1878\u1880-\u1884\u1887-\u18A8\u18AA\u18B0-\u18F5\u1900-\u191E\u1950-\u196D\u1970-\u1974\u1980-\u19AB\u19B0-\u19C9\u1A00-\u1A16\u1A20-\u1A54\u1B05-\u1B33\u1B45-\u1B4B\u1B83-\u1BA0\u1BAE-\u1BAF\u1BBA-\u1BE5\u1C00-\u1C23\u1C4D-\u1C4F\u1C5A-\u1C77\u1CE9-\u1CEC\u1CEE-\u1CF1\u1CF5-\u1CF6\u2135-\u2138\u2D30-\u2D67\u2D80-\u2D96\u2DA0-\u2DA6\u2DA8-\u2DAE\u2DB0-\u2DB6\u2DB8-\u2DBE\u2DC0-\u2DC6\u2DC8-\u2DCE\u2DD0-\u2DD6\u2DD8-\u2DDE\u3006\u303C\u3041-\u3096\u309F\u30A1-\u30FA\u30FF\u3105-\u312F\u3131-\u318E\u31A0-\u31BA\u31F0-\u31FF\u3400-\u4DB5\u4E00-\u9FEF\uA000-\uA014\uA016-\uA48C\uA4D0-\uA4F7\uA500-\uA60B\uA610-\uA61F\uA62A-\uA62B\uA66E\uA6A0-\uA6E5\uA78F\uA7F7\uA7FB-\uA801\uA803-\uA805\uA807-\uA80A\uA80C-\uA822\uA840-\uA873\uA882-\uA8B3\uA8F2-\uA8F7\uA8FB\uA8FD-\uA8FE\uA90A-\uA925\uA930-\uA946\uA960-\uA97C\uA984-\uA9B2\uA9E0-\uA9E4\uA9E7-\uA9EF\uA9FA-\uA9FE\uAA00-\uAA28\uAA40-\uAA42\uAA44-\uAA4B\uAA60-\uAA6F\uAA71-\uAA76\uAA7A\uAA7E-\uAAAF\uAAB1\uAAB5-\uAAB6\uAAB9-\uAABD\uAAC0\uAAC2\uAADB-\uAADC\uAAE0-\uAAEA\uAAF2\uAB01-\uAB06\uAB09-\uAB0E\uAB11-\uAB16\uAB20-\uAB26\uAB28-\uAB2E\uABC0-\uABE2\uAC00-\uD7A3\uD7B0-\uD7C6\uD7CB-\uD7FB\uF900-\uFA6D\uFA70-\uFAD9\uFB1D\uFB1F-\uFB28\uFB2A-\uFB36\uFB38-\uFB3C\uFB3E\uFB40-\uFB41\uFB43-\uFB44\uFB46-\uFBB1\uFBD3-\uFD3D\uFD50-\uFD8F\uFD92-\uFDC7\uFDF0-\uFDFB\uFE70-\uFE74\uFE76-\uFEFC\uFF66-\uFF6F\uFF71-\uFF9D\uFFA0-\uFFBE\uFFC2-\uFFC7\uFFCA-\uFFCF\uFFD2-\uFFD7\uFFDA-\uFFDC]
+  #|
+  #|// Letter, Titlecase
+  #|Lt = [\u01C5\u01C8\u01CB\u01F2\u1F88-\u1F8F\u1F98-\u1F9F\u1FA8-\u1FAF\u1FBC\u1FCC\u1FFC]
+  #|
+  #|// Letter, Uppercase
+  #|Lu = [\u0041-\u005A\u00C0-\u00D6\u00D8-\u00DE\u0100\u0102\u0104\u0106\u0108\u010A\u010C\u010E\u0110\u0112\u0114\u0116\u0118\u011A\u011C\u011E\u0120\u0122\u0124\u0126\u0128\u012A\u012C\u012E\u0130\u0132\u0134\u0136\u0139\u013B\u013D\u013F\u0141\u0143\u0145\u0147\u014A\u014C\u014E\u0150\u0152\u0154\u0156\u0158\u015A\u015C\u015E\u0160\u0162\u0164\u0166\u0168\u016A\u016C\u016E\u0170\u0172\u0174\u0176\u0178-\u0179\u017B\u017D\u0181-\u0182\u0184\u0186-\u0187\u0189-\u018B\u018E-\u0191\u0193-\u0194\u0196-\u0198\u019C-\u019D\u019F-\u01A0\u01A2\u01A4\u01A6-\u01A7\u01A9\u01AC\u01AE-\u01AF\u01B1-\u01B3\u01B5\u01B7-\u01B8\u01BC\u01C4\u01C7\u01CA\u01CD\u01CF\u01D1\u01D3\u01D5\u01D7\u01D9\u01DB\u01DE\u01E0\u01E2\u01E4\u01E6\u01E8\u01EA\u01EC\u01EE\u01F1\u01F4\u01F6-\u01F8\u01FA\u01FC\u01FE\u0200\u0202\u0204\u0206\u0208\u020A\u020C\u020E\u0210\u0212\u0214\u0216\u0218\u021A\u021C\u021E\u0220\u0222\u0224\u0226\u0228\u022A\u022C\u022E\u0230\u0232\u023A-\u023B\u023D-\u023E\u0241\u0243-\u0246\u0248\u024A\u024C\u024E\u0370\u0372\u0376\u037F\u0386\u0388-\u038A\u038C\u038E-\u038F\u0391-\u03A1\u03A3-\u03AB\u03CF\u03D2-\u03D4\u03D8\u03DA\u03DC\u03DE\u03E0\u03E2\u03E4\u03E6\u03E8\u03EA\u03EC\u03EE\u03F4\u03F7\u03F9-\u03FA\u03FD-\u042F\u0460\u0462\u0464\u0466\u0468\u046A\u046C\u046E\u0470\u0472\u0474\u0476\u0478\u047A\u047C\u047E\u0480\u048A\u048C\u048E\u0490\u0492\u0494\u0496\u0498\u049A\u049C\u049E\u04A0\u04A2\u04A4\u04A6\u04A8\u04AA\u04AC\u04AE\u04B0\u04B2\u04B4\u04B6\u04B8\u04BA\u04BC\u04BE\u04C0-\u04C1\u04C3\u04C5\u04C7\u04C9\u04CB\u04CD\u04D0\u04D2\u04D4\u04D6\u04D8\u04DA\u04DC\u04DE\u04E0\u04E2\u04E4\u04E6\u04E8\u04EA\u04EC\u04EE\u04F0\u04F2\u04F4\u04F6\u04F8\u04FA\u04FC\u04FE\u0500\u0502\u0504\u0506\u0508\u050A\u050C\u050E\u0510\u0512\u0514\u0516\u0518\u051A\u051C\u051E\u0520\u0522\u0524\u0526\u0528\u052A\u052C\u052E\u0531-\u0556\u10A0-\u10C5\u10C7\u10CD\u13A0-\u13F5\u1C90-\u1CBA\u1CBD-\u1CBF\u1E00\u1E02\u1E04\u1E06\u1E08\u1E0A\u1E0C\u1E0E\u1E10\u1E12\u1E14\u1E16\u1E18\u1E1A\u1E1C\u1E1E\u1E20\u1E22\u1E24\u1E26\u1E28\u1E2A\u1E2C\u1E2E\u1E30\u1E32\u1E34\u1E36\u1E38\u1E3A\u1E3C\u1E3E\u1E40\u1E42\u1E44\u1E46\u1E48\u1E4A\u1E4C\u1E4E\u1E50\u1E52\u1E54\u1E56\u1E58\u1E5A\u1E5C\u1E5E\u1E60\u1E62\u1E64\u1E66\u1E68\u1E6A\u1E6C\u1E6E\u1E70\u1E72\u1E74\u1E76\u1E78\u1E7A\u1E7C\u1E7E\u1E80\u1E82\u1E84\u1E86\u1E88\u1E8A\u1E8C\u1E8E\u1E90\u1E92\u1E94\u1E9E\u1EA0\u1EA2\u1EA4\u1EA6\u1EA8\u1EAA\u1EAC\u1EAE\u1EB0\u1EB2\u1EB4\u1EB6\u1EB8\u1EBA\u1EBC\u1EBE\u1EC0\u1EC2\u1EC4\u1EC6\u1EC8\u1ECA\u1ECC\u1ECE\u1ED0\u1ED2\u1ED4\u1ED6\u1ED8\u1EDA\u1EDC\u1EDE\u1EE0\u1EE2\u1EE4\u1EE6\u1EE8\u1EEA\u1EEC\u1EEE\u1EF0\u1EF2\u1EF4\u1EF6\u1EF8\u1EFA\u1EFC\u1EFE\u1F08-\u1F0F\u1F18-\u1F1D\u1F28-\u1F2F\u1F38-\u1F3F\u1F48-\u1F4D\u1F59\u1F5B\u1F5D\u1F5F\u1F68-\u1F6F\u1FB8-\u1FBB\u1FC8-\u1FCB\u1FD8-\u1FDB\u1FE8-\u1FEC\u1FF8-\u1FFB\u2102\u2107\u210B-\u210D\u2110-\u2112\u2115\u2119-\u211D\u2124\u2126\u2128\u212A-\u212D\u2130-\u2133\u213E-\u213F\u2145\u2183\u2C00-\u2C2E\u2C60\u2C62-\u2C64\u2C67\u2C69\u2C6B\u2C6D-\u2C70\u2C72\u2C75\u2C7E-\u2C80\u2C82\u2C84\u2C86\u2C88\u2C8A\u2C8C\u2C8E\u2C90\u2C92\u2C94\u2C96\u2C98\u2C9A\u2C9C\u2C9E\u2CA0\u2CA2\u2CA4\u2CA6\u2CA8\u2CAA\u2CAC\u2CAE\u2CB0\u2CB2\u2CB4\u2CB6\u2CB8\u2CBA\u2CBC\u2CBE\u2CC0\u2CC2\u2CC4\u2CC6\u2CC8\u2CCA\u2CCC\u2CCE\u2CD0\u2CD2\u2CD4\u2CD6\u2CD8\u2CDA\u2CDC\u2CDE\u2CE0\u2CE2\u2CEB\u2CED\u2CF2\uA640\uA642\uA644\uA646\uA648\uA64A\uA64C\uA64E\uA650\uA652\uA654\uA656\uA658\uA65A\uA65C\uA65E\uA660\uA662\uA664\uA666\uA668\uA66A\uA66C\uA680\uA682\uA684\uA686\uA688\uA68A\uA68C\uA68E\uA690\uA692\uA694\uA696\uA698\uA69A\uA722\uA724\uA726\uA728\uA72A\uA72C\uA72E\uA732\uA734\uA736\uA738\uA73A\uA73C\uA73E\uA740\uA742\uA744\uA746\uA748\uA74A\uA74C\uA74E\uA750\uA752\uA754\uA756\uA758\uA75A\uA75C\uA75E\uA760\uA762\uA764\uA766\uA768\uA76A\uA76C\uA76E\uA779\uA77B\uA77D-\uA77E\uA780\uA782\uA784\uA786\uA78B\uA78D\uA790\uA792\uA796\uA798\uA79A\uA79C\uA79E\uA7A0\uA7A2\uA7A4\uA7A6\uA7A8\uA7AA-\uA7AE\uA7B0-\uA7B4\uA7B6\uA7B8\uFF21-\uFF3A]
+  #|
+  #|// Mark, Spacing Combining
+  #|Mc = [\u0903\u093B\u093E-\u0940\u0949-\u094C\u094E-\u094F\u0982-\u0983\u09BE-\u09C0\u09C7-\u09C8\u09CB-\u09CC\u09D7\u0A03\u0A3E-\u0A40\u0A83\u0ABE-\u0AC0\u0AC9\u0ACB-\u0ACC\u0B02-\u0B03\u0B3E\u0B40\u0B47-\u0B48\u0B4B-\u0B4C\u0B57\u0BBE-\u0BBF\u0BC1-\u0BC2\u0BC6-\u0BC8\u0BCA-\u0BCC\u0BD7\u0C01-\u0C03\u0C41-\u0C44\u0C82-\u0C83\u0CBE\u0CC0-\u0CC4\u0CC7-\u0CC8\u0CCA-\u0CCB\u0CD5-\u0CD6\u0D02-\u0D03\u0D3E-\u0D40\u0D46-\u0D48\u0D4A-\u0D4C\u0D57\u0D82-\u0D83\u0DCF-\u0DD1\u0DD8-\u0DDF\u0DF2-\u0DF3\u0F3E-\u0F3F\u0F7F\u102B-\u102C\u1031\u1038\u103B-\u103C\u1056-\u1057\u1062-\u1064\u1067-\u106D\u1083-\u1084\u1087-\u108C\u108F\u109A-\u109C\u17B6\u17BE-\u17C5\u17C7-\u17C8\u1923-\u1926\u1929-\u192B\u1930-\u1931\u1933-\u1938\u1A19-\u1A1A\u1A55\u1A57\u1A61\u1A63-\u1A64\u1A6D-\u1A72\u1B04\u1B35\u1B3B\u1B3D-\u1B41\u1B43-\u1B44\u1B82\u1BA1\u1BA6-\u1BA7\u1BAA\u1BE7\u1BEA-\u1BEC\u1BEE\u1BF2-\u1BF3\u1C24-\u1C2B\u1C34-\u1C35\u1CE1\u1CF2-\u1CF3\u1CF7\u302E-\u302F\uA823-\uA824\uA827\uA880-\uA881\uA8B4-\uA8C3\uA952-\uA953\uA983\uA9B4-\uA9B5\uA9BA-\uA9BB\uA9BD-\uA9C0\uAA2F-\uAA30\uAA33-\uAA34\uAA4D\uAA7B\uAA7D\uAAEB\uAAEE-\uAAEF\uAAF5\uABE3-\uABE4\uABE6-\uABE7\uABE9-\uABEA\uABEC]
+  #|
+  #|// Mark, Nonspacing
+  #|Mn = [\u0300-\u036F\u0483-\u0487\u0591-\u05BD\u05BF\u05C1-\u05C2\u05C4-\u05C5\u05C7\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E4\u06E7-\u06E8\u06EA-\u06ED\u0711\u0730-\u074A\u07A6-\u07B0\u07EB-\u07F3\u07FD\u0816-\u0819\u081B-\u0823\u0825-\u0827\u0829-\u082D\u0859-\u085B\u08D3-\u08E1\u08E3-\u0902\u093A\u093C\u0941-\u0948\u094D\u0951-\u0957\u0962-\u0963\u0981\u09BC\u09C1-\u09C4\u09CD\u09E2-\u09E3\u09FE\u0A01-\u0A02\u0A3C\u0A41-\u0A42\u0A47-\u0A48\u0A4B-\u0A4D\u0A51\u0A70-\u0A71\u0A75\u0A81-\u0A82\u0ABC\u0AC1-\u0AC5\u0AC7-\u0AC8\u0ACD\u0AE2-\u0AE3\u0AFA-\u0AFF\u0B01\u0B3C\u0B3F\u0B41-\u0B44\u0B4D\u0B56\u0B62-\u0B63\u0B82\u0BC0\u0BCD\u0C00\u0C04\u0C3E-\u0C40\u0C46-\u0C48\u0C4A-\u0C4D\u0C55-\u0C56\u0C62-\u0C63\u0C81\u0CBC\u0CBF\u0CC6\u0CCC-\u0CCD\u0CE2-\u0CE3\u0D00-\u0D01\u0D3B-\u0D3C\u0D41-\u0D44\u0D4D\u0D62-\u0D63\u0DCA\u0DD2-\u0DD4\u0DD6\u0E31\u0E34-\u0E3A\u0E47-\u0E4E\u0EB1\u0EB4-\u0EB9\u0EBB-\u0EBC\u0EC8-\u0ECD\u0F18-\u0F19\u0F35\u0F37\u0F39\u0F71-\u0F7E\u0F80-\u0F84\u0F86-\u0F87\u0F8D-\u0F97\u0F99-\u0FBC\u0FC6\u102D-\u1030\u1032-\u1037\u1039-\u103A\u103D-\u103E\u1058-\u1059\u105E-\u1060\u1071-\u1074\u1082\u1085-\u1086\u108D\u109D\u135D-\u135F\u1712-\u1714\u1732-\u1734\u1752-\u1753\u1772-\u1773\u17B4-\u17B5\u17B7-\u17BD\u17C6\u17C9-\u17D3\u17DD\u180B-\u180D\u1885-\u1886\u18A9\u1920-\u1922\u1927-\u1928\u1932\u1939-\u193B\u1A17-\u1A18\u1A1B\u1A56\u1A58-\u1A5E\u1A60\u1A62\u1A65-\u1A6C\u1A73-\u1A7C\u1A7F\u1AB0-\u1ABD\u1B00-\u1B03\u1B34\u1B36-\u1B3A\u1B3C\u1B42\u1B6B-\u1B73\u1B80-\u1B81\u1BA2-\u1BA5\u1BA8-\u1BA9\u1BAB-\u1BAD\u1BE6\u1BE8-\u1BE9\u1BED\u1BEF-\u1BF1\u1C2C-\u1C33\u1C36-\u1C37\u1CD0-\u1CD2\u1CD4-\u1CE0\u1CE2-\u1CE8\u1CED\u1CF4\u1CF8-\u1CF9\u1DC0-\u1DF9\u1DFB-\u1DFF\u20D0-\u20DC\u20E1\u20E5-\u20F0\u2CEF-\u2CF1\u2D7F\u2DE0-\u2DFF\u302A-\u302D\u3099-\u309A\uA66F\uA674-\uA67D\uA69E-\uA69F\uA6F0-\uA6F1\uA802\uA806\uA80B\uA825-\uA826\uA8C4-\uA8C5\uA8E0-\uA8F1\uA8FF\uA926-\uA92D\uA947-\uA951\uA980-\uA982\uA9B3\uA9B6-\uA9B9\uA9BC\uA9E5\uAA29-\uAA2E\uAA31-\uAA32\uAA35-\uAA36\uAA43\uAA4C\uAA7C\uAAB0\uAAB2-\uAAB4\uAAB7-\uAAB8\uAABE-\uAABF\uAAC1\uAAEC-\uAAED\uAAF6\uABE5\uABE8\uABED\uFB1E\uFE00-\uFE0F\uFE20-\uFE2F]
+  #|
+  #|// Number, Decimal Digit
+  #|Nd = [\u0030-\u0039\u0660-\u0669\u06F0-\u06F9\u07C0-\u07C9\u0966-\u096F\u09E6-\u09EF\u0A66-\u0A6F\u0AE6-\u0AEF\u0B66-\u0B6F\u0BE6-\u0BEF\u0C66-\u0C6F\u0CE6-\u0CEF\u0D66-\u0D6F\u0DE6-\u0DEF\u0E50-\u0E59\u0ED0-\u0ED9\u0F20-\u0F29\u1040-\u1049\u1090-\u1099\u17E0-\u17E9\u1810-\u1819\u1946-\u194F\u19D0-\u19D9\u1A80-\u1A89\u1A90-\u1A99\u1B50-\u1B59\u1BB0-\u1BB9\u1C40-\u1C49\u1C50-\u1C59\uA620-\uA629\uA8D0-\uA8D9\uA900-\uA909\uA9D0-\uA9D9\uA9F0-\uA9F9\uAA50-\uAA59\uABF0-\uABF9\uFF10-\uFF19]
+  #|
+  #|// Number, Letter
+  #|Nl = [\u16EE-\u16F0\u2160-\u2182\u2185-\u2188\u3007\u3021-\u3029\u3038-\u303A\uA6E6-\uA6EF]
+  #|
+  #|// Punctuation, Connector
+  #|Pc = [\u005F\u203F-\u2040\u2054\uFE33-\uFE34\uFE4D-\uFE4F\uFF3F]
+  #|
+  #|// Separator, Space
+  #|Zs = [\u0020\u00A0\u1680\u2000-\u200A\u202F\u205F\u3000]
+  #|
+  #|// Tokens
+  #|
+  #|BreakToken      = "break"      !IdentifierPart
+  #|CaseToken       = "case"       !IdentifierPart
+  #|CatchToken      = "catch"      !IdentifierPart
+  #|ClassToken      = "class"      !IdentifierPart
+  #|ConstToken      = "const"      !IdentifierPart
+  #|ContinueToken   = "continue"   !IdentifierPart
+  #|DebuggerToken   = "debugger"   !IdentifierPart
+  #|DefaultToken    = "default"    !IdentifierPart
+  #|DeleteToken     = "delete"     !IdentifierPart
+  #|DoToken         = "do"         !IdentifierPart
+  #|ElseToken       = "else"       !IdentifierPart
+  #|EnumToken       = "enum"       !IdentifierPart
+  #|ExportToken     = "export"     !IdentifierPart
+  #|ExtendsToken    = "extends"    !IdentifierPart
+  #|FalseToken      = "false"      !IdentifierPart
+  #|FinallyToken    = "finally"    !IdentifierPart
+  #|ForToken        = "for"        !IdentifierPart
+  #|FunctionToken   = "function"   !IdentifierPart
+  #|GetToken        = "get"        !IdentifierPart
+  #|IfToken         = "if"         !IdentifierPart
+  #|ImportToken     = "import"     !IdentifierPart
+  #|InstanceofToken = "instanceof" !IdentifierPart
+  #|InToken         = "in"         !IdentifierPart
+  #|NewToken        = "new"        !IdentifierPart
+  #|NullToken       = "null"       !IdentifierPart
+  #|ReturnToken     = "return"     !IdentifierPart
+  #|SetToken        = "set"        !IdentifierPart
+  #|SuperToken      = "super"      !IdentifierPart
+  #|SwitchToken     = "switch"     !IdentifierPart
+  #|ThisToken       = "this"       !IdentifierPart
+  #|ThrowToken      = "throw"      !IdentifierPart
+  #|TrueToken       = "true"       !IdentifierPart
+  #|TryToken        = "try"        !IdentifierPart
+  #|TypeofToken     = "typeof"     !IdentifierPart
+  #|VarToken        = "var"        !IdentifierPart
+  #|VoidToken       = "void"       !IdentifierPart
+  #|WhileToken      = "while"      !IdentifierPart
+  #|WithToken       = "with"       !IdentifierPart
+  #|
+  #|// Skipped
+  #|
+  #|__
+  #|  = (WhiteSpace / LineTerminatorSequence / Comment)*
+  #|
+  #|_
+  #|  = (WhiteSpace / MultiLineCommentNoLineTerminator)*
+  #|
+  #|// Automatic Semicolon Insertion
+  #|
+  #|EOS
+  #|  = __ ";"
+  #|  / _ SingleLineComment? LineTerminatorSequence
+  #|  / _ &"}"
+  #|  / __ EOF
+  #|
+  #|EOF
+  #|  = !.
+  #|
+  #|// ----- A.2 Number Conversions -----
+  #|
+  #|// Irrelevant.
+  #|
+  #|// ----- A.3 Expressions -----
+  #|
+  #|PrimaryExpression
+  #|  = ThisToken { return { type: "ThisExpression" }; }
+  #|  / Identifier
+  #|  / Literal
+  #|  / ArrayLiteral
+  #|  / ObjectLiteral
+  #|  / "(" __ expression:Expression __ ")" { return expression; }
+  #|
+  #|ArrayLiteral
+  #|  = "[" __ elision:(Elision __)? "]" {
+  #|      return {
+  #|        type: "ArrayExpression",
+  #|        elements: optionalList(extractOptional(elision, 0))
+  #|      };
+  #|    }
+  #|  / "[" __ elements:ElementList __ "]" {
+  #|      return {
+  #|        type: "ArrayExpression",
+  #|        elements: elements
+  #|      };
+  #|    }
+  #|  / "[" __ elements:ElementList __ "," __ elision:(Elision __)? "]" {
+  #|      return {
+  #|        type: "ArrayExpression",
+  #|        elements: elements.concat(optionalList(extractOptional(elision, 0)))
+  #|      };
+  #|    }
+  #|
+  #|ElementList
+  #|  = head:(
+  #|      elision:(Elision __)? element:AssignmentExpression {
+  #|        return optionalList(extractOptional(elision, 0)).concat(element);
+  #|      }
+  #|    )
+  #|    tail:(
+  #|      __ "," __ elision:(Elision __)? element:AssignmentExpression {
+  #|        return optionalList(extractOptional(elision, 0)).concat(element);
+  #|      }
+  #|    )*
+  #|    { return Array.prototype.concat.apply(head, tail); }
+  #|
+  #|Elision
+  #|  = "," commas:(__ ",")* { return filledArray(commas.length + 1, null); }
+  #|
+  #|ObjectLiteral
+  #|  = "{" __ "}" { return { type: "ObjectExpression", properties: [] }; }
+  #|  / "{" __ properties:PropertyNameAndValueList __ "}" {
+  #|       return { type: "ObjectExpression", properties: properties };
+  #|     }
+  #|  / "{" __ properties:PropertyNameAndValueList __ "," __ "}" {
+  #|       return { type: "ObjectExpression", properties: properties };
+  #|     }
+  #|PropertyNameAndValueList
+  #|  = head:PropertyAssignment tail:(__ "," __ PropertyAssignment)* {
+  #|      return buildList(head, tail, 3);
+  #|    }
+  #|
+  #|PropertyAssignment
+  #|  = key:PropertyName __ ":" __ value:AssignmentExpression {
+  #|      return { type: "Property", key: key, value: value, kind: "init" };
+  #|    }
+  #|  / GetToken __ key:PropertyName __
+  #|    "(" __ ")" __
+  #|    "{" __ body:FunctionBody __ "}"
+  #|    {
+  #|      return {
+  #|        type: "Property",
+  #|        key: key,
+  #|        value: {
+  #|          type: "FunctionExpression",
+  #|          id: null,
+  #|          params: [],
+  #|          body: body
+  #|        },
+  #|        kind: "get"
+  #|      };
+  #|    }
+  #|  / SetToken __ key:PropertyName __
+  #|    "(" __ params:PropertySetParameterList __ ")" __
+  #|    "{" __ body:FunctionBody __ "}"
+  #|    {
+  #|      return {
+  #|        type: "Property",
+  #|        key: key,
+  #|        value: {
+  #|          type: "FunctionExpression",
+  #|          id: null,
+  #|          params: params,
+  #|          body: body
+  #|        },
+  #|        kind: "set"
+  #|      };
+  #|    }
+  #|
+  #|PropertyName
+  #|  = IdentifierName
+  #|  / StringLiteral
+  #|  / NumericLiteral
+  #|
+  #|PropertySetParameterList
+  #|  = id:Identifier { return [id]; }
+  #|
+  #|MemberExpression
+  #|  = head:(
+  #|        PrimaryExpression
+  #|      / FunctionExpression
+  #|      / NewToken __ callee:MemberExpression __ args:Arguments {
+  #|          return { type: "NewExpression", callee: callee, arguments: args };
+  #|        }
+  #|    )
+  #|    tail:(
+  #|        __ "[" __ property:Expression __ "]" {
+  #|          return { property: property, computed: true };
+  #|        }
+  #|      / __ "." __ property:IdentifierName {
+  #|          return { property: property, computed: false };
+  #|        }
+  #|    )*
+  #|    {
+  #|      return tail.reduce(function(result, element) {
+  #|        return {
+  #|          type: "MemberExpression",
+  #|          object: result,
+  #|          property: element.property,
+  #|          computed: element.computed
+  #|        };
+  #|      }, head);
+  #|    }
+  #|
+  #|NewExpression
+  #|  = MemberExpression
+  #|  / NewToken __ callee:NewExpression {
+  #|      return { type: "NewExpression", callee: callee, arguments: [] };
+  #|    }
+  #|
+  #|CallExpression
+  #|  = head:(
+  #|      callee:MemberExpression __ args:Arguments {
+  #|        return { type: "CallExpression", callee: callee, arguments: args };
+  #|      }
+  #|    )
+  #|    tail:(
+  #|        __ args:Arguments {
+  #|          return { type: "CallExpression", arguments: args };
+  #|        }
+  #|      / __ "[" __ property:Expression __ "]" {
+  #|          return {
+  #|            type: "MemberExpression",
+  #|            property: property,
+  #|            computed: true
+  #|          };
+  #|        }
+  #|      / __ "." __ property:IdentifierName {
+  #|          return {
+  #|            type: "MemberExpression",
+  #|            property: property,
+  #|            computed: false
+  #|          };
+  #|        }
+  #|    )*
+  #|    {
+  #|      return tail.reduce(function(result, element) {
+  #|        element[TYPES_TO_PROPERTY_NAMES[element.type]] = result;
+  #|
+  #|        return element;
+  #|      }, head);
+  #|    }
+  #|
+  #|Arguments
+  #|  = "(" __ args:(ArgumentList __)? ")" {
+  #|      return optionalList(extractOptional(args, 0));
+  #|    }
+  #|
+  #|ArgumentList
+  #|  = head:AssignmentExpression tail:(__ "," __ AssignmentExpression)* {
+  #|      return buildList(head, tail, 3);
+  #|    }
+  #|
+  #|LeftHandSideExpression
+  #|  = CallExpression
+  #|  / NewExpression
+  #|
+  #|PostfixExpression
+  #|  = argument:LeftHandSideExpression _ operator:PostfixOperator {
+  #|      return {
+  #|        type: "UpdateExpression",
+  #|        operator: operator,
+  #|        argument: argument,
+  #|        prefix: false
+  #|      };
+  #|    }
+  #|  / LeftHandSideExpression
+  #|
+  #|PostfixOperator
+  #|  = "++"
+  #|  / "--"
+  #|
+  #|UnaryExpression
+  #|  = PostfixExpression
+  #|  / operator:UnaryOperator __ argument:UnaryExpression {
+  #|      var type = (operator === "++" || operator === "--")
+  #|        ? "UpdateExpression"
+  #|        : "UnaryExpression";
+  #|
+  #|      return {
+  #|        type: type,
+  #|        operator: operator,
+  #|        argument: argument,
+  #|        prefix: true
+  #|      };
+  #|    }
+  #|
+  #|UnaryOperator
+  #|  = $DeleteToken
+  #|  / $VoidToken
+  #|  / $TypeofToken
+  #|  / "++"
+  #|  / "--"
+  #|  / $("+" !"=")
+  #|  / $("-" !"=")
+  #|  / "~"
+  #|  / "!"
+  #|
+  #|MultiplicativeExpression
+  #|  = head:UnaryExpression
+  #|    tail:(__ MultiplicativeOperator __ UnaryExpression)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|MultiplicativeOperator
+  #|  = $("*" !"=")
+  #|  / $("/" !"=")
+  #|  / $("%" !"=")
+  #|
+  #|AdditiveExpression
+  #|  = head:MultiplicativeExpression
+  #|    tail:(__ AdditiveOperator __ MultiplicativeExpression)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|AdditiveOperator
+  #|  = $("+" ![+=])
+  #|  / $("-" ![-=])
+  #|
+  #|ShiftExpression
+  #|  = head:AdditiveExpression
+  #|    tail:(__ ShiftOperator __ AdditiveExpression)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|ShiftOperator
+  #|  = $("<<"  !"=")
+  #|  / $(">>>" !"=")
+  #|  / $(">>"  !"=")
+  #|
+  #|RelationalExpression
+  #|  = head:ShiftExpression
+  #|    tail:(__ RelationalOperator __ ShiftExpression)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|RelationalOperator
+  #|  = "<="
+  #|  / ">="
+  #|  / $("<" !"<")
+  #|  / $(">" !">")
+  #|  / $InstanceofToken
+  #|  / $InToken
+  #|
+  #|RelationalExpressionNoIn
+  #|  = head:ShiftExpression
+  #|    tail:(__ RelationalOperatorNoIn __ ShiftExpression)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|RelationalOperatorNoIn
+  #|  = "<="
+  #|  / ">="
+  #|  / $("<" !"<")
+  #|  / $(">" !">")
+  #|  / $InstanceofToken
+  #|
+  #|EqualityExpression
+  #|  = head:RelationalExpression
+  #|    tail:(__ EqualityOperator __ RelationalExpression)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|EqualityExpressionNoIn
+  #|  = head:RelationalExpressionNoIn
+  #|    tail:(__ EqualityOperator __ RelationalExpressionNoIn)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|EqualityOperator
+  #|  = "==="
+  #|  / "!=="
+  #|  / "=="
+  #|  / "!="
+  #|
+  #|BitwiseANDExpression
+  #|  = head:EqualityExpression
+  #|    tail:(__ BitwiseANDOperator __ EqualityExpression)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|BitwiseANDExpressionNoIn
+  #|  = head:EqualityExpressionNoIn
+  #|    tail:(__ BitwiseANDOperator __ EqualityExpressionNoIn)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|BitwiseANDOperator
+  #|  = $("&" ![&=])
+  #|
+  #|BitwiseXORExpression
+  #|  = head:BitwiseANDExpression
+  #|    tail:(__ BitwiseXOROperator __ BitwiseANDExpression)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|BitwiseXORExpressionNoIn
+  #|  = head:BitwiseANDExpressionNoIn
+  #|    tail:(__ BitwiseXOROperator __ BitwiseANDExpressionNoIn)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|BitwiseXOROperator
+  #|  = $("^" !"=")
+  #|
+  #|BitwiseORExpression
+  #|  = head:BitwiseXORExpression
+  #|    tail:(__ BitwiseOROperator __ BitwiseXORExpression)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|BitwiseORExpressionNoIn
+  #|  = head:BitwiseXORExpressionNoIn
+  #|    tail:(__ BitwiseOROperator __ BitwiseXORExpressionNoIn)*
+  #|    { return buildBinaryExpression(head, tail); }
+  #|
+  #|BitwiseOROperator
+  #|  = $("|" ![|=])
+  #|
+  #|LogicalANDExpression
+  #|  = head:BitwiseORExpression
+  #|    tail:(__ LogicalANDOperator __ BitwiseORExpression)*
+  #|    { return buildLogicalExpression(head, tail); }
+  #|
+  #|LogicalANDExpressionNoIn
+  #|  = head:BitwiseORExpressionNoIn
+  #|    tail:(__ LogicalANDOperator __ BitwiseORExpressionNoIn)*
+  #|    { return buildLogicalExpression(head, tail); }
+  #|
+  #|LogicalANDOperator
+  #|  = "&&"
+  #|
+  #|LogicalORExpression
+  #|  = head:LogicalANDExpression
+  #|    tail:(__ LogicalOROperator __ LogicalANDExpression)*
+  #|    { return buildLogicalExpression(head, tail); }
+  #|
+  #|LogicalORExpressionNoIn
+  #|  = head:LogicalANDExpressionNoIn
+  #|    tail:(__ LogicalOROperator __ LogicalANDExpressionNoIn)*
+  #|    { return buildLogicalExpression(head, tail); }
+  #|
+  #|LogicalOROperator
+  #|  = "||"
+  #|
+  #|ConditionalExpression
+  #|  = test:LogicalORExpression __
+  #|    "?" __ consequent:AssignmentExpression __
+  #|    ":" __ alternate:AssignmentExpression
+  #|    {
+  #|      return {
+  #|        type: "ConditionalExpression",
+  #|        test: test,
+  #|        consequent: consequent,
+  #|        alternate: alternate
+  #|      };
+  #|    }
+  #|  / LogicalORExpression
+  #|
+  #|ConditionalExpressionNoIn
+  #|  = test:LogicalORExpressionNoIn __
+  #|    "?" __ consequent:AssignmentExpression __
+  #|    ":" __ alternate:AssignmentExpressionNoIn
+  #|    {
+  #|      return {
+  #|        type: "ConditionalExpression",
+  #|        test: test,
+  #|        consequent: consequent,
+  #|        alternate: alternate
+  #|      };
+  #|    }
+  #|  / LogicalORExpressionNoIn
+  #|
+  #|AssignmentExpression
+  #|  = left:LeftHandSideExpression __
+  #|    "=" !"=" __
+  #|    right:AssignmentExpression
+  #|    {
+  #|      return {
+  #|        type: "AssignmentExpression",
+  #|        operator: "=",
+  #|        left: left,
+  #|        right: right
+  #|      };
+  #|    }
+  #|  / left:LeftHandSideExpression __
+  #|    operator:AssignmentOperator __
+  #|    right:AssignmentExpression
+  #|    {
+  #|      return {
+  #|        type: "AssignmentExpression",
+  #|        operator: operator,
+  #|        left: left,
+  #|        right: right
+  #|      };
+  #|    }
+  #|  / ConditionalExpression
+  #|
+  #|AssignmentExpressionNoIn
+  #|  = left:LeftHandSideExpression __
+  #|    "=" !"=" __
+  #|    right:AssignmentExpressionNoIn
+  #|    {
+  #|      return {
+  #|        type: "AssignmentExpression",
+  #|        operator: "=",
+  #|        left: left,
+  #|        right: right
+  #|      };
+  #|    }
+  #|  / left:LeftHandSideExpression __
+  #|    operator:AssignmentOperator __
+  #|    right:AssignmentExpressionNoIn
+  #|    {
+  #|      return {
+  #|        type: "AssignmentExpression",
+  #|        operator: operator,
+  #|        left: left,
+  #|        right: right
+  #|      };
+  #|    }
+  #|  / ConditionalExpressionNoIn
+  #|
+  #|AssignmentOperator
+  #|  = "*="
+  #|  / "/="
+  #|  / "%="
+  #|  / "+="
+  #|  / "-="
+  #|  / "<<="
+  #|  / ">>="
+  #|  / ">>>="
+  #|  / "&="
+  #|  / "^="
+  #|  / "|="
+  #|
+  #|Expression
+  #|  = head:AssignmentExpression tail:(__ "," __ AssignmentExpression)* {
+  #|      return tail.length > 0
+  #|        ? { type: "SequenceExpression", expressions: buildList(head, tail, 3) }
+  #|        : head;
+  #|    }
+  #|
+  #|ExpressionNoIn
+  #|  = head:AssignmentExpressionNoIn tail:(__ "," __ AssignmentExpressionNoIn)* {
+  #|      return tail.length > 0
+  #|        ? { type: "SequenceExpression", expressions: buildList(head, tail, 3) }
+  #|        : head;
+  #|    }
+  #|
+  #|// ----- A.4 Statements -----
+  #|
+  #|Statement
+  #|  = Block
+  #|  / VariableStatement
+  #|  / EmptyStatement
+  #|  / ExpressionStatement
+  #|  / IfStatement
+  #|  / IterationStatement
+  #|  / ContinueStatement
+  #|  / BreakStatement
+  #|  / ReturnStatement
+  #|  / WithStatement
+  #|  / LabelledStatement
+  #|  / SwitchStatement
+  #|  / ThrowStatement
+  #|  / TryStatement
+  #|  / DebuggerStatement
+  #|
+  #|Block
+  #|  = "{" __ body:(StatementList __)? "}" {
+  #|      return {
+  #|        type: "BlockStatement",
+  #|        body: optionalList(extractOptional(body, 0))
+  #|      };
+  #|    }
+  #|
+  #|StatementList
+  #|  = head:Statement tail:(__ Statement)* { return buildList(head, tail, 1); }
+  #|
+  #|VariableStatement
+  #|  = VarToken __ declarations:VariableDeclarationList EOS {
+  #|      return {
+  #|        type: "VariableDeclaration",
+  #|        declarations: declarations,
+  #|        kind: "var"
+  #|      };
+  #|    }
+  #|
+  #|VariableDeclarationList
+  #|  = head:VariableDeclaration tail:(__ "," __ VariableDeclaration)* {
+  #|      return buildList(head, tail, 3);
+  #|    }
+  #|
+  #|VariableDeclarationListNoIn
+  #|  = head:VariableDeclarationNoIn tail:(__ "," __ VariableDeclarationNoIn)* {
+  #|      return buildList(head, tail, 3);
+  #|    }
+  #|
+  #|VariableDeclaration
+  #|  = id:Identifier init:(__ Initialiser)? {
+  #|      return {
+  #|        type: "VariableDeclarator",
+  #|        id: id,
+  #|        init: extractOptional(init, 1)
+  #|      };
+  #|    }
+  #|
+  #|VariableDeclarationNoIn
+  #|  = id:Identifier init:(__ InitialiserNoIn)? {
+  #|      return {
+  #|        type: "VariableDeclarator",
+  #|        id: id,
+  #|        init: extractOptional(init, 1)
+  #|      };
+  #|    }
+  #|
+  #|Initialiser
+  #|  = "=" !"=" __ expression:AssignmentExpression { return expression; }
+  #|
+  #|InitialiserNoIn
+  #|  = "=" !"=" __ expression:AssignmentExpressionNoIn { return expression; }
+  #|
+  #|EmptyStatement
+  #|  = ";" { return { type: "EmptyStatement" }; }
+  #|
+  #|ExpressionStatement
+  #|  = !("{" / FunctionToken) expression:Expression EOS {
+  #|      return {
+  #|        type: "ExpressionStatement",
+  #|        expression: expression
+  #|      };
+  #|    }
+  #|
+  #|IfStatement
+  #|  = IfToken __ "(" __ test:Expression __ ")" __
+  #|    consequent:Statement __
+  #|    ElseToken __
+  #|    alternate:Statement
+  #|    {
+  #|      return {
+  #|        type: "IfStatement",
+  #|        test: test,
+  #|        consequent: consequent,
+  #|        alternate: alternate
+  #|      };
+  #|    }
+  #|  / IfToken __ "(" __ test:Expression __ ")" __
+  #|    consequent:Statement {
+  #|      return {
+  #|        type: "IfStatement",
+  #|        test: test,
+  #|        consequent: consequent,
+  #|        alternate: null
+  #|      };
+  #|    }
+  #|
+  #|IterationStatement
+  #|  = DoToken __
+  #|    body:Statement __
+  #|    WhileToken __ "(" __ test:Expression __ ")" EOS
+  #|    { return { type: "DoWhileStatement", body: body, test: test }; }
+  #|  / WhileToken __ "(" __ test:Expression __ ")" __
+  #|    body:Statement
+  #|    { return { type: "WhileStatement", test: test, body: body }; }
+  #|  / ForToken __
+  #|    "(" __
+  #|    init:(ExpressionNoIn __)? ";" __
+  #|    test:(Expression __)? ";" __
+  #|    update:(Expression __)?
+  #|    ")" __
+  #|    body:Statement
+  #|    {
+  #|      return {
+  #|        type: "ForStatement",
+  #|        init: extractOptional(init, 0),
+  #|        test: extractOptional(test, 0),
+  #|        update: extractOptional(update, 0),
+  #|        body: body
+  #|      };
+  #|    }
+  #|  / ForToken __
+  #|    "(" __
+  #|    VarToken __ declarations:VariableDeclarationListNoIn __ ";" __
+  #|    test:(Expression __)? ";" __
+  #|    update:(Expression __)?
+  #|    ")" __
+  #|    body:Statement
+  #|    {
+  #|      return {
+  #|        type: "ForStatement",
+  #|        init: {
+  #|          type: "VariableDeclaration",
+  #|          declarations: declarations,
+  #|          kind: "var"
+  #|        },
+  #|        test: extractOptional(test, 0),
+  #|        update: extractOptional(update, 0),
+  #|        body: body
+  #|      };
+  #|    }
+  #|  / ForToken __
+  #|    "(" __
+  #|    left:LeftHandSideExpression __
+  #|    InToken __
+  #|    right:Expression __
+  #|    ")" __
+  #|    body:Statement
+  #|    {
+  #|      return {
+  #|        type: "ForInStatement",
+  #|        left: left,
+  #|        right: right,
+  #|        body: body
+  #|      };
+  #|    }
+  #|  / ForToken __
+  #|    "(" __
+  #|    VarToken __ declarations:VariableDeclarationListNoIn __
+  #|    InToken __
+  #|    right:Expression __
+  #|    ")" __
+  #|    body:Statement
+  #|    {
+  #|      return {
+  #|        type: "ForInStatement",
+  #|        left: {
+  #|          type: "VariableDeclaration",
+  #|          declarations: declarations,
+  #|          kind: "var"
+  #|        },
+  #|        right: right,
+  #|        body: body
+  #|      };
+  #|    }
+  #|
+  #|ContinueStatement
+  #|  = ContinueToken EOS {
+  #|      return { type: "ContinueStatement", label: null };
+  #|    }
+  #|  / ContinueToken _ label:Identifier EOS {
+  #|      return { type: "ContinueStatement", label: label };
+  #|    }
+  #|
+  #|BreakStatement
+  #|  = BreakToken EOS {
+  #|      return { type: "BreakStatement", label: null };
+  #|    }
+  #|  / BreakToken _ label:Identifier EOS {
+  #|      return { type: "BreakStatement", label: label };
+  #|    }
+  #|
+  #|ReturnStatement
+  #|  = ReturnToken EOS {
+  #|      return { type: "ReturnStatement", argument: null };
+  #|    }
+  #|  / ReturnToken _ argument:Expression EOS {
+  #|      return { type: "ReturnStatement", argument: argument };
+  #|    }
+  #|
+  #|WithStatement
+  #|  = WithToken __ "(" __ object:Expression __ ")" __
+  #|    body:Statement
+  #|    { return { type: "WithStatement", object: object, body: body }; }
+  #|
+  #|SwitchStatement
+  #|  = SwitchToken __ "(" __ discriminant:Expression __ ")" __
+  #|    cases:CaseBlock
+  #|    {
+  #|      return {
+  #|        type: "SwitchStatement",
+  #|        discriminant: discriminant,
+  #|        cases: cases
+  #|      };
+  #|    }
+  #|
+  #|CaseBlock
+  #|  = "{" __ clauses:(CaseClauses __)? "}" {
+  #|      return optionalList(extractOptional(clauses, 0));
+  #|    }
+  #|  / "{" __
+  #|    before:(CaseClauses __)?
+  #|    default_:DefaultClause __
+  #|    after:(CaseClauses __)? "}"
+  #|    {
+  #|      return optionalList(extractOptional(before, 0))
+  #|        .concat(default_)
+  #|        .concat(optionalList(extractOptional(after, 0)));
+  #|    }
+  #|
+  #|CaseClauses
+  #|  = head:CaseClause tail:(__ CaseClause)* { return buildList(head, tail, 1); }
+  #|
+  #|CaseClause
+  #|  = CaseToken __ test:Expression __ ":" consequent:(__ StatementList)? {
+  #|      return {
+  #|        type: "SwitchCase",
+  #|        test: test,
+  #|        consequent: optionalList(extractOptional(consequent, 1))
+  #|      };
+  #|    }
+  #|
+  #|DefaultClause
+  #|  = DefaultToken __ ":" consequent:(__ StatementList)? {
+  #|      return {
+  #|        type: "SwitchCase",
+  #|        test: null,
+  #|        consequent: optionalList(extractOptional(consequent, 1))
+  #|      };
+  #|    }
+  #|
+  #|LabelledStatement
+  #|  = label:Identifier __ ":" __ body:Statement {
+  #|      return { type: "LabeledStatement", label: label, body: body };
+  #|    }
+  #|
+  #|ThrowStatement
+  #|  = ThrowToken _ argument:Expression EOS {
+  #|      return { type: "ThrowStatement", argument: argument };
+  #|    }
+  #|
+  #|TryStatement
+  #|  = TryToken __ block:Block __ handler:Catch __ finalizer:Finally {
+  #|      return {
+  #|        type: "TryStatement",
+  #|        block: block,
+  #|        handler: handler,
+  #|        finalizer: finalizer
+  #|      };
+  #|    }
+  #|  / TryToken __ block:Block __ handler:Catch {
+  #|      return {
+  #|        type: "TryStatement",
+  #|        block: block,
+  #|        handler: handler,
+  #|        finalizer: null
+  #|      };
+  #|    }
+  #|  / TryToken __ block:Block __ finalizer:Finally {
+  #|      return {
+  #|        type: "TryStatement",
+  #|        block: block,
+  #|        handler: null,
+  #|        finalizer: finalizer
+  #|      };
+  #|    }
+  #|
+  #|Catch
+  #|  = CatchToken __ "(" __ param:Identifier __ ")" __ body:Block {
+  #|      return {
+  #|        type: "CatchClause",
+  #|        param: param,
+  #|        body: body
+  #|      };
+  #|    }
+  #|
+  #|Finally
+  #|  = FinallyToken __ block:Block { return block; }
+  #|
+  #|DebuggerStatement
+  #|  = DebuggerToken EOS { return { type: "DebuggerStatement" }; }
+  #|
+  #|// ----- A.5 Functions and Programs -----
+  #|
+  #|FunctionDeclaration
+  #|  = FunctionToken __ id:Identifier __
+  #|    "(" __ params:(FormalParameterList __)? ")" __
+  #|    "{" __ body:FunctionBody __ "}"
+  #|    {
+  #|      return {
+  #|        type: "FunctionDeclaration",
+  #|        id: id,
+  #|        params: optionalList(extractOptional(params, 0)),
+  #|        body: body
+  #|      };
+  #|    }
+  #|
+  #|FunctionExpression
+  #|  = FunctionToken __ id:(Identifier __)?
+  #|    "(" __ params:(FormalParameterList __)? ")" __
+  #|    "{" __ body:FunctionBody __ "}"
+  #|    {
+  #|      return {
+  #|        type: "FunctionExpression",
+  #|        id: extractOptional(id, 0),
+  #|        params: optionalList(extractOptional(params, 0)),
+  #|        body: body
+  #|      };
+  #|    }
+  #|
+  #|FormalParameterList
+  #|  = head:Identifier tail:(__ "," __ Identifier)* {
+  #|      return buildList(head, tail, 3);
+  #|    }
+  #|
+  #|FunctionBody
+  #|  = body:SourceElements? {
+  #|      return {
+  #|        type: "BlockStatement",
+  #|        body: optionalList(body)
+  #|      };
+  #|    }
+  #|
+  #|Program
+  #|  = body:SourceElements? {
+  #|      return {
+  #|        type: "Program",
+  #|        body: optionalList(body)
+  #|      };
+  #|    }
+  #|
+  #|SourceElements
+  #|  = head:SourceElement tail:(__ SourceElement)* {
+  #|      return buildList(head, tail, 1);
+  #|    }
+  #|
+  #|SourceElement
+  #|  = Statement
+  #|  / FunctionDeclaration
+  #|
+  #|// ----- A.6 Universal Resource Identifier Character Classes -----
+  #|
+  #|// Irrelevant.
+  #|
+  #|// ----- A.7 Regular Expressions -----
+  #|
+  #|// Irrelevant.
+  #|
+  #|// ----- A.8 JSON -----
+  #|
+  #|// Irrelevant.
+  #|
+
+///|
+let example_javascript_program : String =
+  #|{
+  #|"rules": [
+  #|  {"name":"Start","bytecode":[5,27,100,27,191,27,100,24,3,26,0,4,1,1]},
+  #|  {"name":"SourceCharacter","bytecode":[23,0,17,2,1,21,1,3]},
+  #|  {"name":"WhiteSpace","bytecode":[23,1,28,18,0,2,1,22,0,3,14,58,0,6,18,1,2,1,22,1,3,14,47,0,6,18,2,2,1,22,2,3,14,36,0,6,18,3,2,1,22,3,3,14,25,0,6,18,4,2,1,22,4,3,14,14,0,6,18,5,2,1,22,5,3,14,3,0,6,27,61,29]},
+  #|  {"name":"LineTerminator","bytecode":[23,2,20,0,2,1,21,1,3]},
+  #|  {"name":"LineTerminatorSequence","bytecode":[23,3,28,18,6,2,1,22,6,3,14,41,0,6,18,7,2,1,22,7,3,14,30,0,6,18,8,2,1,22,8,3,14,19,0,6,18,9,2,1,22,9,3,14,8,0,6,18,10,2,1,22,10,3,29]},
+  #|  {"name":"Comment","bytecode":[23,4,28,27,6,14,3,0,6,27,8,29]},
+  #|  {"name":"MultiLineComment","bytecode":[5,18,11,2,1,22,11,3,15,100,3,4,5,5,38,18,12,2,1,22,12,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3,16,40,10,5,5,38,18,12,2,1,22,12,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3,6,18,12,2,1,22,12,3,15,3,4,11,3,9,8,3,7,3,6,7,3]},
+  #|  {"name":"MultiLineCommentNoLineTerminator","bytecode":[5,23,5,18,11,2,1,22,11,3,15,118,3,4,5,5,38,23,6,18,12,2,1,22,12,3,14,3,0,6,27,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3,16,48,10,5,5,38,23,6,18,12,2,1,22,12,3,14,3,0,6,27,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3,6,23,6,18,12,2,1,22,12,3,15,3,4,11,3,9,8,3,7,3,6,7,3]},
+  #|  {"name":"SingleLineComment","bytecode":[5,23,7,18,13,2,1,22,13,3,15,76,3,4,5,5,38,27,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3,16,35,10,5,5,38,27,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3,6,11,2,9,6,7,3]},
+  #|  {"name":"Identifier","bytecode":[5,5,38,27,15,39,1,14,3,3,6,6,1,6,7,3,15,16,3,27,10,15,7,4,24,2,26,1,3,1,0,8,2,7,3,6,7,3]},
+  #|  {"name":"IdentifierName","bytecode":[23,8,28,5,27,11,15,17,3,4,27,12,16,3,10,27,12,6,24,2,26,2,3,2,1,0,6,7,3,29]},
+  #|  {"name":"IdentifierStart","bytecode":[27,13,14,59,0,6,23,9,18,14,2,1,22,14,3,14,46,0,6,23,10,18,15,2,1,22,15,3,14,33,0,6,5,23,11,18,16,2,1,22,16,3,15,16,3,27,41,15,7,4,24,2,26,3,3,1,0,8,2,7,3,6,7,3]},
+  #|  {"name":"IdentifierPart","bytecode":[27,11,14,41,0,6,27,14,14,35,0,6,27,58,14,29,0,6,27,60,14,23,0,6,23,12,18,17,2,1,22,17,3,14,10,0,6,23,13,18,18,2,1,22,18,3]},
+  #|  {"name":"UnicodeLetter","bytecode":[27,55,14,27,0,6,27,51,14,21,0,6,27,54,14,15,0,6,27,52,14,9,0,6,27,53,14,3,0,6,27,59]},
+  #|  {"name":"UnicodeCombiningMark","bytecode":[27,57,14,3,0,6,27,56]},
+  #|  {"name":"ReservedWord","bytecode":[27,16,14,15,0,6,27,17,14,9,0,6,27,19,14,3,0,6,27,20]},
+  #|  {"name":"Keyword","bytecode":[27,62,14,147,0,6,27,63,14,141,0,6,27,64,14,135,0,6,27,67,14,129,0,6,27,68,14,123,0,6,27,69,14,117,0,6,27,70,14,111,0,6,27,71,14,105,0,6,27,72,14,99,0,6,27,77,14,93,0,6,27,78,14,87,0,6,27,79,14,81,0,6,27,81,14,75,0,6,27,83,14,69,0,6,27,84,14,63,0,6,27,85,14,57,0,6,27,87,14,51,0,6,27,90,14,45,0,6,27,91,14,39,0,6,27,92,14,33,0,6,27,94,14,27,0,6,27,95,14,21,0,6,27,96,14,15,0,6,27,97,14,9,0,6,27,98,14,3,0,6,27,99]},
+  #|  {"name":"FutureReservedWord","bytecode":[27,65,14,33,0,6,27,66,14,27,0,6,27,73,14,21,0,6,27,74,14,15,0,6,27,75,14,9,0,6,27,82,14,3,0,6,27,89]},
+  #|  {"name":"Literal","bytecode":[27,19,14,21,0,6,27,20,14,15,0,6,27,21,14,9,0,6,27,31,14,3,0,6,27,42]},
+  #|  {"name":"NullLiteral","bytecode":[5,27,86,15,6,0,24,1,26,4,1,0,9]},
+  #|  {"name":"BooleanLiteral","bytecode":[5,27,93,15,6,0,24,1,26,5,1,0,9,14,14,0,6,5,27,76,15,6,0,24,1,26,6,1,0,9]},
+  #|  {"name":"NumericLiteral","bytecode":[23,14,28,5,27,29,15,35,3,5,38,27,11,14,3,0,6,27,24,39,1,14,3,3,6,6,1,6,7,3,15,7,4,24,2,26,7,3,1,1,8,2,7,3,6,7,3,14,45,0,6,5,27,22,15,35,3,5,38,27,11,14,3,0,6,27,24,39,1,14,3,3,6,6,1,6,7,3,15,7,4,24,2,26,7,3,1,1,8,2,7,3,6,7,3,29]},
+  #|  {"name":"DecimalLiteral","bytecode":[5,27,23,15,36,3,18,19,2,1,22,19,3,15,22,4,4,27,24,16,3,10,27,24,6,27,26,14,2,0,6,2,24,4,26,8,5,0,8,2,7,3,6,7,3,14,76,0,6,5,18,19,2,1,22,19,3,15,35,3,4,27,24,15,6,3,16,3,10,27,24,6,6,6,3,15,13,4,27,26,14,2,0,6,2,24,3,26,8,4,0,8,2,7,3,6,7,3,14,23,0,6,5,27,23,15,13,3,27,26,14,2,0,6,2,24,2,26,8,3,0,6,7,3]},
+  #|  {"name":"DecimalIntegerLiteral","bytecode":[18,20,2,1,22,20,3,14,22,0,6,5,27,25,15,12,3,4,27,24,16,3,10,27,24,6,11,2,9,6,7,3]},
+  #|  {"name":"DecimalDigit","bytecode":[20,1,2,1,21,1,3]},
+  #|  {"name":"NonZeroDigit","bytecode":[20,2,2,1,21,1,3]},
+  #|  {"name":"ExponentPart","bytecode":[5,27,27,15,12,3,27,28,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"ExponentIndicator","bytecode":[19,21,2,1,21,1,3]},
+  #|  {"name":"SignedInteger","bytecode":[5,20,3,2,1,21,1,3,14,2,0,6,2,4,27,24,15,6,3,16,3,10,27,24,6,6,6,3,15,3,4,11,2,9,8,2,7,3]},
+  #|  {"name":"HexIntegerLiteral","bytecode":[5,19,22,2,1,21,2,3,15,36,3,5,4,27,30,15,6,3,16,3,10,27,30,6,6,6,3,15,2,1,6,12,9,15,7,4,24,2,26,9,3,1,0,8,2,7,3,6,7,3]},
+  #|  {"name":"HexDigit","bytecode":[23,15,20,4,2,1,21,1,3]},
+  #|  {"name":"StringLiteral","bytecode":[23,16,28,5,18,23,2,1,22,23,3,15,30,3,4,27,32,16,3,10,27,32,6,18,23,2,1,22,23,3,15,7,4,24,3,26,10,4,1,1,8,3,7,3,6,7,3,14,45,0,6,5,18,24,2,1,22,24,3,15,30,3,4,27,33,16,3,10,27,33,6,18,24,2,1,22,24,3,15,7,4,24,3,26,10,4,1,1,8,3,7,3,6,7,3,29]},
+  #|  {"name":"DoubleStringCharacter","bytecode":[5,5,38,18,23,2,1,22,23,3,14,14,0,6,18,16,2,1,22,16,3,14,3,0,6,27,3,39,1,14,3,3,6,6,1,6,7,3,15,15,3,27,1,15,6,4,24,2,26,11,3,0,8,2,7,3,6,7,3,14,37,0,6,5,18,16,2,1,22,16,3,15,16,3,27,35,15,7,4,24,2,26,3,3,1,0,8,2,7,3,6,7,3,14,3,0,6,27,34]},
+  #|  {"name":"SingleStringCharacter","bytecode":[5,5,38,18,24,2,1,22,24,3,14,14,0,6,18,16,2,1,22,16,3,14,3,0,6,27,3,39,1,14,3,3,6,6,1,6,7,3,15,15,3,27,1,15,6,4,24,2,26,11,3,0,8,2,7,3,6,7,3,14,37,0,6,5,18,16,2,1,22,16,3,15,16,3,27,35,15,7,4,24,2,26,3,3,1,0,8,2,7,3,6,7,3,14,3,0,6,27,34]},
+  #|  {"name":"LineContinuation","bytecode":[5,18,16,2,1,22,16,3,15,15,3,27,4,15,6,4,24,2,26,12,3,0,8,2,7,3,6,7,3]},
+  #|  {"name":"EscapeSequence","bytecode":[27,36,14,55,0,6,5,18,20,2,1,22,20,3,15,28,3,5,38,27,24,39,1,14,3,3,6,6,1,6,7,3,15,6,4,24,2,26,13,3,0,8,2,7,3,6,7,3,14,9,0,6,27,40,14,3,0,6,27,41]},
+  #|  {"name":"CharacterEscapeSequence","bytecode":[27,37,14,3,0,6,27,38]},
+  #|  {"name":"SingleEscapeCharacter","bytecode":[18,24,2,1,22,24,3,14,151,0,6,18,23,2,1,22,23,3,14,140,0,6,18,16,2,1,22,16,3,14,129,0,6,5,18,25,2,1,22,25,3,15,6,0,24,1,26,14,1,0,9,14,107,0,6,5,18,26,2,1,22,26,3,15,6,0,24,1,26,15,1,0,9,14,85,0,6,5,18,27,2,1,22,27,3,15,6,0,24,1,26,16,1,0,9,14,63,0,6,5,18,28,2,1,22,28,3,15,6,0,24,1,26,17,1,0,9,14,41,0,6,5,18,29,2,1,22,29,3,15,6,0,24,1,26,18,1,0,9,14,19,0,6,5,18,30,2,1,22,30,3,15,6,0,24,1,26,19,1,0,9]},
+  #|  {"name":"NonEscapeCharacter","bytecode":[5,5,38,27,39,14,3,0,6,27,3,39,1,14,3,3,6,6,1,6,7,3,15,15,3,27,1,15,6,4,24,2,26,11,3,0,8,2,7,3,6,7,3]},
+  #|  {"name":"EscapeCharacter","bytecode":[27,37,14,25,0,6,27,24,14,19,0,6,18,31,2,1,22,31,3,14,8,0,6,18,32,2,1,22,32,3]},
+  #|  {"name":"HexEscapeSequence","bytecode":[5,18,31,2,1,22,31,3,15,42,3,5,5,27,30,15,12,3,27,30,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,15,7,4,24,2,26,20,3,1,0,8,2,7,3,6,7,3]},
+  #|  {"name":"UnicodeEscapeSequence","bytecode":[5,23,17,18,32,2,1,22,32,3,15,60,3,5,5,27,30,15,30,3,27,30,15,21,4,27,30,15,12,4,27,30,15,3,4,11,4,9,8,4,7,3,8,3,7,3,8,2,7,3,6,7,3,15,2,1,6,12,9,15,7,4,24,2,26,20,3,1,0,8,2,7,3,6,7,3]},
+  #|  {"name":"RegularExpressionLiteral","bytecode":[23,18,28,5,18,33,2,1,22,33,3,15,43,3,5,27,43,15,2,1,6,12,9,15,27,4,18,33,2,1,22,33,3,15,13,4,5,27,50,6,12,24,4,26,21,5,2,2,0,8,3,7,3,8,2,7,3,6,7,3,29]},
+  #|  {"name":"RegularExpressionBody","bytecode":[5,27,44,15,12,3,4,27,45,16,3,10,27,45,6,11,2,9,6,7,3]},
+  #|  {"name":"RegularExpressionFirstChar","bytecode":[5,5,38,20,5,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,47,15,3,4,11,2,9,8,2,7,3,6,7,3,14,9,0,6,27,46,14,3,0,6,27,48]},
+  #|  {"name":"RegularExpressionChar","bytecode":[5,5,38,20,6,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,47,15,3,4,11,2,9,8,2,7,3,6,7,3,14,9,0,6,27,46,14,3,0,6,27,48]},
+  #|  {"name":"RegularExpressionBackslashSequence","bytecode":[5,18,16,2,1,22,16,3,15,12,3,27,47,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"RegularExpressionNonTerminator","bytecode":[5,5,38,27,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"RegularExpressionClass","bytecode":[5,18,34,2,1,22,34,3,15,26,3,4,27,49,16,3,10,27,49,6,18,35,2,1,22,35,3,15,3,4,11,3,9,8,3,7,3,6,7,3]},
+  #|  {"name":"RegularExpressionClassChar","bytecode":[5,5,38,20,7,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,47,15,3,4,11,2,9,8,2,7,3,6,7,3,14,3,0,6,27,46]},
+  #|  {"name":"RegularExpressionFlags","bytecode":[4,27,12,16,3,10,27,12,6]},
+  #|  {"name":"Ll","bytecode":[23,19,20,8,2,1,21,1,3]},
+  #|  {"name":"Lm","bytecode":[23,20,20,9,2,1,21,1,3]},
+  #|  {"name":"Lo","bytecode":[23,21,20,10,2,1,21,1,3]},
+  #|  {"name":"Lt","bytecode":[23,22,20,11,2,1,21,1,3]},
+  #|  {"name":"Lu","bytecode":[23,23,20,12,2,1,21,1,3]},
+  #|  {"name":"Mc","bytecode":[23,24,20,13,2,1,21,1,3]},
+  #|  {"name":"Mn","bytecode":[23,25,20,14,2,1,21,1,3]},
+  #|  {"name":"Nd","bytecode":[23,26,20,15,2,1,21,1,3]},
+  #|  {"name":"Nl","bytecode":[23,27,20,16,2,1,21,1,3]},
+  #|  {"name":"Pc","bytecode":[23,28,20,17,2,1,21,1,3]},
+  #|  {"name":"Zs","bytecode":[20,18,2,1,21,1,3]},
+  #|  {"name":"BreakToken","bytecode":[5,23,29,18,36,2,1,22,36,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"CaseToken","bytecode":[5,23,30,18,37,2,1,22,37,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"CatchToken","bytecode":[5,23,31,18,38,2,1,22,38,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"ClassToken","bytecode":[5,23,32,18,39,2,1,22,39,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"ConstToken","bytecode":[5,23,33,18,40,2,1,22,40,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"ContinueToken","bytecode":[5,23,34,18,41,2,1,22,41,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"DebuggerToken","bytecode":[5,23,35,18,42,2,1,22,42,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"DefaultToken","bytecode":[5,23,36,18,43,2,1,22,43,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"DeleteToken","bytecode":[5,23,37,18,44,2,1,22,44,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"DoToken","bytecode":[5,23,38,18,45,2,1,22,45,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"ElseToken","bytecode":[5,23,39,18,46,2,1,22,46,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"EnumToken","bytecode":[5,23,40,18,47,2,1,22,47,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"ExportToken","bytecode":[5,23,41,18,48,2,1,22,48,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"ExtendsToken","bytecode":[5,23,42,18,49,2,1,22,49,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"FalseToken","bytecode":[5,23,43,18,50,2,1,22,50,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"FinallyToken","bytecode":[5,23,44,18,51,2,1,22,51,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"ForToken","bytecode":[5,23,45,18,52,2,1,22,52,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"FunctionToken","bytecode":[5,23,46,18,53,2,1,22,53,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"GetToken","bytecode":[5,23,47,18,54,2,1,22,54,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"IfToken","bytecode":[5,23,48,18,55,2,1,22,55,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"ImportToken","bytecode":[5,23,49,18,56,2,1,22,56,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"InstanceofToken","bytecode":[5,23,50,18,57,2,1,22,57,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"InToken","bytecode":[5,23,51,18,58,2,1,22,58,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"NewToken","bytecode":[5,23,52,18,59,2,1,22,59,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"NullToken","bytecode":[5,23,53,18,60,2,1,22,60,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"ReturnToken","bytecode":[5,23,54,18,61,2,1,22,61,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"SetToken","bytecode":[5,23,55,18,62,2,1,22,62,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"SuperToken","bytecode":[5,23,56,18,63,2,1,22,63,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"SwitchToken","bytecode":[5,23,57,18,64,2,1,22,64,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"ThisToken","bytecode":[5,23,58,18,65,2,1,22,65,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"ThrowToken","bytecode":[5,23,59,18,66,2,1,22,66,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"TrueToken","bytecode":[5,23,60,18,67,2,1,22,67,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"TryToken","bytecode":[5,23,61,18,68,2,1,22,68,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"TypeofToken","bytecode":[5,23,62,18,69,2,1,22,69,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"VarToken","bytecode":[5,23,63,18,70,2,1,22,70,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"VoidToken","bytecode":[5,23,64,18,71,2,1,22,71,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"WhileToken","bytecode":[5,23,65,18,72,2,1,22,72,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"WithToken","bytecode":[5,23,66,18,73,2,1,22,73,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},
+  #|  {"name":"__","bytecode":[4,27,2,14,9,0,6,27,4,14,3,0,6,27,5,16,15,10,27,2,14,9,0,6,27,4,14,3,0,6,27,5,6]},
+  #|  {"name":"_","bytecode":[4,27,2,14,3,0,6,27,7,16,9,10,27,2,14,3,0,6,27,7,6]},
+  #|  {"name":"EOS","bytecode":[5,27,100,23,67,18,74,2,1,22,74,3,15,3,4,11,2,9,8,2,7,3,14,81,0,6,5,27,101,27,8,14,2,0,6,2,27,4,15,3,4,11,3,9,8,3,7,3,14,55,0,6,5,27,101,5,38,23,68,18,75,2,1,22,75,3,39,0,15,3,3,6,7,1,6,6,3,15,3,4,11,2,9,8,2,7,3,14,16,0,6,5,27,100,27,103,15,3,4,11,2,9,8,2,7,3]},
+  #|  {"name":"EOF","bytecode":[5,38,23,0,17,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3]},
+  #|  {"name":"PrimaryExpression","bytecode":[5,27,91,15,6,0,24,1,26,22,1,0,9,14,77,0,6,27,9,14,71,0,6,27,18,14,65,0,6,27,105,14,59,0,6,27,108,14,53,0,6,5,23,69,18,76,2,1,22,76,3,15,36,3,27,100,27,156,15,25,4,27,100,23,70,18,77,2,1,22,77,3,15,7,4,24,5,26,23,6,1,2,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"ArrayLiteral","bytecode":[5,23,71,18,34,2,1,22,34,3,15,44,3,27,100,5,27,107,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,72,18,35,2,1,22,35,3,15,7,4,24,4,26,24,5,1,1,8,4,7,3,6,7,3,14,147,0,6,5,23,71,18,34,2,1,22,34,3,15,36,3,27,100,27,106,15,25,4,27,100,23,72,18,35,2,1,22,35,3,15,7,4,24,5,26,25,6,1,2,8,5,7,3,8,3,7,3,6,7,3,14,91,0,6,5,23,71,18,34,2,1,22,34,3,15,74,3,27,100,27,106,15,63,4,27,100,23,73,18,78,2,1,22,78,3,15,45,4,27,100,5,27,107,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,72,18,35,2,1,22,35,3,15,8,4,24,8,26,26,9,2,5,1,8,8,7,3,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"ElementList","bytecode":[5,5,5,27,107,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,27,153,15,8,4,24,2,26,27,3,2,1,0,8,2,7,3,15,129,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,39,4,27,100,5,27,107,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,27,153,15,9,4,24,5,26,28,6,3,7,1,0,8,5,7,3,8,2,7,3,16,59,10,5,27,100,23,73,18,78,2,1,22,78,3,15,39,4,27,100,5,27,107,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,27,153,15,9,4,24,5,26,28,6,3,7,1,0,8,5,7,3,8,2,7,3,6,24,2,26,29,3,2,1,0,6,7,3]},
+  #|  {"name":"Elision","bytecode":[5,23,73,18,78,2,1,22,78,3,15,56,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,3,4,11,2,9,8,2,7,3,16,23,10,5,27,100,23,73,18,78,2,1,22,78,3,15,3,4,11,2,9,8,2,7,3,6,24,2,26,30,3,1,0,6,7,3]},
+  #|  {"name":"ObjectLiteral","bytecode":[5,23,74,18,79,2,1,22,79,3,15,24,3,27,100,23,68,18,75,2,1,22,75,3,15,6,4,24,3,26,31,4,0,8,3,7,3,6,7,3,14,127,0,6,5,23,74,18,79,2,1,22,79,3,15,36,3,27,100,27,109,15,25,4,27,100,23,68,18,75,2,1,22,75,3,15,7,4,24,5,26,32,6,1,2,8,5,7,3,8,3,7,3,6,7,3,14,71,0,6,5,23,74,18,79,2,1,22,79,3,15,54,3,27,100,27,109,15,43,4,27,100,23,73,18,78,2,1,22,78,3,15,25,4,27,100,23,68,18,75,2,1,22,75,3,15,7,4,24,7,26,32,8,1,4,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"PropertyNameAndValueList","bytecode":[5,27,110,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,110,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,110,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,33,3,2,1,0,6,7,3]},
+  #|  {"name":"PropertyAssignment","bytecode":[5,27,111,15,37,3,27,100,23,75,18,80,2,1,22,80,3,15,19,4,27,100,27,153,15,8,4,24,5,26,34,6,2,4,0,8,5,7,3,8,3,7,3,6,7,3,14,225,0,6,5,27,80,15,95,3,27,100,27,111,15,84,4,27,100,23,69,18,76,2,1,22,76,3,15,66,4,27,100,23,70,18,77,2,1,22,77,3,15,48,4,27,100,23,74,18,79,2,1,22,79,3,15,30,4,27,100,27,190,27,100,23,68,18,75,2,1,22,75,3,15,8,4,24,13,26,35,14,2,10,2,8,13,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,117,0,6,5,27,88,15,107,3,27,100,27,111,15,96,4,27,100,23,69,18,76,2,1,22,76,3,15,78,4,27,100,27,112,15,67,4,27,100,23,70,18,77,2,1,22,77,3,15,49,4,27,100,23,74,18,79,2,1,22,79,3,15,31,4,27,100,27,190,27,100,23,68,18,75,2,1,22,75,3,15,9,4,24,15,26,36,16,3,12,8,2,8,15,7,3,8,11,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"PropertyName","bytecode":[27,10,14,9,0,6,27,31,14,3,0,6,27,21]},
+  #|  {"name":"PropertySetParameterList","bytecode":[5,27,9,15,7,0,24,1,26,37,1,1,0,9]},
+  #|  {"name":"MemberExpression","bytecode":[5,27,104,14,46,0,6,27,188,14,40,0,6,5,27,85,15,30,3,27,100,27,113,15,19,4,27,100,27,116,15,8,4,24,5,26,38,6,2,2,0,8,5,7,3,8,3,7,3,6,7,3,15,209,3,4,5,27,100,23,71,18,34,2,1,22,34,3,15,37,4,27,100,27,156,15,26,4,27,100,23,72,18,35,2,1,22,35,3,15,8,4,24,6,26,39,7,2,8,2,8,6,7,3,8,4,7,3,8,2,7,3,14,39,0,6,5,27,100,23,76,18,19,2,1,22,19,3,15,19,4,27,100,27,10,15,8,4,24,4,26,40,5,2,6,0,8,4,7,3,8,2,7,3,16,99,10,5,27,100,23,71,18,34,2,1,22,34,3,15,37,4,27,100,27,156,15,26,4,27,100,23,72,18,35,2,1,22,35,3,15,8,4,24,6,26,39,7,2,8,2,8,6,7,3,8,4,7,3,8,2,7,3,14,39,0,6,5,27,100,23,76,18,19,2,1,22,19,3,15,19,4,27,100,27,10,15,8,4,24,4,26,40,5,2,6,0,8,4,7,3,8,2,7,3,6,24,2,26,41,3,2,1,0,6,7,3]},
+  #|  {"name":"NewExpression","bytecode":[27,113,14,28,0,6,5,27,85,15,18,3,27,100,27,114,15,7,4,24,3,26,42,4,1,0,8,3,7,3,6,7,3]},
+  #|  {"name":"CallExpression","bytecode":[5,5,27,113,15,19,3,27,100,27,116,15,8,4,24,3,26,43,4,2,2,0,8,3,7,3,6,7,3,15,257,3,4,5,27,100,27,116,15,8,4,24,2,26,44,3,2,4,0,8,2,7,3,14,99,0,6,5,27,100,23,71,18,34,2,1,22,34,3,15,37,4,27,100,27,156,15,26,4,27,100,23,72,18,35,2,1,22,35,3,15,8,4,24,6,26,45,7,2,8,2,8,6,7,3,8,4,7,3,8,2,7,3,14,39,0,6,5,27,100,23,76,18,19,2,1,22,19,3,15,19,4,27,100,27,10,15,8,4,24,4,26,46,5,2,6,0,8,4,7,3,8,2,7,3,16,123,10,5,27,100,27,116,15,8,4,24,2,26,44,3,2,4,0,8,2,7,3,14,99,0,6,5,27,100,23,71,18,34,2,1,22,34,3,15,37,4,27,100,27,156,15,26,4,27,100,23,72,18,35,2,1,22,35,3,15,8,4,24,6,26,45,7,2,8,2,8,6,7,3,8,4,7,3,8,2,7,3,14,39,0,6,5,27,100,23,76,18,19,2,1,22,19,3,15,19,4,27,100,27,10,15,8,4,24,4,26,46,5,2,6,0,8,4,7,3,8,2,7,3,6,24,2,26,47,3,2,1,0,6,7,3]},
+  #|  {"name":"Arguments","bytecode":[5,23,69,18,76,2,1,22,76,3,15,44,3,27,100,5,27,117,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,70,18,77,2,1,22,77,3,15,7,4,24,4,26,48,5,1,1,8,4,7,3,6,7,3]},
+  #|  {"name":"ArgumentList","bytecode":[5,27,153,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,153,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,153,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,33,3,2,1,0,6,7,3]},
+  #|  {"name":"LeftHandSideExpression","bytecode":[27,115,14,3,0,6,27,114]},
+  #|  {"name":"PostfixExpression","bytecode":[5,27,118,15,19,3,27,101,27,120,15,8,4,24,3,26,49,4,2,2,0,8,3,7,3,6,7,3,14,3,0,6,27,118]},
+  #|  {"name":"PostfixOperator","bytecode":[23,77,18,81,2,1,22,81,3,14,10,0,6,23,78,18,82,2,1,22,82,3]},
+  #|  {"name":"UnaryExpression","bytecode":[27,119,14,29,0,6,5,27,122,15,19,3,27,100,27,121,15,8,4,24,3,26,50,4,2,2,0,8,3,7,3,6,7,3]},
+  #|  {"name":"UnaryOperator","bytecode":[5,27,70,15,2,1,6,12,9,14,193,0,6,5,27,97,15,2,1,6,12,9,14,180,0,6,5,27,95,15,2,1,6,12,9,14,167,0,6,23,77,18,81,2,1,22,81,3,14,154,0,6,23,78,18,82,2,1,22,82,3,14,141,0,6,5,5,23,79,18,83,2,1,22,83,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,82,0,6,5,5,23,81,18,85,2,1,22,85,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,23,0,6,23,82,18,86,2,1,22,86,3,14,10,0,6,23,83,18,87,2,1,22,87,3]},
+  #|  {"name":"MultiplicativeExpression","bytecode":[5,27,121,15,65,3,4,5,27,100,27,124,15,14,4,27,100,27,121,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,124,15,14,4,27,100,27,121,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"MultiplicativeOperator","bytecode":[5,5,23,84,18,88,2,1,22,88,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,115,0,6,5,5,23,85,18,33,2,1,22,33,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,56,0,6,5,5,23,86,18,89,2,1,22,89,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9]},
+  #|  {"name":"AdditiveExpression","bytecode":[5,27,123,15,65,3,4,5,27,100,27,126,15,14,4,27,100,27,123,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,126,15,14,4,27,100,27,123,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"AdditiveOperator","bytecode":[5,5,23,79,18,83,2,1,22,83,3,15,32,3,5,38,23,87,20,19,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,56,0,6,5,5,23,81,18,85,2,1,22,85,3,15,32,3,5,38,23,88,20,20,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9]},
+  #|  {"name":"ShiftExpression","bytecode":[5,27,125,15,65,3,4,5,27,100,27,128,15,14,4,27,100,27,125,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,128,15,14,4,27,100,27,125,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"ShiftOperator","bytecode":[5,5,23,89,18,90,2,1,22,90,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,115,0,6,5,5,23,90,18,91,2,1,22,91,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,56,0,6,5,5,23,91,18,92,2,1,22,92,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9]},
+  #|  {"name":"RelationalExpression","bytecode":[5,27,127,15,65,3,4,5,27,100,27,130,15,14,4,27,100,27,127,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,130,15,14,4,27,100,27,127,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"RelationalOperator","bytecode":[23,92,18,93,2,1,22,93,3,14,154,0,6,23,93,18,94,2,1,22,94,3,14,141,0,6,5,5,23,94,18,95,2,1,22,95,3,15,32,3,5,38,23,94,18,95,2,1,22,95,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,82,0,6,5,5,23,95,18,96,2,1,22,96,3,15,32,3,5,38,23,95,18,96,2,1,22,96,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,23,0,6,5,27,83,15,2,1,6,12,9,14,10,0,6,5,27,84,15,2,1,6,12,9]},
+  #|  {"name":"RelationalExpressionNoIn","bytecode":[5,27,127,15,65,3,4,5,27,100,27,132,15,14,4,27,100,27,127,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,132,15,14,4,27,100,27,127,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"RelationalOperatorNoIn","bytecode":[23,92,18,93,2,1,22,93,3,14,141,0,6,23,93,18,94,2,1,22,94,3,14,128,0,6,5,5,23,94,18,95,2,1,22,95,3,15,32,3,5,38,23,94,18,95,2,1,22,95,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,69,0,6,5,5,23,95,18,96,2,1,22,96,3,15,32,3,5,38,23,95,18,96,2,1,22,96,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,10,0,6,5,27,83,15,2,1,6,12,9]},
+  #|  {"name":"EqualityExpression","bytecode":[5,27,129,15,65,3,4,5,27,100,27,135,15,14,4,27,100,27,129,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,135,15,14,4,27,100,27,129,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"EqualityExpressionNoIn","bytecode":[5,27,131,15,65,3,4,5,27,100,27,135,15,14,4,27,100,27,131,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,135,15,14,4,27,100,27,131,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"EqualityOperator","bytecode":[23,96,18,97,2,1,22,97,3,14,36,0,6,23,97,18,98,2,1,22,98,3,14,23,0,6,23,98,18,99,2,1,22,99,3,14,10,0,6,23,99,18,100,2,1,22,100,3]},
+  #|  {"name":"BitwiseANDExpression","bytecode":[5,27,133,15,65,3,4,5,27,100,27,138,15,14,4,27,100,27,133,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,138,15,14,4,27,100,27,133,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"BitwiseANDExpressionNoIn","bytecode":[5,27,134,15,65,3,4,5,27,100,27,138,15,14,4,27,100,27,134,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,138,15,14,4,27,100,27,134,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"BitwiseANDOperator","bytecode":[5,5,23,100,18,101,2,1,22,101,3,15,32,3,5,38,23,101,20,21,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9]},
+  #|  {"name":"BitwiseXORExpression","bytecode":[5,27,136,15,65,3,4,5,27,100,27,141,15,14,4,27,100,27,136,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,141,15,14,4,27,100,27,136,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"BitwiseXORExpressionNoIn","bytecode":[5,27,137,15,65,3,4,5,27,100,27,141,15,14,4,27,100,27,137,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,141,15,14,4,27,100,27,137,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"BitwiseXOROperator","bytecode":[5,5,23,102,18,102,2,1,22,102,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9]},
+  #|  {"name":"BitwiseORExpression","bytecode":[5,27,139,15,65,3,4,5,27,100,27,144,15,14,4,27,100,27,139,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,144,15,14,4,27,100,27,139,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"BitwiseORExpressionNoIn","bytecode":[5,27,140,15,65,3,4,5,27,100,27,144,15,14,4,27,100,27,140,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,144,15,14,4,27,100,27,140,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},
+  #|  {"name":"BitwiseOROperator","bytecode":[5,5,23,103,18,103,2,1,22,103,3,15,32,3,5,38,23,104,20,22,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9]},
+  #|  {"name":"LogicalANDExpression","bytecode":[5,27,142,15,65,3,4,5,27,100,27,147,15,14,4,27,100,27,142,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,147,15,14,4,27,100,27,142,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,52,3,2,1,0,6,7,3]},
+  #|  {"name":"LogicalANDExpressionNoIn","bytecode":[5,27,143,15,65,3,4,5,27,100,27,147,15,14,4,27,100,27,143,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,147,15,14,4,27,100,27,143,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,52,3,2,1,0,6,7,3]},
+  #|  {"name":"LogicalANDOperator","bytecode":[23,105,18,104,2,1,22,104,3]},
+  #|  {"name":"LogicalORExpression","bytecode":[5,27,145,15,65,3,4,5,27,100,27,150,15,14,4,27,100,27,145,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,150,15,14,4,27,100,27,145,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,52,3,2,1,0,6,7,3]},
+  #|  {"name":"LogicalORExpressionNoIn","bytecode":[5,27,146,15,65,3,4,5,27,100,27,150,15,14,4,27,100,27,146,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,150,15,14,4,27,100,27,146,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,52,3,2,1,0,6,7,3]},
+  #|  {"name":"LogicalOROperator","bytecode":[23,106,18,105,2,1,22,105,3]},
+  #|  {"name":"ConditionalExpression","bytecode":[5,27,148,15,67,3,27,100,23,107,18,106,2,1,22,106,3,15,49,4,27,100,27,153,15,38,4,27,100,23,75,18,80,2,1,22,80,3,15,20,4,27,100,27,153,15,9,4,24,9,26,53,10,3,8,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,3,0,6,27,148]},
+  #|  {"name":"ConditionalExpressionNoIn","bytecode":[5,27,149,15,67,3,27,100,23,107,18,106,2,1,22,106,3,15,49,4,27,100,27,153,15,38,4,27,100,23,75,18,80,2,1,22,80,3,15,20,4,27,100,27,154,15,9,4,24,9,26,53,10,3,8,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,3,0,6,27,149]},
+  #|  {"name":"AssignmentExpression","bytecode":[5,27,118,15,66,3,27,100,23,80,18,84,2,1,22,84,3,15,48,4,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,19,4,27,100,27,153,15,8,4,24,6,26,54,7,2,5,0,8,6,7,3,8,4,7,3,8,3,7,3,6,7,3,14,47,0,6,5,27,118,15,31,3,27,100,27,155,15,20,4,27,100,27,153,15,9,4,24,5,26,55,6,3,4,2,0,8,5,7,3,8,3,7,3,6,7,3,14,3,0,6,27,151]},
+  #|  {"name":"AssignmentExpressionNoIn","bytecode":[5,27,118,15,66,3,27,100,23,80,18,84,2,1,22,84,3,15,48,4,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,19,4,27,100,27,154,15,8,4,24,6,26,54,7,2,5,0,8,6,7,3,8,4,7,3,8,3,7,3,6,7,3,14,47,0,6,5,27,118,15,31,3,27,100,27,155,15,20,4,27,100,27,154,15,9,4,24,5,26,55,6,3,4,2,0,8,5,7,3,8,3,7,3,6,7,3,14,3,0,6,27,152]},
+  #|  {"name":"AssignmentOperator","bytecode":[23,108,18,107,2,1,22,107,3,14,127,0,6,23,109,18,108,2,1,22,108,3,14,114,0,6,23,110,18,109,2,1,22,109,3,14,101,0,6,23,111,18,110,2,1,22,110,3,14,88,0,6,23,112,18,111,2,1,22,111,3,14,75,0,6,23,113,18,112,2,1,22,112,3,14,62,0,6,23,114,18,113,2,1,22,113,3,14,49,0,6,23,115,18,114,2,1,22,114,3,14,36,0,6,23,116,18,115,2,1,22,115,3,14,23,0,6,23,117,18,116,2,1,22,116,3,14,10,0,6,23,118,18,117,2,1,22,117,3]},
+  #|  {"name":"Expression","bytecode":[5,27,153,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,153,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,153,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,56,3,2,1,0,6,7,3]},
+  #|  {"name":"ExpressionNoIn","bytecode":[5,27,154,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,154,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,154,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,56,3,2,1,0,6,7,3]},
+  #|  {"name":"Statement","bytecode":[27,159,14,81,0,6,27,161,14,75,0,6,27,168,14,69,0,6,27,169,14,63,0,6,27,170,14,57,0,6,27,171,14,51,0,6,27,172,14,45,0,6,27,173,14,39,0,6,27,174,14,33,0,6,27,175,14,27,0,6,27,181,14,21,0,6,27,176,14,15,0,6,27,182,14,9,0,6,27,183,14,3,0,6,27,186]},
+  #|  {"name":"Block","bytecode":[5,23,74,18,79,2,1,22,79,3,15,44,3,27,100,5,27,160,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,68,18,75,2,1,22,75,3,15,7,4,24,4,26,57,5,1,1,8,4,7,3,6,7,3]},
+  #|  {"name":"StatementList","bytecode":[5,27,158,15,43,3,4,5,27,100,27,158,15,3,4,11,2,9,8,2,7,3,16,16,10,5,27,100,27,158,15,3,4,11,2,9,8,2,7,3,6,24,2,26,58,3,2,1,0,6,7,3]},
+  #|  {"name":"VariableStatement","bytecode":[5,27,96,15,27,3,27,100,27,162,15,16,4,27,102,15,7,4,24,4,26,59,5,1,1,8,4,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"VariableDeclarationList","bytecode":[5,27,164,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,164,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,164,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,33,3,2,1,0,6,7,3]},
+  #|  {"name":"VariableDeclarationListNoIn","bytecode":[5,27,165,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,165,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,165,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,33,3,2,1,0,6,7,3]},
+  #|  {"name":"VariableDeclaration","bytecode":[5,27,9,15,28,3,5,27,100,27,166,15,3,4,11,2,9,8,2,7,3,14,2,0,6,2,24,2,26,60,3,2,1,0,6,7,3]},
+  #|  {"name":"VariableDeclarationNoIn","bytecode":[5,27,9,15,28,3,5,27,100,27,167,15,3,4,11,2,9,8,2,7,3,14,2,0,6,2,24,2,26,60,3,2,1,0,6,7,3]},
+  #|  {"name":"Initialiser","bytecode":[5,23,80,18,84,2,1,22,84,3,15,47,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,18,4,27,100,27,153,15,7,4,24,4,26,23,5,1,0,8,4,7,3,8,2,7,3,6,7,3]},
+  #|  {"name":"InitialiserNoIn","bytecode":[5,23,80,18,84,2,1,22,84,3,15,47,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,18,4,27,100,27,154,15,7,4,24,4,26,23,5,1,0,8,4,7,3,8,2,7,3,6,7,3]},
+  #|  {"name":"EmptyStatement","bytecode":[5,23,67,18,74,2,1,22,74,3,15,6,0,24,1,26,61,1,0,9]},
+  #|  {"name":"ExpressionStatement","bytecode":[5,5,38,23,74,18,79,2,1,22,79,3,14,3,0,6,27,79,39,1,14,3,3,6,6,1,6,7,3,15,25,3,27,156,15,16,4,27,102,15,7,4,24,3,26,62,4,1,1,8,3,7,3,8,2,7,3,6,7,3]},
+  #|  {"name":"IfStatement","bytecode":[5,27,81,15,89,3,27,100,23,69,18,76,2,1,22,76,3,15,71,4,27,100,27,156,15,60,4,27,100,23,70,18,77,2,1,22,77,3,15,42,4,27,100,27,158,15,31,4,27,100,27,72,15,20,4,27,100,27,158,15,9,4,24,13,26,63,14,3,8,4,0,8,13,7,3,8,11,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,76,0,6,5,27,81,15,66,3,27,100,23,69,18,76,2,1,22,76,3,15,48,4,27,100,27,156,15,37,4,27,100,23,70,18,77,2,1,22,77,3,15,19,4,27,100,27,158,15,8,4,24,9,26,64,10,2,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"IterationStatement","bytecode":[5,27,71,15,86,3,27,100,27,158,15,75,4,27,100,27,98,15,64,4,27,100,23,69,18,76,2,1,22,76,3,15,46,4,27,100,27,156,15,35,4,27,100,23,70,18,77,2,1,22,77,3,15,17,4,27,102,15,8,4,24,12,26,65,13,2,9,3,8,12,7,3,8,11,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,620,0,6,5,27,98,15,66,3,27,100,23,69,18,76,2,1,22,76,3,15,48,4,27,100,27,156,15,37,4,27,100,23,70,18,77,2,1,22,77,3,15,19,4,27,100,27,158,15,8,4,24,9,26,66,10,2,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,541,0,6,5,27,78,15,150,3,27,100,23,69,18,76,2,1,22,76,3,15,132,4,27,100,5,27,157,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,67,18,74,2,1,22,74,3,15,95,4,27,100,5,27,156,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,67,18,74,2,1,22,74,3,15,58,4,27,100,5,27,156,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,70,18,77,2,1,22,77,3,15,21,4,27,100,27,158,15,10,4,24,14,26,67,15,4,9,6,3,0,8,14,7,3,8,12,7,3,8,9,7,3,8,6,7,3,8,3,7,3,6,7,3,14,378,0,6,5,27,78,15,153,3,27,100,23,69,18,76,2,1,22,76,3,15,135,4,27,100,27,96,15,124,4,27,100,27,163,15,113,4,27,100,23,67,18,74,2,1,22,74,3,15,95,4,27,100,5,27,156,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,67,18,74,2,1,22,74,3,15,58,4,27,100,5,27,156,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,70,18,77,2,1,22,77,3,15,21,4,27,100,27,158,15,10,4,24,17,26,68,18,4,10,6,3,0,8,17,7,3,8,15,7,3,8,12,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,212,0,6,5,27,78,15,89,3,27,100,23,69,18,76,2,1,22,76,3,15,71,4,27,100,27,118,15,60,4,27,100,27,84,15,49,4,27,100,27,156,15,38,4,27,100,23,70,18,77,2,1,22,77,3,15,20,4,27,100,27,158,15,9,4,24,13,26,69,14,3,8,4,0,8,13,7,3,8,11,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,110,0,6,5,27,78,15,100,3,27,100,23,69,18,76,2,1,22,76,3,15,82,4,27,100,27,96,15,71,4,27,100,27,163,15,60,4,27,100,27,84,15,49,4,27,100,27,156,15,38,4,27,100,23,70,18,77,2,1,22,77,3,15,20,4,27,100,27,158,15,9,4,24,15,26,70,16,3,8,4,0,8,15,7,3,8,13,7,3,8,11,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"ContinueStatement","bytecode":[5,27,67,15,15,3,27,102,15,6,4,24,2,26,71,3,0,8,2,7,3,6,7,3,14,37,0,6,5,27,67,15,27,3,27,101,27,9,15,16,4,27,102,15,7,4,24,4,26,72,5,1,1,8,4,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"BreakStatement","bytecode":[5,27,62,15,15,3,27,102,15,6,4,24,2,26,73,3,0,8,2,7,3,6,7,3,14,37,0,6,5,27,62,15,27,3,27,101,27,9,15,16,4,27,102,15,7,4,24,4,26,74,5,1,1,8,4,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"ReturnStatement","bytecode":[5,27,87,15,15,3,27,102,15,6,4,24,2,26,75,3,0,8,2,7,3,6,7,3,14,37,0,6,5,27,87,15,27,3,27,101,27,156,15,16,4,27,102,15,7,4,24,4,26,76,5,1,1,8,4,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"WithStatement","bytecode":[5,27,99,15,66,3,27,100,23,69,18,76,2,1,22,76,3,15,48,4,27,100,27,156,15,37,4,27,100,23,70,18,77,2,1,22,77,3,15,19,4,27,100,27,158,15,8,4,24,9,26,77,10,2,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"SwitchStatement","bytecode":[5,27,90,15,66,3,27,100,23,69,18,76,2,1,22,76,3,15,48,4,27,100,27,156,15,37,4,27,100,23,70,18,77,2,1,22,77,3,15,19,4,27,100,27,177,15,8,4,24,9,26,78,10,2,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"CaseBlock","bytecode":[5,23,74,18,79,2,1,22,79,3,15,44,3,27,100,5,27,178,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,68,18,75,2,1,22,75,3,15,7,4,24,4,26,79,5,1,1,8,4,7,3,6,7,3,14,93,0,6,5,23,74,18,79,2,1,22,79,3,15,76,3,27,100,5,27,178,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,27,180,15,46,4,27,100,5,27,178,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,68,18,75,2,1,22,75,3,15,9,4,24,7,26,80,8,3,4,3,1,8,7,7,3,8,4,7,3,6,7,3]},
+  #|  {"name":"CaseClauses","bytecode":[5,27,179,15,43,3,4,5,27,100,27,179,15,3,4,11,2,9,8,2,7,3,16,16,10,5,27,100,27,179,15,3,4,11,2,9,8,2,7,3,6,24,2,26,58,3,2,1,0,6,7,3]},
+  #|  {"name":"CaseClause","bytecode":[5,27,63,15,57,3,27,100,27,156,15,46,4,27,100,23,75,18,80,2,1,22,80,3,15,28,4,5,27,100,27,160,15,3,4,11,2,9,8,2,7,3,14,2,0,6,2,24,6,26,81,7,2,3,0,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"DefaultClause","bytecode":[5,27,69,15,45,3,27,100,23,75,18,80,2,1,22,80,3,15,27,4,5,27,100,27,160,15,3,4,11,2,9,8,2,7,3,14,2,0,6,2,24,4,26,82,5,1,0,8,3,7,3,6,7,3]},
+  #|  {"name":"LabelledStatement","bytecode":[5,27,9,15,37,3,27,100,23,75,18,80,2,1,22,80,3,15,19,4,27,100,27,158,15,8,4,24,5,26,83,6,2,4,0,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"ThrowStatement","bytecode":[5,27,92,15,27,3,27,101,27,156,15,16,4,27,102,15,7,4,24,4,26,84,5,1,1,8,4,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"TryStatement","bytecode":[5,27,94,15,42,3,27,100,27,159,15,31,4,27,100,27,184,15,20,4,27,100,27,185,15,9,4,24,7,26,85,8,3,4,2,0,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,83,0,6,5,27,94,15,30,3,27,100,27,159,15,19,4,27,100,27,184,15,8,4,24,5,26,86,6,2,2,0,8,5,7,3,8,3,7,3,6,7,3,14,40,0,6,5,27,94,15,30,3,27,100,27,159,15,19,4,27,100,27,185,15,8,4,24,5,26,87,6,2,2,0,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"Catch","bytecode":[5,27,64,15,66,3,27,100,23,69,18,76,2,1,22,76,3,15,48,4,27,100,27,9,15,37,4,27,100,23,70,18,77,2,1,22,77,3,15,19,4,27,100,27,159,15,8,4,24,9,26,88,10,2,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"Finally","bytecode":[5,27,77,15,18,3,27,100,27,159,15,7,4,24,3,26,89,4,1,0,8,3,7,3,6,7,3]},
+  #|  {"name":"DebuggerStatement","bytecode":[5,27,68,15,15,3,27,102,15,6,4,24,2,26,90,3,0,8,2,7,3,6,7,3]},
+  #|  {"name":"FunctionDeclaration","bytecode":[5,27,79,15,115,3,27,100,27,9,15,104,4,27,100,23,69,18,76,2,1,22,76,3,15,86,4,27,100,5,27,189,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,70,18,77,2,1,22,77,3,15,49,4,27,100,23,74,18,79,2,1,22,79,3,15,31,4,27,100,27,190,27,100,23,68,18,75,2,1,22,75,3,15,9,4,24,14,26,91,15,3,11,7,2,8,14,7,3,8,10,7,3,8,8,7,3,8,5,7,3,8,3,7,3,6,7,3]},
+  #|  {"name":"FunctionExpression","bytecode":[5,27,79,15,123,3,27,100,5,27,9,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,69,18,76,2,1,22,76,3,15,86,4,27,100,5,27,189,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,70,18,77,2,1,22,77,3,15,49,4,27,100,23,74,18,79,2,1,22,79,3,15,31,4,27,100,27,190,27,100,23,68,18,75,2,1,22,75,3,15,9,4,24,13,26,92,14,3,10,7,2,8,13,7,3,8,9,7,3,8,7,7,3,8,4,7,3,6,7,3]},
+  #|  {"name":"FormalParameterList","bytecode":[5,27,9,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,9,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,9,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,33,3,2,1,0,6,7,3]},
+  #|  {"name":"FunctionBody","bytecode":[5,27,192,14,2,0,6,2,24,1,26,93,1,1,0,9]},
+  #|  {"name":"Program","bytecode":[5,27,192,14,2,0,6,2,24,1,26,94,1,1,0,9]},
+  #|  {"name":"SourceElements","bytecode":[5,27,193,15,43,3,4,5,27,100,27,193,15,3,4,11,2,9,8,2,7,3,16,16,10,5,27,100,27,193,15,3,4,11,2,9,8,2,7,3,6,24,2,26,95,3,2,1,0,6,7,3]},
+  #|  {"name":"SourceElement","bytecode":[27,158,14,3,0,6,27,187]}
+  #|],
+  #|"literals": [
+  #|  "\t",
+  #|  "\u000b",
+  #|  "\f",
+  #|  " ",
+  #|  " ",
+  #|  "﻿",
+  #|  "\n",
+  #|  "\r\n",
+  #|  "\r",
+  #|  " ",
+  #|  " ",
+  #|  "/*",
+  #|  "*/",
+  #|  "//",
+  #|  "$",
+  #|  "_",
+  #|  "\\",
+  #|  "‌",
+  #|  "‍",
+  #|  ".",
+  #|  "0",
+  #|  "e",
+  #|  "0x",
+  #|  "\"",
+  #|  "'",
+  #|  "b",
+  #|  "f",
+  #|  "n",
+  #|  "r",
+  #|  "t",
+  #|  "v",
+  #|  "x",
+  #|  "u",
+  #|  "/",
+  #|  "[",
+  #|  "]",
+  #|  "break",
+  #|  "case",
+  #|  "catch",
+  #|  "class",
+  #|  "const",
+  #|  "continue",
+  #|  "debugger",
+  #|  "default",
+  #|  "delete",
+  #|  "do",
+  #|  "else",
+  #|  "enum",
+  #|  "export",
+  #|  "extends",
+  #|  "false",
+  #|  "finally",
+  #|  "for",
+  #|  "function",
+  #|  "get",
+  #|  "if",
+  #|  "import",
+  #|  "instanceof",
+  #|  "in",
+  #|  "new",
+  #|  "null",
+  #|  "return",
+  #|  "set",
+  #|  "super",
+  #|  "switch",
+  #|  "this",
+  #|  "throw",
+  #|  "true",
+  #|  "try",
+  #|  "typeof",
+  #|  "var",
+  #|  "void",
+  #|  "while",
+  #|  "with",
+  #|  ";",
+  #|  "}",
+  #|  "(",
+  #|  ")",
+  #|  ",",
+  #|  "{",
+  #|  ":",
+  #|  "++",
+  #|  "--",
+  #|  "+",
+  #|  "=",
+  #|  "-",
+  #|  "~",
+  #|  "!",
+  #|  "*",
+  #|  "%",
+  #|  "<<",
+  #|  ">>>",
+  #|  ">>",
+  #|  "<=",
+  #|  ">=",
+  #|  "<",
+  #|  ">",
+  #|  "===",
+  #|  "!==",
+  #|  "==",
+  #|  "!=",
+  #|  "&",
+  #|  "^",
+  #|  "|",
+  #|  "&&",
+  #|  "||",
+  #|  "?",
+  #|  "*=",
+  #|  "/=",
+  #|  "%=",
+  #|  "+=",
+  #|  "-=",
+  #|  "<<=",
+  #|  ">>=",
+  #|  ">>>=",
+  #|  "&=",
+  #|  "^=",
+  #|  "|="
+  #|],
+  #|"classes": [
+  #|  {"value":["\n","\r"," "," "],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["0","9"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["1","9"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":["+","-"],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["0","9"],["a","f"]],"inverted":false,"ignoreCase":true},
+  #|  {"value":["*","\\","/","["],"inverted":false,"ignoreCase":false},
+  #|  {"value":["\\","/","["],"inverted":false,"ignoreCase":false},
+  #|  {"value":["]","\\"],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["a","z"],"µ",["ß","ö"],["ø","ÿ"],"ā","ă","ą","ć","ĉ","ċ","č","ď","đ","ē","ĕ","ė","ę","ě","ĝ","ğ","ġ","ģ","ĥ","ħ","ĩ","ī","ĭ","į","ı","ĳ","ĵ",["ķ","ĸ"],"ĺ","ļ","ľ","ŀ","ł","ń","ņ",["ň","ŉ"],"ŋ","ō","ŏ","ő","œ","ŕ","ŗ","ř","ś","ŝ","ş","š","ţ","ť","ŧ","ũ","ū","ŭ","ů","ű","ų","ŵ","ŷ","ź","ż",["ž","ƀ"],"ƃ","ƅ","ƈ",["ƌ","ƍ"],"ƒ","ƕ",["ƙ","ƛ"],"ƞ","ơ","ƣ","ƥ","ƨ",["ƪ","ƫ"],"ƭ","ư","ƴ","ƶ",["ƹ","ƺ"],["ƽ","ƿ"],"ǆ","ǉ","ǌ","ǎ","ǐ","ǒ","ǔ","ǖ","ǘ","ǚ",["ǜ","ǝ"],"ǟ","ǡ","ǣ","ǥ","ǧ","ǩ","ǫ","ǭ",["ǯ","ǰ"],"ǳ","ǵ","ǹ","ǻ","ǽ","ǿ","ȁ","ȃ","ȅ","ȇ","ȉ","ȋ","ȍ","ȏ","ȑ","ȓ","ȕ","ȗ","ș","ț","ȝ","ȟ","ȡ","ȣ","ȥ","ȧ","ȩ","ȫ","ȭ","ȯ","ȱ",["ȳ","ȹ"],"ȼ",["ȿ","ɀ"],"ɂ","ɇ","ɉ","ɋ","ɍ",["ɏ","ʓ"],["ʕ","ʯ"],"ͱ","ͳ","ͷ",["ͻ","ͽ"],"ΐ",["ά","ώ"],["ϐ","ϑ"],["ϕ","ϗ"],"ϙ","ϛ","ϝ","ϟ","ϡ","ϣ","ϥ","ϧ","ϩ","ϫ","ϭ",["ϯ","ϳ"],"ϵ","ϸ",["ϻ","ϼ"],["а","џ"],"ѡ","ѣ","ѥ","ѧ","ѩ","ѫ","ѭ","ѯ","ѱ","ѳ","ѵ","ѷ","ѹ","ѻ","ѽ","ѿ","ҁ","ҋ","ҍ","ҏ","ґ","ғ","ҕ","җ","ҙ","қ","ҝ","ҟ","ҡ","ң","ҥ","ҧ","ҩ","ҫ","ҭ","ү","ұ","ҳ","ҵ","ҷ","ҹ","һ","ҽ","ҿ","ӂ","ӄ","ӆ","ӈ","ӊ","ӌ",["ӎ","ӏ"],"ӑ","ӓ","ӕ","ӗ","ә","ӛ","ӝ","ӟ","ӡ","ӣ","ӥ","ӧ","ө","ӫ","ӭ","ӯ","ӱ","ӳ","ӵ","ӷ","ӹ","ӻ","ӽ","ӿ","ԁ","ԃ","ԅ","ԇ","ԉ","ԋ","ԍ","ԏ","ԑ","ԓ","ԕ","ԗ","ԙ","ԛ","ԝ","ԟ","ԡ","ԣ","ԥ","ԧ","ԩ","ԫ","ԭ","ԯ",["ՠ","ֈ"],["ა","ჺ"],["ჽ","ჿ"],["ᏸ","ᏽ"],["ᲀ","ᲈ"],["ᴀ","ᴫ"],["ᵫ","ᵷ"],["ᵹ","ᶚ"],"ḁ","ḃ","ḅ","ḇ","ḉ","ḋ","ḍ","ḏ","ḑ","ḓ","ḕ","ḗ","ḙ","ḛ","ḝ","ḟ","ḡ","ḣ","ḥ","ḧ","ḩ","ḫ","ḭ","ḯ","ḱ","ḳ","ḵ","ḷ","ḹ","ḻ","ḽ","ḿ","ṁ","ṃ","ṅ","ṇ","ṉ","ṋ","ṍ","ṏ","ṑ","ṓ","ṕ","ṗ","ṙ","ṛ","ṝ","ṟ","ṡ","ṣ","ṥ","ṧ","ṩ","ṫ","ṭ","ṯ","ṱ","ṳ","ṵ","ṷ","ṹ","ṻ","ṽ","ṿ","ẁ","ẃ","ẅ","ẇ","ẉ","ẋ","ẍ","ẏ","ẑ","ẓ",["ẕ","ẝ"],"ẟ","ạ","ả","ấ","ầ","ẩ","ẫ","ậ","ắ","ằ","ẳ","ẵ","ặ","ẹ","ẻ","ẽ","ế","ề","ể","ễ","ệ","ỉ","ị","ọ","ỏ","ố","ồ","ổ","ỗ","ộ","ớ","ờ","ở","ỡ","ợ","ụ","ủ","ứ","ừ","ử","ữ","ự","ỳ","ỵ","ỷ","ỹ","ỻ","ỽ",["ỿ","ἇ"],["ἐ","ἕ"],["ἠ","ἧ"],["ἰ","ἷ"],["ὀ","ὅ"],["ὐ","ὗ"],["ὠ","ὧ"],["ὰ","ώ"],["ᾀ","ᾇ"],["ᾐ","ᾗ"],["ᾠ","ᾧ"],["ᾰ","ᾴ"],["ᾶ","ᾷ"],"ι",["ῂ","ῄ"],["ῆ","ῇ"],["ῐ","ΐ"],["ῖ","ῗ"],["ῠ","ῧ"],["ῲ","ῴ"],["ῶ","ῷ"],"ℊ",["ℎ","ℏ"],"ℓ","ℯ","ℴ","ℹ",["ℼ","ℽ"],["ⅆ","ⅉ"],"ⅎ","ↄ",["ⰰ","ⱞ"],"ⱡ",["ⱥ","ⱦ"],"ⱨ","ⱪ","ⱬ","ⱱ",["ⱳ","ⱴ"],["ⱶ","ⱻ"],"ⲁ","ⲃ","ⲅ","ⲇ","ⲉ","ⲋ","ⲍ","ⲏ","ⲑ","ⲓ","ⲕ","ⲗ","ⲙ","ⲛ","ⲝ","ⲟ","ⲡ","ⲣ","ⲥ","ⲧ","ⲩ","ⲫ","ⲭ","ⲯ","ⲱ","ⲳ","ⲵ","ⲷ","ⲹ","ⲻ","ⲽ","ⲿ","ⳁ","ⳃ","ⳅ","ⳇ","ⳉ","ⳋ","ⳍ","ⳏ","ⳑ","ⳓ","ⳕ","ⳗ","ⳙ","ⳛ","ⳝ","ⳟ","ⳡ",["ⳣ","ⳤ"],"ⳬ","ⳮ","ⳳ",["ⴀ","ⴥ"],"ⴧ","ⴭ","ꙁ","ꙃ","ꙅ","ꙇ","ꙉ","ꙋ","ꙍ","ꙏ","ꙑ","ꙓ","ꙕ","ꙗ","ꙙ","ꙛ","ꙝ","ꙟ","ꙡ","ꙣ","ꙥ","ꙧ","ꙩ","ꙫ","ꙭ","ꚁ","ꚃ","ꚅ","ꚇ","ꚉ","ꚋ","ꚍ","ꚏ","ꚑ","ꚓ","ꚕ","ꚗ","ꚙ","ꚛ","ꜣ","ꜥ","ꜧ","ꜩ","ꜫ","ꜭ",["ꜯ","ꜱ"],"ꜳ","ꜵ","ꜷ","ꜹ","ꜻ","ꜽ","ꜿ","ꝁ","ꝃ","ꝅ","ꝇ","ꝉ","ꝋ","ꝍ","ꝏ","ꝑ","ꝓ","ꝕ","ꝗ","ꝙ","ꝛ","ꝝ","ꝟ","ꝡ","ꝣ","ꝥ","ꝧ","ꝩ","ꝫ","ꝭ","ꝯ",["ꝱ","ꝸ"],"ꝺ","ꝼ","ꝿ","ꞁ","ꞃ","ꞅ","ꞇ","ꞌ","ꞎ","ꞑ",["ꞓ","ꞕ"],"ꞗ","ꞙ","ꞛ","ꞝ","ꞟ","ꞡ","ꞣ","ꞥ","ꞧ","ꞩ","ꞯ","ꞵ","ꞷ","ꞹ","ꟺ",["ꬰ","ꭚ"],["ꭠ","ꭥ"],["ꭰ","ꮿ"],["ﬀ","ﬆ"],["ﬓ","ﬗ"],["ａ","ｚ"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["ʰ","ˁ"],["ˆ","ˑ"],["ˠ","ˤ"],"ˬ","ˮ","ʹ","ͺ","ՙ","ـ",["ۥ","ۦ"],["ߴ","ߵ"],"ߺ","ࠚ","ࠤ","ࠨ","ॱ","ๆ","ໆ","ჼ","ៗ","ᡃ","ᪧ",["ᱸ","ᱽ"],["ᴬ","ᵪ"],"ᵸ",["ᶛ","ᶿ"],"ⁱ","ⁿ",["ₐ","ₜ"],["ⱼ","ⱽ"],"ⵯ","ⸯ","々",["〱","〵"],"〻",["ゝ","ゞ"],["ー","ヾ"],"ꀕ",["ꓸ","ꓽ"],"ꘌ","ꙿ",["ꚜ","ꚝ"],["ꜗ","ꜟ"],"ꝰ","ꞈ",["ꟸ","ꟹ"],"ꧏ","ꧦ","ꩰ","ꫝ",["ꫳ","ꫴ"],["ꭜ","ꭟ"],"ｰ",["ﾞ","ﾟ"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":["ª","º","ƻ",["ǀ","ǃ"],"ʔ",["א","ת"],["ׯ","ײ"],["ؠ","ؿ"],["ف","ي"],["ٮ","ٯ"],["ٱ","ۓ"],"ە",["ۮ","ۯ"],["ۺ","ۼ"],"ۿ","ܐ",["ܒ","ܯ"],["ݍ","ޥ"],"ޱ",["ߊ","ߪ"],["ࠀ","ࠕ"],["ࡀ","ࡘ"],["ࡠ","ࡪ"],["ࢠ","ࢴ"],["ࢶ","ࢽ"],["ऄ","ह"],"ऽ","ॐ",["क़","ॡ"],["ॲ","ঀ"],["অ","ঌ"],["এ","ঐ"],["ও","ন"],["প","র"],"ল",["শ","হ"],"ঽ","ৎ",["ড়","ঢ়"],["য়","ৡ"],["ৰ","ৱ"],"ৼ",["ਅ","ਊ"],["ਏ","ਐ"],["ਓ","ਨ"],["ਪ","ਰ"],["ਲ","ਲ਼"],["ਵ","ਸ਼"],["ਸ","ਹ"],["ਖ਼","ੜ"],"ਫ਼",["ੲ","ੴ"],["અ","ઍ"],["એ","ઑ"],["ઓ","ન"],["પ","ર"],["લ","ળ"],["વ","હ"],"ઽ","ૐ",["ૠ","ૡ"],"ૹ",["ଅ","ଌ"],["ଏ","ଐ"],["ଓ","ନ"],["ପ","ର"],["ଲ","ଳ"],["ଵ","ହ"],"ଽ",["ଡ଼","ଢ଼"],["ୟ","ୡ"],"ୱ","ஃ",["அ","ஊ"],["எ","ஐ"],["ஒ","க"],["ங","ச"],"ஜ",["ஞ","ட"],["ண","த"],["ந","ப"],["ம","ஹ"],"ௐ",["అ","ఌ"],["ఎ","ఐ"],["ఒ","న"],["ప","హ"],"ఽ",["ౘ","ౚ"],["ౠ","ౡ"],"ಀ",["ಅ","ಌ"],["ಎ","ಐ"],["ಒ","ನ"],["ಪ","ಳ"],["ವ","ಹ"],"ಽ","ೞ",["ೠ","ೡ"],["ೱ","ೲ"],["അ","ഌ"],["എ","ഐ"],["ഒ","ഺ"],"ഽ","ൎ",["ൔ","ൖ"],["ൟ","ൡ"],["ൺ","ൿ"],["අ","ඖ"],["ක","න"],["ඳ","ර"],"ල",["ව","ෆ"],["ก","ะ"],["า","ำ"],["เ","ๅ"],["ກ","ຂ"],"ຄ",["ງ","ຈ"],"ຊ","ຍ",["ດ","ທ"],["ນ","ຟ"],["ມ","ຣ"],"ລ","ວ",["ສ","ຫ"],["ອ","ະ"],["າ","ຳ"],"ຽ",["ເ","ໄ"],["ໜ","ໟ"],"ༀ",["ཀ","ཇ"],["ཉ","ཬ"],["ྈ","ྌ"],["က","ဪ"],"ဿ",["ၐ","ၕ"],["ၚ","ၝ"],"ၡ",["ၥ","ၦ"],["ၮ","ၰ"],["ၵ","ႁ"],"ႎ",["ᄀ","ቈ"],["ቊ","ቍ"],["ቐ","ቖ"],"ቘ",["ቚ","ቝ"],["በ","ኈ"],["ኊ","ኍ"],["ነ","ኰ"],["ኲ","ኵ"],["ኸ","ኾ"],"ዀ",["ዂ","ዅ"],["ወ","ዖ"],["ዘ","ጐ"],["ጒ","ጕ"],["ጘ","ፚ"],["ᎀ","ᎏ"],["ᐁ","ᙬ"],["ᙯ","ᙿ"],["ᚁ","ᚚ"],["ᚠ","ᛪ"],["ᛱ","ᛸ"],["ᜀ","ᜌ"],["ᜎ","ᜑ"],["ᜠ","ᜱ"],["ᝀ","ᝑ"],["ᝠ","ᝬ"],["ᝮ","ᝰ"],["ក","ឳ"],"ៜ",["ᠠ","ᡂ"],["ᡄ","ᡸ"],["ᢀ","ᢄ"],["ᢇ","ᢨ"],"ᢪ",["ᢰ","ᣵ"],["ᤀ","ᤞ"],["ᥐ","ᥭ"],["ᥰ","ᥴ"],["ᦀ","ᦫ"],["ᦰ","ᧉ"],["ᨀ","ᨖ"],["ᨠ","ᩔ"],["ᬅ","ᬳ"],["ᭅ","ᭋ"],["ᮃ","ᮠ"],["ᮮ","ᮯ"],["ᮺ","ᯥ"],["ᰀ","ᰣ"],["ᱍ","ᱏ"],["ᱚ","ᱷ"],["ᳩ","ᳬ"],["ᳮ","ᳱ"],["ᳵ","ᳶ"],["ℵ","ℸ"],["ⴰ","ⵧ"],["ⶀ","ⶖ"],["ⶠ","ⶦ"],["ⶨ","ⶮ"],["ⶰ","ⶶ"],["ⶸ","ⶾ"],["ⷀ","ⷆ"],["ⷈ","ⷎ"],["ⷐ","ⷖ"],["ⷘ","ⷞ"],"〆","〼",["ぁ","ゖ"],"ゟ",["ァ","ヺ"],"ヿ",["ㄅ","ㄯ"],["ㄱ","ㆎ"],["ㆠ","ㆺ"],["ㇰ","ㇿ"],["㐀","䶵"],["一","鿯"],["ꀀ","ꀔ"],["ꀖ","ꒌ"],["ꓐ","ꓷ"],["ꔀ","ꘋ"],["ꘐ","ꘟ"],["ꘪ","ꘫ"],"ꙮ",["ꚠ","ꛥ"],"ꞏ","ꟷ",["ꟻ","ꠁ"],["ꠃ","ꠅ"],["ꠇ","ꠊ"],["ꠌ","ꠢ"],["ꡀ","ꡳ"],["ꢂ","ꢳ"],["ꣲ","ꣷ"],"ꣻ",["ꣽ","ꣾ"],["ꤊ","ꤥ"],["ꤰ","ꥆ"],["ꥠ","ꥼ"],["ꦄ","ꦲ"],["ꧠ","ꧤ"],["ꧧ","ꧯ"],["ꧺ","ꧾ"],["ꨀ","ꨨ"],["ꩀ","ꩂ"],["ꩄ","ꩋ"],["ꩠ","ꩯ"],["ꩱ","ꩶ"],"ꩺ",["ꩾ","ꪯ"],"ꪱ",["ꪵ","ꪶ"],["ꪹ","ꪽ"],"ꫀ","ꫂ",["ꫛ","ꫜ"],["ꫠ","ꫪ"],"ꫲ",["ꬁ","ꬆ"],["ꬉ","ꬎ"],["ꬑ","ꬖ"],["ꬠ","ꬦ"],["ꬨ","ꬮ"],["ꯀ","ꯢ"],["가","힣"],["ힰ","ퟆ"],["ퟋ","ퟻ"],["豈","舘"],["並","龎"],"יִ",["ײַ","ﬨ"],["שׁ","זּ"],["טּ","לּ"],"מּ",["נּ","סּ"],["ףּ","פּ"],["צּ","ﮱ"],["ﯓ","ﴽ"],["ﵐ","ﶏ"],["ﶒ","ﷇ"],["ﷰ","ﷻ"],["ﹰ","ﹴ"],["ﹶ","ﻼ"],["ｦ","ｯ"],["ｱ","ﾝ"],["ﾠ","ﾾ"],["ￂ","ￇ"],["ￊ","ￏ"],["ￒ","ￗ"],["ￚ","ￜ"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":["ǅ","ǈ","ǋ","ǲ",["ᾈ","ᾏ"],["ᾘ","ᾟ"],["ᾨ","ᾯ"],"ᾼ","ῌ","ῼ"],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["A","Z"],["À","Ö"],["Ø","Þ"],"Ā","Ă","Ą","Ć","Ĉ","Ċ","Č","Ď","Đ","Ē","Ĕ","Ė","Ę","Ě","Ĝ","Ğ","Ġ","Ģ","Ĥ","Ħ","Ĩ","Ī","Ĭ","Į","İ","Ĳ","Ĵ","Ķ","Ĺ","Ļ","Ľ","Ŀ","Ł","Ń","Ņ","Ň","Ŋ","Ō","Ŏ","Ő","Œ","Ŕ","Ŗ","Ř","Ś","Ŝ","Ş","Š","Ţ","Ť","Ŧ","Ũ","Ū","Ŭ","Ů","Ű","Ų","Ŵ","Ŷ",["Ÿ","Ź"],"Ż","Ž",["Ɓ","Ƃ"],"Ƅ",["Ɔ","Ƈ"],["Ɖ","Ƌ"],["Ǝ","Ƒ"],["Ɠ","Ɣ"],["Ɩ","Ƙ"],["Ɯ","Ɲ"],["Ɵ","Ơ"],"Ƣ","Ƥ",["Ʀ","Ƨ"],"Ʃ","Ƭ",["Ʈ","Ư"],["Ʊ","Ƴ"],"Ƶ",["Ʒ","Ƹ"],"Ƽ","Ǆ","Ǉ","Ǌ","Ǎ","Ǐ","Ǒ","Ǔ","Ǖ","Ǘ","Ǚ","Ǜ","Ǟ","Ǡ","Ǣ","Ǥ","Ǧ","Ǩ","Ǫ","Ǭ","Ǯ","Ǳ","Ǵ",["Ƕ","Ǹ"],"Ǻ","Ǽ","Ǿ","Ȁ","Ȃ","Ȅ","Ȇ","Ȉ","Ȋ","Ȍ","Ȏ","Ȑ","Ȓ","Ȕ","Ȗ","Ș","Ț","Ȝ","Ȟ","Ƞ","Ȣ","Ȥ","Ȧ","Ȩ","Ȫ","Ȭ","Ȯ","Ȱ","Ȳ",["Ⱥ","Ȼ"],["Ƚ","Ⱦ"],"Ɂ",["Ƀ","Ɇ"],"Ɉ","Ɋ","Ɍ","Ɏ","Ͱ","Ͳ","Ͷ","Ϳ","Ά",["Έ","Ί"],"Ό",["Ύ","Ώ"],["Α","Ρ"],["Σ","Ϋ"],"Ϗ",["ϒ","ϔ"],"Ϙ","Ϛ","Ϝ","Ϟ","Ϡ","Ϣ","Ϥ","Ϧ","Ϩ","Ϫ","Ϭ","Ϯ","ϴ","Ϸ",["Ϲ","Ϻ"],["Ͻ","Я"],"Ѡ","Ѣ","Ѥ","Ѧ","Ѩ","Ѫ","Ѭ","Ѯ","Ѱ","Ѳ","Ѵ","Ѷ","Ѹ","Ѻ","Ѽ","Ѿ","Ҁ","Ҋ","Ҍ","Ҏ","Ґ","Ғ","Ҕ","Җ","Ҙ","Қ","Ҝ","Ҟ","Ҡ","Ң","Ҥ","Ҧ","Ҩ","Ҫ","Ҭ","Ү","Ұ","Ҳ","Ҵ","Ҷ","Ҹ","Һ","Ҽ","Ҿ",["Ӏ","Ӂ"],"Ӄ","Ӆ","Ӈ","Ӊ","Ӌ","Ӎ","Ӑ","Ӓ","Ӕ","Ӗ","Ә","Ӛ","Ӝ","Ӟ","Ӡ","Ӣ","Ӥ","Ӧ","Ө","Ӫ","Ӭ","Ӯ","Ӱ","Ӳ","Ӵ","Ӷ","Ӹ","Ӻ","Ӽ","Ӿ","Ԁ","Ԃ","Ԅ","Ԇ","Ԉ","Ԋ","Ԍ","Ԏ","Ԑ","Ԓ","Ԕ","Ԗ","Ԙ","Ԛ","Ԝ","Ԟ","Ԡ","Ԣ","Ԥ","Ԧ","Ԩ","Ԫ","Ԭ","Ԯ",["Ա","Ֆ"],["Ⴀ","Ⴥ"],"Ⴧ","Ⴭ",["Ꭰ","Ᏽ"],["Ა","Ჺ"],["Ჽ","Ჿ"],"Ḁ","Ḃ","Ḅ","Ḇ","Ḉ","Ḋ","Ḍ","Ḏ","Ḑ","Ḓ","Ḕ","Ḗ","Ḙ","Ḛ","Ḝ","Ḟ","Ḡ","Ḣ","Ḥ","Ḧ","Ḩ","Ḫ","Ḭ","Ḯ","Ḱ","Ḳ","Ḵ","Ḷ","Ḹ","Ḻ","Ḽ","Ḿ","Ṁ","Ṃ","Ṅ","Ṇ","Ṉ","Ṋ","Ṍ","Ṏ","Ṑ","Ṓ","Ṕ","Ṗ","Ṙ","Ṛ","Ṝ","Ṟ","Ṡ","Ṣ","Ṥ","Ṧ","Ṩ","Ṫ","Ṭ","Ṯ","Ṱ","Ṳ","Ṵ","Ṷ","Ṹ","Ṻ","Ṽ","Ṿ","Ẁ","Ẃ","Ẅ","Ẇ","Ẉ","Ẋ","Ẍ","Ẏ","Ẑ","Ẓ","Ẕ","ẞ","Ạ","Ả","Ấ","Ầ","Ẩ","Ẫ","Ậ","Ắ","Ằ","Ẳ","Ẵ","Ặ","Ẹ","Ẻ","Ẽ","Ế","Ề","Ể","Ễ","Ệ","Ỉ","Ị","Ọ","Ỏ","Ố","Ồ","Ổ","Ỗ","Ộ","Ớ","Ờ","Ở","Ỡ","Ợ","Ụ","Ủ","Ứ","Ừ","Ử","Ữ","Ự","Ỳ","Ỵ","Ỷ","Ỹ","Ỻ","Ỽ","Ỿ",["Ἀ","Ἇ"],["Ἐ","Ἕ"],["Ἠ","Ἧ"],["Ἰ","Ἷ"],["Ὀ","Ὅ"],"Ὑ","Ὓ","Ὕ","Ὗ",["Ὠ","Ὧ"],["Ᾰ","Ά"],["Ὲ","Ή"],["Ῐ","Ί"],["Ῠ","Ῥ"],["Ὸ","Ώ"],"ℂ","ℇ",["ℋ","ℍ"],["ℐ","ℒ"],"ℕ",["ℙ","ℝ"],"ℤ","Ω","ℨ",["K","ℭ"],["ℰ","ℳ"],["ℾ","ℿ"],"ⅅ","Ↄ",["Ⰰ","Ⱞ"],"Ⱡ",["Ɫ","Ɽ"],"Ⱨ","Ⱪ","Ⱬ",["Ɑ","Ɒ"],"Ⱳ","Ⱶ",["Ȿ","Ⲁ"],"Ⲃ","Ⲅ","Ⲇ","Ⲉ","Ⲋ","Ⲍ","Ⲏ","Ⲑ","Ⲓ","Ⲕ","Ⲗ","Ⲙ","Ⲛ","Ⲝ","Ⲟ","Ⲡ","Ⲣ","Ⲥ","Ⲧ","Ⲩ","Ⲫ","Ⲭ","Ⲯ","Ⲱ","Ⲳ","Ⲵ","Ⲷ","Ⲹ","Ⲻ","Ⲽ","Ⲿ","Ⳁ","Ⳃ","Ⳅ","Ⳇ","Ⳉ","Ⳋ","Ⳍ","Ⳏ","Ⳑ","Ⳓ","Ⳕ","Ⳗ","Ⳙ","Ⳛ","Ⳝ","Ⳟ","Ⳡ","Ⳣ","Ⳬ","Ⳮ","Ⳳ","Ꙁ","Ꙃ","Ꙅ","Ꙇ","Ꙉ","Ꙋ","Ꙍ","Ꙏ","Ꙑ","Ꙓ","Ꙕ","Ꙗ","Ꙙ","Ꙛ","Ꙝ","Ꙟ","Ꙡ","Ꙣ","Ꙥ","Ꙧ","Ꙩ","Ꙫ","Ꙭ","Ꚁ","Ꚃ","Ꚅ","Ꚇ","Ꚉ","Ꚋ","Ꚍ","Ꚏ","Ꚑ","Ꚓ","Ꚕ","Ꚗ","Ꚙ","Ꚛ","Ꜣ","Ꜥ","Ꜧ","Ꜩ","Ꜫ","Ꜭ","Ꜯ","Ꜳ","Ꜵ","Ꜷ","Ꜹ","Ꜻ","Ꜽ","Ꜿ","Ꝁ","Ꝃ","Ꝅ","Ꝇ","Ꝉ","Ꝋ","Ꝍ","Ꝏ","Ꝑ","Ꝓ","Ꝕ","Ꝗ","Ꝙ","Ꝛ","Ꝝ","Ꝟ","Ꝡ","Ꝣ","Ꝥ","Ꝧ","Ꝩ","Ꝫ","Ꝭ","Ꝯ","Ꝺ","Ꝼ",["Ᵹ","Ꝿ"],"Ꞁ","Ꞃ","Ꞅ","Ꞇ","Ꞌ","Ɥ","Ꞑ","Ꞓ","Ꞗ","Ꞙ","Ꞛ","Ꞝ","Ꞟ","Ꞡ","Ꞣ","Ꞥ","Ꞧ","Ꞩ",["Ɦ","Ɪ"],["Ʞ","Ꞵ"],"Ꞷ","Ꞹ",["Ａ","Ｚ"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":["ः","ऻ",["ा","ी"],["ॉ","ौ"],["ॎ","ॏ"],["ং","ঃ"],["া","ী"],["ে","ৈ"],["ো","ৌ"],"ৗ","ਃ",["ਾ","ੀ"],"ઃ",["ા","ી"],"ૉ",["ો","ૌ"],["ଂ","ଃ"],"ା","ୀ",["େ","ୈ"],["ୋ","ୌ"],"ୗ",["ா","ி"],["ு","ூ"],["ெ","ை"],["ொ","ௌ"],"ௗ",["ఁ","ః"],["ు","ౄ"],["ಂ","ಃ"],"ಾ",["ೀ","ೄ"],["ೇ","ೈ"],["ೊ","ೋ"],["ೕ","ೖ"],["ം","ഃ"],["ാ","ീ"],["െ","ൈ"],["ൊ","ൌ"],"ൗ",["ං","ඃ"],["ා","ෑ"],["ෘ","ෟ"],["ෲ","ෳ"],["༾","༿"],"ཿ",["ါ","ာ"],"ေ","း",["ျ","ြ"],["ၖ","ၗ"],["ၢ","ၤ"],["ၧ","ၭ"],["ႃ","ႄ"],["ႇ","ႌ"],"ႏ",["ႚ","ႜ"],"ា",["ើ","ៅ"],["ះ","ៈ"],["ᤣ","ᤦ"],["ᤩ","ᤫ"],["ᤰ","ᤱ"],["ᤳ","ᤸ"],["ᨙ","ᨚ"],"ᩕ","ᩗ","ᩡ",["ᩣ","ᩤ"],["ᩭ","ᩲ"],"ᬄ","ᬵ","ᬻ",["ᬽ","ᭁ"],["ᭃ","᭄"],"ᮂ","ᮡ",["ᮦ","ᮧ"],"᮪","ᯧ",["ᯪ","ᯬ"],"ᯮ",["᯲","᯳"],["ᰤ","ᰫ"],["ᰴ","ᰵ"],"᳡",["ᳲ","ᳳ"],"᳷",["〮","〯"],["ꠣ","ꠤ"],"ꠧ",["ꢀ","ꢁ"],["ꢴ","ꣃ"],["ꥒ","꥓"],"ꦃ",["ꦴ","ꦵ"],["ꦺ","ꦻ"],["ꦽ","꧀"],["ꨯ","ꨰ"],["ꨳ","ꨴ"],"ꩍ","ꩻ","ꩽ","ꫫ",["ꫮ","ꫯ"],"ꫵ",["ꯣ","ꯤ"],["ꯦ","ꯧ"],["ꯩ","ꯪ"],"꯬"],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["̀","ͯ"],["҃","҇"],["֑","ֽ"],"ֿ",["ׁ","ׂ"],["ׄ","ׅ"],"ׇ",["ؐ","ؚ"],["ً","ٟ"],"ٰ",["ۖ","ۜ"],["۟","ۤ"],["ۧ","ۨ"],["۪","ۭ"],"ܑ",["ܰ","݊"],["ަ","ް"],["߫","߳"],"߽",["ࠖ","࠙"],["ࠛ","ࠣ"],["ࠥ","ࠧ"],["ࠩ","࠭"],["࡙","࡛"],["࣓","࣡"],["ࣣ","ं"],"ऺ","़",["ु","ै"],"्",["॑","ॗ"],["ॢ","ॣ"],"ঁ","়",["ু","ৄ"],"্",["ৢ","ৣ"],"৾",["ਁ","ਂ"],"਼",["ੁ","ੂ"],["ੇ","ੈ"],["ੋ","੍"],"ੑ",["ੰ","ੱ"],"ੵ",["ઁ","ં"],"઼",["ુ","ૅ"],["ે","ૈ"],"્",["ૢ","ૣ"],["ૺ","૿"],"ଁ","଼","ି",["ୁ","ୄ"],"୍","ୖ",["ୢ","ୣ"],"ஂ","ீ","்","ఀ","ఄ",["ా","ీ"],["ె","ై"],["ొ","్"],["ౕ","ౖ"],["ౢ","ౣ"],"ಁ","಼","ಿ","ೆ",["ೌ","್"],["ೢ","ೣ"],["ഀ","ഁ"],["഻","഼"],["ു","ൄ"],"്",["ൢ","ൣ"],"්",["ි","ු"],"ූ","ั",["ิ","ฺ"],["็","๎"],"ັ",["ິ","ູ"],["ົ","ຼ"],["່","ໍ"],["༘","༙"],"༵","༷","༹",["ཱ","ཾ"],["ྀ","྄"],["྆","྇"],["ྍ","ྗ"],["ྙ","ྼ"],"࿆",["ိ","ူ"],["ဲ","့"],["္","်"],["ွ","ှ"],["ၘ","ၙ"],["ၞ","ၠ"],["ၱ","ၴ"],"ႂ",["ႅ","ႆ"],"ႍ","ႝ",["፝","፟"],["ᜒ","᜔"],["ᜲ","᜴"],["ᝒ","ᝓ"],["ᝲ","ᝳ"],["឴","឵"],["ិ","ួ"],"ំ",["៉","៓"],"៝",["᠋","᠍"],["ᢅ","ᢆ"],"ᢩ",["ᤠ","ᤢ"],["ᤧ","ᤨ"],"ᤲ",["᤹","᤻"],["ᨗ","ᨘ"],"ᨛ","ᩖ",["ᩘ","ᩞ"],"᩠","ᩢ",["ᩥ","ᩬ"],["ᩳ","᩼"],"᩿",["᪰","᪽"],["ᬀ","ᬃ"],"᬴",["ᬶ","ᬺ"],"ᬼ","ᭂ",["᭫","᭳"],["ᮀ","ᮁ"],["ᮢ","ᮥ"],["ᮨ","ᮩ"],["᮫","ᮭ"],"᯦",["ᯨ","ᯩ"],"ᯭ",["ᯯ","ᯱ"],["ᰬ","ᰳ"],["ᰶ","᰷"],["᳐","᳒"],["᳔","᳠"],["᳢","᳨"],"᳭","᳴",["᳸","᳹"],["᷀","᷹"],["᷻","᷿"],["⃐","⃜"],"⃡",["⃥","⃰"],["⳯","⳱"],"⵿",["ⷠ","ⷿ"],["〪","〭"],["゙","゚"],"꙯",["ꙴ","꙽"],["ꚞ","ꚟ"],["꛰","꛱"],"ꠂ","꠆","ꠋ",["ꠥ","ꠦ"],["꣄","ꣅ"],["꣠","꣱"],"ꣿ",["ꤦ","꤭"],["ꥇ","ꥑ"],["ꦀ","ꦂ"],"꦳",["ꦶ","ꦹ"],"ꦼ","ꧥ",["ꨩ","ꨮ"],["ꨱ","ꨲ"],["ꨵ","ꨶ"],"ꩃ","ꩌ","ꩼ","ꪰ",["ꪲ","ꪴ"],["ꪷ","ꪸ"],["ꪾ","꪿"],"꫁",["ꫬ","ꫭ"],"꫶","ꯥ","ꯨ","꯭","ﬞ",["︀","️"],["︠","︯"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["0","9"],["٠","٩"],["۰","۹"],["߀","߉"],["०","९"],["০","৯"],["੦","੯"],["૦","૯"],["୦","୯"],["௦","௯"],["౦","౯"],["೦","೯"],["൦","൯"],["෦","෯"],["๐","๙"],["໐","໙"],["༠","༩"],["၀","၉"],["႐","႙"],["០","៩"],["᠐","᠙"],["᥆","᥏"],["᧐","᧙"],["᪀","᪉"],["᪐","᪙"],["᭐","᭙"],["᮰","᮹"],["᱀","᱉"],["᱐","᱙"],["꘠","꘩"],["꣐","꣙"],["꤀","꤉"],["꧐","꧙"],["꧰","꧹"],["꩐","꩙"],["꯰","꯹"],["０","９"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":[["ᛮ","ᛰ"],["Ⅰ","ↂ"],["ↅ","ↈ"],"〇",["〡","〩"],["〸","〺"],["ꛦ","ꛯ"]],"inverted":false,"ignoreCase":false},
+  #|  {"value":["_",["‿","⁀"],"⁔",["︳","︴"],["﹍","﹏"],"＿"],"inverted":false,"ignoreCase":false},
+  #|  {"value":[" "," "," ",[" "," "]," "," ","　"],"inverted":false,"ignoreCase":false},
+  #|  {"value":["+","="],"inverted":false,"ignoreCase":false},
+  #|  {"value":["-","="],"inverted":false,"ignoreCase":false},
+  #|  {"value":["&","="],"inverted":false,"ignoreCase":false},
+  #|  {"value":["|","="],"inverted":false,"ignoreCase":false}
+  #|],
+  #|"expectations": [
+  #|  {"type":"any"},
+  #|  {"type":"rule","value":"whitespace"},
+  #|  {"type":"class","value":["\n","\r"," "," "],"inverted":false,"ignoreCase":false},
+  #|  {"type":"rule","value":"end of line"},
+  #|  {"type":"rule","value":"comment"},
+  #|  {"type":"literal","value":"/*","ignoreCase":false},
+  #|  {"type":"literal","value":"*/","ignoreCase":false},
+  #|  {"type":"literal","value":"//","ignoreCase":false},
+  #|  {"type":"rule","value":"identifier"},
+  #|  {"type":"literal","value":"$","ignoreCase":false},
+  #|  {"type":"literal","value":"_","ignoreCase":false},
+  #|  {"type":"literal","value":"\\","ignoreCase":false},
+  #|  {"type":"literal","value":"‌","ignoreCase":false},
+  #|  {"type":"literal","value":"‍","ignoreCase":false},
+  #|  {"type":"rule","value":"number"},
+  #|  {"type":"class","value":[["0","9"],["a","f"]],"inverted":false,"ignoreCase":true},
+  #|  {"type":"rule","value":"string"},
+  #|  {"type":"literal","value":"u","ignoreCase":false},
+  #|  {"type":"rule","value":"regular expression"},
+  #|  {"type":"class","value":[["a","z"],"µ",["ß","ö"],["ø","ÿ"],"ā","ă","ą","ć","ĉ","ċ","č","ď","đ","ē","ĕ","ė","ę","ě","ĝ","ğ","ġ","ģ","ĥ","ħ","ĩ","ī","ĭ","į","ı","ĳ","ĵ",["ķ","ĸ"],"ĺ","ļ","ľ","ŀ","ł","ń","ņ",["ň","ŉ"],"ŋ","ō","ŏ","ő","œ","ŕ","ŗ","ř","ś","ŝ","ş","š","ţ","ť","ŧ","ũ","ū","ŭ","ů","ű","ų","ŵ","ŷ","ź","ż",["ž","ƀ"],"ƃ","ƅ","ƈ",["ƌ","ƍ"],"ƒ","ƕ",["ƙ","ƛ"],"ƞ","ơ","ƣ","ƥ","ƨ",["ƪ","ƫ"],"ƭ","ư","ƴ","ƶ",["ƹ","ƺ"],["ƽ","ƿ"],"ǆ","ǉ","ǌ","ǎ","ǐ","ǒ","ǔ","ǖ","ǘ","ǚ",["ǜ","ǝ"],"ǟ","ǡ","ǣ","ǥ","ǧ","ǩ","ǫ","ǭ",["ǯ","ǰ"],"ǳ","ǵ","ǹ","ǻ","ǽ","ǿ","ȁ","ȃ","ȅ","ȇ","ȉ","ȋ","ȍ","ȏ","ȑ","ȓ","ȕ","ȗ","ș","ț","ȝ","ȟ","ȡ","ȣ","ȥ","ȧ","ȩ","ȫ","ȭ","ȯ","ȱ",["ȳ","ȹ"],"ȼ",["ȿ","ɀ"],"ɂ","ɇ","ɉ","ɋ","ɍ",["ɏ","ʓ"],["ʕ","ʯ"],"ͱ","ͳ","ͷ",["ͻ","ͽ"],"ΐ",["ά","ώ"],["ϐ","ϑ"],["ϕ","ϗ"],"ϙ","ϛ","ϝ","ϟ","ϡ","ϣ","ϥ","ϧ","ϩ","ϫ","ϭ",["ϯ","ϳ"],"ϵ","ϸ",["ϻ","ϼ"],["а","џ"],"ѡ","ѣ","ѥ","ѧ","ѩ","ѫ","ѭ","ѯ","ѱ","ѳ","ѵ","ѷ","ѹ","ѻ","ѽ","ѿ","ҁ","ҋ","ҍ","ҏ","ґ","ғ","ҕ","җ","ҙ","қ","ҝ","ҟ","ҡ","ң","ҥ","ҧ","ҩ","ҫ","ҭ","ү","ұ","ҳ","ҵ","ҷ","ҹ","һ","ҽ","ҿ","ӂ","ӄ","ӆ","ӈ","ӊ","ӌ",["ӎ","ӏ"],"ӑ","ӓ","ӕ","ӗ","ә","ӛ","ӝ","ӟ","ӡ","ӣ","ӥ","ӧ","ө","ӫ","ӭ","ӯ","ӱ","ӳ","ӵ","ӷ","ӹ","ӻ","ӽ","ӿ","ԁ","ԃ","ԅ","ԇ","ԉ","ԋ","ԍ","ԏ","ԑ","ԓ","ԕ","ԗ","ԙ","ԛ","ԝ","ԟ","ԡ","ԣ","ԥ","ԧ","ԩ","ԫ","ԭ","ԯ",["ՠ","ֈ"],["ა","ჺ"],["ჽ","ჿ"],["ᏸ","ᏽ"],["ᲀ","ᲈ"],["ᴀ","ᴫ"],["ᵫ","ᵷ"],["ᵹ","ᶚ"],"ḁ","ḃ","ḅ","ḇ","ḉ","ḋ","ḍ","ḏ","ḑ","ḓ","ḕ","ḗ","ḙ","ḛ","ḝ","ḟ","ḡ","ḣ","ḥ","ḧ","ḩ","ḫ","ḭ","ḯ","ḱ","ḳ","ḵ","ḷ","ḹ","ḻ","ḽ","ḿ","ṁ","ṃ","ṅ","ṇ","ṉ","ṋ","ṍ","ṏ","ṑ","ṓ","ṕ","ṗ","ṙ","ṛ","ṝ","ṟ","ṡ","ṣ","ṥ","ṧ","ṩ","ṫ","ṭ","ṯ","ṱ","ṳ","ṵ","ṷ","ṹ","ṻ","ṽ","ṿ","ẁ","ẃ","ẅ","ẇ","ẉ","ẋ","ẍ","ẏ","ẑ","ẓ",["ẕ","ẝ"],"ẟ","ạ","ả","ấ","ầ","ẩ","ẫ","ậ","ắ","ằ","ẳ","ẵ","ặ","ẹ","ẻ","ẽ","ế","ề","ể","ễ","ệ","ỉ","ị","ọ","ỏ","ố","ồ","ổ","ỗ","ộ","ớ","ờ","ở","ỡ","ợ","ụ","ủ","ứ","ừ","ử","ữ","ự","ỳ","ỵ","ỷ","ỹ","ỻ","ỽ",["ỿ","ἇ"],["ἐ","ἕ"],["ἠ","ἧ"],["ἰ","ἷ"],["ὀ","ὅ"],["ὐ","ὗ"],["ὠ","ὧ"],["ὰ","ώ"],["ᾀ","ᾇ"],["ᾐ","ᾗ"],["ᾠ","ᾧ"],["ᾰ","ᾴ"],["ᾶ","ᾷ"],"ι",["ῂ","ῄ"],["ῆ","ῇ"],["ῐ","ΐ"],["ῖ","ῗ"],["ῠ","ῧ"],["ῲ","ῴ"],["ῶ","ῷ"],"ℊ",["ℎ","ℏ"],"ℓ","ℯ","ℴ","ℹ",["ℼ","ℽ"],["ⅆ","ⅉ"],"ⅎ","ↄ",["ⰰ","ⱞ"],"ⱡ",["ⱥ","ⱦ"],"ⱨ","ⱪ","ⱬ","ⱱ",["ⱳ","ⱴ"],["ⱶ","ⱻ"],"ⲁ","ⲃ","ⲅ","ⲇ","ⲉ","ⲋ","ⲍ","ⲏ","ⲑ","ⲓ","ⲕ","ⲗ","ⲙ","ⲛ","ⲝ","ⲟ","ⲡ","ⲣ","ⲥ","ⲧ","ⲩ","ⲫ","ⲭ","ⲯ","ⲱ","ⲳ","ⲵ","ⲷ","ⲹ","ⲻ","ⲽ","ⲿ","ⳁ","ⳃ","ⳅ","ⳇ","ⳉ","ⳋ","ⳍ","ⳏ","ⳑ","ⳓ","ⳕ","ⳗ","ⳙ","ⳛ","ⳝ","ⳟ","ⳡ",["ⳣ","ⳤ"],"ⳬ","ⳮ","ⳳ",["ⴀ","ⴥ"],"ⴧ","ⴭ","ꙁ","ꙃ","ꙅ","ꙇ","ꙉ","ꙋ","ꙍ","ꙏ","ꙑ","ꙓ","ꙕ","ꙗ","ꙙ","ꙛ","ꙝ","ꙟ","ꙡ","ꙣ","ꙥ","ꙧ","ꙩ","ꙫ","ꙭ","ꚁ","ꚃ","ꚅ","ꚇ","ꚉ","ꚋ","ꚍ","ꚏ","ꚑ","ꚓ","ꚕ","ꚗ","ꚙ","ꚛ","ꜣ","ꜥ","ꜧ","ꜩ","ꜫ","ꜭ",["ꜯ","ꜱ"],"ꜳ","ꜵ","ꜷ","ꜹ","ꜻ","ꜽ","ꜿ","ꝁ","ꝃ","ꝅ","ꝇ","ꝉ","ꝋ","ꝍ","ꝏ","ꝑ","ꝓ","ꝕ","ꝗ","ꝙ","ꝛ","ꝝ","ꝟ","ꝡ","ꝣ","ꝥ","ꝧ","ꝩ","ꝫ","ꝭ","ꝯ",["ꝱ","ꝸ"],"ꝺ","ꝼ","ꝿ","ꞁ","ꞃ","ꞅ","ꞇ","ꞌ","ꞎ","ꞑ",["ꞓ","ꞕ"],"ꞗ","ꞙ","ꞛ","ꞝ","ꞟ","ꞡ","ꞣ","ꞥ","ꞧ","ꞩ","ꞯ","ꞵ","ꞷ","ꞹ","ꟺ",["ꬰ","ꭚ"],["ꭠ","ꭥ"],["ꭰ","ꮿ"],["ﬀ","ﬆ"],["ﬓ","ﬗ"],["ａ","ｚ"]],"inverted":false,"ignoreCase":false},
+  #|  {"type":"class","value":[["ʰ","ˁ"],["ˆ","ˑ"],["ˠ","ˤ"],"ˬ","ˮ","ʹ","ͺ","ՙ","ـ",["ۥ","ۦ"],["ߴ","ߵ"],"ߺ","ࠚ","ࠤ","ࠨ","ॱ","ๆ","ໆ","ჼ","ៗ","ᡃ","ᪧ",["ᱸ","ᱽ"],["ᴬ","ᵪ"],"ᵸ",["ᶛ","ᶿ"],"ⁱ","ⁿ",["ₐ","ₜ"],["ⱼ","ⱽ"],"ⵯ","ⸯ","々",["〱","〵"],"〻",["ゝ","ゞ"],["ー","ヾ"],"ꀕ",["ꓸ","ꓽ"],"ꘌ","ꙿ",["ꚜ","ꚝ"],["ꜗ","ꜟ"],"ꝰ","ꞈ",["ꟸ","ꟹ"],"ꧏ","ꧦ","ꩰ","ꫝ",["ꫳ","ꫴ"],["ꭜ","ꭟ"],"ｰ",["ﾞ","ﾟ"]],"inverted":false,"ignoreCase":false},
+  #|  {"type":"class","value":["ª","º","ƻ",["ǀ","ǃ"],"ʔ",["א","ת"],["ׯ","ײ"],["ؠ","ؿ"],["ف","ي"],["ٮ","ٯ"],["ٱ","ۓ"],"ە",["ۮ","ۯ"],["ۺ","ۼ"],"ۿ","ܐ",["ܒ","ܯ"],["ݍ","ޥ"],"ޱ",["ߊ","ߪ"],["ࠀ","ࠕ"],["ࡀ","ࡘ"],["ࡠ","ࡪ"],["ࢠ","ࢴ"],["ࢶ","ࢽ"],["ऄ","ह"],"ऽ","ॐ",["क़","ॡ"],["ॲ","ঀ"],["অ","ঌ"],["এ","ঐ"],["ও","ন"],["প","র"],"ল",["শ","হ"],"ঽ","ৎ",["ড়","ঢ়"],["য়","ৡ"],["ৰ","ৱ"],"ৼ",["ਅ","ਊ"],["ਏ","ਐ"],["ਓ","ਨ"],["ਪ","ਰ"],["ਲ","ਲ਼"],["ਵ","ਸ਼"],["ਸ","ਹ"],["ਖ਼","ੜ"],"ਫ਼",["ੲ","ੴ"],["અ","ઍ"],["એ","ઑ"],["ઓ","ન"],["પ","ર"],["લ","ળ"],["વ","હ"],"ઽ","ૐ",["ૠ","ૡ"],"ૹ",["ଅ","ଌ"],["ଏ","ଐ"],["ଓ","ନ"],["ପ","ର"],["ଲ","ଳ"],["ଵ","ହ"],"ଽ",["ଡ଼","ଢ଼"],["ୟ","ୡ"],"ୱ","ஃ",["அ","ஊ"],["எ","ஐ"],["ஒ","க"],["ங","ச"],"ஜ",["ஞ","ட"],["ண","த"],["ந","ப"],["ம","ஹ"],"ௐ",["అ","ఌ"],["ఎ","ఐ"],["ఒ","న"],["ప","హ"],"ఽ",["ౘ","ౚ"],["ౠ","ౡ"],"ಀ",["ಅ","ಌ"],["ಎ","ಐ"],["ಒ","ನ"],["ಪ","ಳ"],["ವ","ಹ"],"ಽ","ೞ",["ೠ","ೡ"],["ೱ","ೲ"],["അ","ഌ"],["എ","ഐ"],["ഒ","ഺ"],"ഽ","ൎ",["ൔ","ൖ"],["ൟ","ൡ"],["ൺ","ൿ"],["අ","ඖ"],["ක","න"],["ඳ","ර"],"ල",["ව","ෆ"],["ก","ะ"],["า","ำ"],["เ","ๅ"],["ກ","ຂ"],"ຄ",["ງ","ຈ"],"ຊ","ຍ",["ດ","ທ"],["ນ","ຟ"],["ມ","ຣ"],"ລ","ວ",["ສ","ຫ"],["ອ","ະ"],["າ","ຳ"],"ຽ",["ເ","ໄ"],["ໜ","ໟ"],"ༀ",["ཀ","ཇ"],["ཉ","ཬ"],["ྈ","ྌ"],["က","ဪ"],"ဿ",["ၐ","ၕ"],["ၚ","ၝ"],"ၡ",["ၥ","ၦ"],["ၮ","ၰ"],["ၵ","ႁ"],"ႎ",["ᄀ","ቈ"],["ቊ","ቍ"],["ቐ","ቖ"],"ቘ",["ቚ","ቝ"],["በ","ኈ"],["ኊ","ኍ"],["ነ","ኰ"],["ኲ","ኵ"],["ኸ","ኾ"],"ዀ",["ዂ","ዅ"],["ወ","ዖ"],["ዘ","ጐ"],["ጒ","ጕ"],["ጘ","ፚ"],["ᎀ","ᎏ"],["ᐁ","ᙬ"],["ᙯ","ᙿ"],["ᚁ","ᚚ"],["ᚠ","ᛪ"],["ᛱ","ᛸ"],["ᜀ","ᜌ"],["ᜎ","ᜑ"],["ᜠ","ᜱ"],["ᝀ","ᝑ"],["ᝠ","ᝬ"],["ᝮ","ᝰ"],["ក","ឳ"],"ៜ",["ᠠ","ᡂ"],["ᡄ","ᡸ"],["ᢀ","ᢄ"],["ᢇ","ᢨ"],"ᢪ",["ᢰ","ᣵ"],["ᤀ","ᤞ"],["ᥐ","ᥭ"],["ᥰ","ᥴ"],["ᦀ","ᦫ"],["ᦰ","ᧉ"],["ᨀ","ᨖ"],["ᨠ","ᩔ"],["ᬅ","ᬳ"],["ᭅ","ᭋ"],["ᮃ","ᮠ"],["ᮮ","ᮯ"],["ᮺ","ᯥ"],["ᰀ","ᰣ"],["ᱍ","ᱏ"],["ᱚ","ᱷ"],["ᳩ","ᳬ"],["ᳮ","ᳱ"],["ᳵ","ᳶ"],["ℵ","ℸ"],["ⴰ","ⵧ"],["ⶀ","ⶖ"],["ⶠ","ⶦ"],["ⶨ","ⶮ"],["ⶰ","ⶶ"],["ⶸ","ⶾ"],["ⷀ","ⷆ"],["ⷈ","ⷎ"],["ⷐ","ⷖ"],["ⷘ","ⷞ"],"〆","〼",["ぁ","ゖ"],"ゟ",["ァ","ヺ"],"ヿ",["ㄅ","ㄯ"],["ㄱ","ㆎ"],["ㆠ","ㆺ"],["ㇰ","ㇿ"],["㐀","䶵"],["一","鿯"],["ꀀ","ꀔ"],["ꀖ","ꒌ"],["ꓐ","ꓷ"],["ꔀ","ꘋ"],["ꘐ","ꘟ"],["ꘪ","ꘫ"],"ꙮ",["ꚠ","ꛥ"],"ꞏ","ꟷ",["ꟻ","ꠁ"],["ꠃ","ꠅ"],["ꠇ","ꠊ"],["ꠌ","ꠢ"],["ꡀ","ꡳ"],["ꢂ","ꢳ"],["ꣲ","ꣷ"],"ꣻ",["ꣽ","ꣾ"],["ꤊ","ꤥ"],["ꤰ","ꥆ"],["ꥠ","ꥼ"],["ꦄ","ꦲ"],["ꧠ","ꧤ"],["ꧧ","ꧯ"],["ꧺ","ꧾ"],["ꨀ","ꨨ"],["ꩀ","ꩂ"],["ꩄ","ꩋ"],["ꩠ","ꩯ"],["ꩱ","ꩶ"],"ꩺ",["ꩾ","ꪯ"],"ꪱ",["ꪵ","ꪶ"],["ꪹ","ꪽ"],"ꫀ","ꫂ",["ꫛ","ꫜ"],["ꫠ","ꫪ"],"ꫲ",["ꬁ","ꬆ"],["ꬉ","ꬎ"],["ꬑ","ꬖ"],["ꬠ","ꬦ"],["ꬨ","ꬮ"],["ꯀ","ꯢ"],["가","힣"],["ힰ","ퟆ"],["ퟋ","ퟻ"],["豈","舘"],["並","龎"],"יִ",["ײַ","ﬨ"],["שׁ","זּ"],["טּ","לּ"],"מּ",["נּ","סּ"],["ףּ","פּ"],["צּ","ﮱ"],["ﯓ","ﴽ"],["ﵐ","ﶏ"],["ﶒ","ﷇ"],["ﷰ","ﷻ"],["ﹰ","ﹴ"],["ﹶ","ﻼ"],["ｦ","ｯ"],["ｱ","ﾝ"],["ﾠ","ﾾ"],["ￂ","ￇ"],["ￊ","ￏ"],["ￒ","ￗ"],["ￚ","ￜ"]],"inverted":false,"ignoreCase":false},
+  #|  {"type":"class","value":["ǅ","ǈ","ǋ","ǲ",["ᾈ","ᾏ"],["ᾘ","ᾟ"],["ᾨ","ᾯ"],"ᾼ","ῌ","ῼ"],"inverted":false,"ignoreCase":false},
+  #|  {"type":"class","value":[["A","Z"],["À","Ö"],["Ø","Þ"],"Ā","Ă","Ą","Ć","Ĉ","Ċ","Č","Ď","Đ","Ē","Ĕ","Ė","Ę","Ě","Ĝ","Ğ","Ġ","Ģ","Ĥ","Ħ","Ĩ","Ī","Ĭ","Į","İ","Ĳ","Ĵ","Ķ","Ĺ","Ļ","Ľ","Ŀ","Ł","Ń","Ņ","Ň","Ŋ","Ō","Ŏ","Ő","Œ","Ŕ","Ŗ","Ř","Ś","Ŝ","Ş","Š","Ţ","Ť","Ŧ","Ũ","Ū","Ŭ","Ů","Ű","Ų","Ŵ","Ŷ",["Ÿ","Ź"],"Ż","Ž",["Ɓ","Ƃ"],"Ƅ",["Ɔ","Ƈ"],["Ɖ","Ƌ"],["Ǝ","Ƒ"],["Ɠ","Ɣ"],["Ɩ","Ƙ"],["Ɯ","Ɲ"],["Ɵ","Ơ"],"Ƣ","Ƥ",["Ʀ","Ƨ"],"Ʃ","Ƭ",["Ʈ","Ư"],["Ʊ","Ƴ"],"Ƶ",["Ʒ","Ƹ"],"Ƽ","Ǆ","Ǉ","Ǌ","Ǎ","Ǐ","Ǒ","Ǔ","Ǖ","Ǘ","Ǚ","Ǜ","Ǟ","Ǡ","Ǣ","Ǥ","Ǧ","Ǩ","Ǫ","Ǭ","Ǯ","Ǳ","Ǵ",["Ƕ","Ǹ"],"Ǻ","Ǽ","Ǿ","Ȁ","Ȃ","Ȅ","Ȇ","Ȉ","Ȋ","Ȍ","Ȏ","Ȑ","Ȓ","Ȕ","Ȗ","Ș","Ț","Ȝ","Ȟ","Ƞ","Ȣ","Ȥ","Ȧ","Ȩ","Ȫ","Ȭ","Ȯ","Ȱ","Ȳ",["Ⱥ","Ȼ"],["Ƚ","Ⱦ"],"Ɂ",["Ƀ","Ɇ"],"Ɉ","Ɋ","Ɍ","Ɏ","Ͱ","Ͳ","Ͷ","Ϳ","Ά",["Έ","Ί"],"Ό",["Ύ","Ώ"],["Α","Ρ"],["Σ","Ϋ"],"Ϗ",["ϒ","ϔ"],"Ϙ","Ϛ","Ϝ","Ϟ","Ϡ","Ϣ","Ϥ","Ϧ","Ϩ","Ϫ","Ϭ","Ϯ","ϴ","Ϸ",["Ϲ","Ϻ"],["Ͻ","Я"],"Ѡ","Ѣ","Ѥ","Ѧ","Ѩ","Ѫ","Ѭ","Ѯ","Ѱ","Ѳ","Ѵ","Ѷ","Ѹ","Ѻ","Ѽ","Ѿ","Ҁ","Ҋ","Ҍ","Ҏ","Ґ","Ғ","Ҕ","Җ","Ҙ","Қ","Ҝ","Ҟ","Ҡ","Ң","Ҥ","Ҧ","Ҩ","Ҫ","Ҭ","Ү","Ұ","Ҳ","Ҵ","Ҷ","Ҹ","Һ","Ҽ","Ҿ",["Ӏ","Ӂ"],"Ӄ","Ӆ","Ӈ","Ӊ","Ӌ","Ӎ","Ӑ","Ӓ","Ӕ","Ӗ","Ә","Ӛ","Ӝ","Ӟ","Ӡ","Ӣ","Ӥ","Ӧ","Ө","Ӫ","Ӭ","Ӯ","Ӱ","Ӳ","Ӵ","Ӷ","Ӹ","Ӻ","Ӽ","Ӿ","Ԁ","Ԃ","Ԅ","Ԇ","Ԉ","Ԋ","Ԍ","Ԏ","Ԑ","Ԓ","Ԕ","Ԗ","Ԙ","Ԛ","Ԝ","Ԟ","Ԡ","Ԣ","Ԥ","Ԧ","Ԩ","Ԫ","Ԭ","Ԯ",["Ա","Ֆ"],["Ⴀ","Ⴥ"],"Ⴧ","Ⴭ",["Ꭰ","Ᏽ"],["Ა","Ჺ"],["Ჽ","Ჿ"],"Ḁ","Ḃ","Ḅ","Ḇ","Ḉ","Ḋ","Ḍ","Ḏ","Ḑ","Ḓ","Ḕ","Ḗ","Ḙ","Ḛ","Ḝ","Ḟ","Ḡ","Ḣ","Ḥ","Ḧ","Ḩ","Ḫ","Ḭ","Ḯ","Ḱ","Ḳ","Ḵ","Ḷ","Ḹ","Ḻ","Ḽ","Ḿ","Ṁ","Ṃ","Ṅ","Ṇ","Ṉ","Ṋ","Ṍ","Ṏ","Ṑ","Ṓ","Ṕ","Ṗ","Ṙ","Ṛ","Ṝ","Ṟ","Ṡ","Ṣ","Ṥ","Ṧ","Ṩ","Ṫ","Ṭ","Ṯ","Ṱ","Ṳ","Ṵ","Ṷ","Ṹ","Ṻ","Ṽ","Ṿ","Ẁ","Ẃ","Ẅ","Ẇ","Ẉ","Ẋ","Ẍ","Ẏ","Ẑ","Ẓ","Ẕ","ẞ","Ạ","Ả","Ấ","Ầ","Ẩ","Ẫ","Ậ","Ắ","Ằ","Ẳ","Ẵ","Ặ","Ẹ","Ẻ","Ẽ","Ế","Ề","Ể","Ễ","Ệ","Ỉ","Ị","Ọ","Ỏ","Ố","Ồ","Ổ","Ỗ","Ộ","Ớ","Ờ","Ở","Ỡ","Ợ","Ụ","Ủ","Ứ","Ừ","Ử","Ữ","Ự","Ỳ","Ỵ","Ỷ","Ỹ","Ỻ","Ỽ","Ỿ",["Ἀ","Ἇ"],["Ἐ","Ἕ"],["Ἠ","Ἧ"],["Ἰ","Ἷ"],["Ὀ","Ὅ"],"Ὑ","Ὓ","Ὕ","Ὗ",["Ὠ","Ὧ"],["Ᾰ","Ά"],["Ὲ","Ή"],["Ῐ","Ί"],["Ῠ","Ῥ"],["Ὸ","Ώ"],"ℂ","ℇ",["ℋ","ℍ"],["ℐ","ℒ"],"ℕ",["ℙ","ℝ"],"ℤ","Ω","ℨ",["K","ℭ"],["ℰ","ℳ"],["ℾ","ℿ"],"ⅅ","Ↄ",["Ⰰ","Ⱞ"],"Ⱡ",["Ɫ","Ɽ"],"Ⱨ","Ⱪ","Ⱬ",["Ɑ","Ɒ"],"Ⱳ","Ⱶ",["Ȿ","Ⲁ"],"Ⲃ","Ⲅ","Ⲇ","Ⲉ","Ⲋ","Ⲍ","Ⲏ","Ⲑ","Ⲓ","Ⲕ","Ⲗ","Ⲙ","Ⲛ","Ⲝ","Ⲟ","Ⲡ","Ⲣ","Ⲥ","Ⲧ","Ⲩ","Ⲫ","Ⲭ","Ⲯ","Ⲱ","Ⲳ","Ⲵ","Ⲷ","Ⲹ","Ⲻ","Ⲽ","Ⲿ","Ⳁ","Ⳃ","Ⳅ","Ⳇ","Ⳉ","Ⳋ","Ⳍ","Ⳏ","Ⳑ","Ⳓ","Ⳕ","Ⳗ","Ⳙ","Ⳛ","Ⳝ","Ⳟ","Ⳡ","Ⳣ","Ⳬ","Ⳮ","Ⳳ","Ꙁ","Ꙃ","Ꙅ","Ꙇ","Ꙉ","Ꙋ","Ꙍ","Ꙏ","Ꙑ","Ꙓ","Ꙕ","Ꙗ","Ꙙ","Ꙛ","Ꙝ","Ꙟ","Ꙡ","Ꙣ","Ꙥ","Ꙧ","Ꙩ","Ꙫ","Ꙭ","Ꚁ","Ꚃ","Ꚅ","Ꚇ","Ꚉ","Ꚋ","Ꚍ","Ꚏ","Ꚑ","Ꚓ","Ꚕ","Ꚗ","Ꚙ","Ꚛ","Ꜣ","Ꜥ","Ꜧ","Ꜩ","Ꜫ","Ꜭ","Ꜯ","Ꜳ","Ꜵ","Ꜷ","Ꜹ","Ꜻ","Ꜽ","Ꜿ","Ꝁ","Ꝃ","Ꝅ","Ꝇ","Ꝉ","Ꝋ","Ꝍ","Ꝏ","Ꝑ","Ꝓ","Ꝕ","Ꝗ","Ꝙ","Ꝛ","Ꝝ","Ꝟ","Ꝡ","Ꝣ","Ꝥ","Ꝧ","Ꝩ","Ꝫ","Ꝭ","Ꝯ","Ꝺ","Ꝼ",["Ᵹ","Ꝿ"],"Ꞁ","Ꞃ","Ꞅ","Ꞇ","Ꞌ","Ɥ","Ꞑ","Ꞓ","Ꞗ","Ꞙ","Ꞛ","Ꞝ","Ꞟ","Ꞡ","Ꞣ","Ꞥ","Ꞧ","Ꞩ",["Ɦ","Ɪ"],["Ʞ","Ꞵ"],"Ꞷ","Ꞹ",["Ａ","Ｚ"]],"inverted":false,"ignoreCase":false},
+  #|  {"type":"class","value":["ः","ऻ",["ा","ी"],["ॉ","ौ"],["ॎ","ॏ"],["ং","ঃ"],["া","ী"],["ে","ৈ"],["ো","ৌ"],"ৗ","ਃ",["ਾ","ੀ"],"ઃ",["ા","ી"],"ૉ",["ો","ૌ"],["ଂ","ଃ"],"ା","ୀ",["େ","ୈ"],["ୋ","ୌ"],"ୗ",["ா","ி"],["ு","ூ"],["ெ","ை"],["ொ","ௌ"],"ௗ",["ఁ","ః"],["ు","ౄ"],["ಂ","ಃ"],"ಾ",["ೀ","ೄ"],["ೇ","ೈ"],["ೊ","ೋ"],["ೕ","ೖ"],["ം","ഃ"],["ാ","ീ"],["െ","ൈ"],["ൊ","ൌ"],"ൗ",["ං","ඃ"],["ා","ෑ"],["ෘ","ෟ"],["ෲ","ෳ"],["༾","༿"],"ཿ",["ါ","ာ"],"ေ","း",["ျ","ြ"],["ၖ","ၗ"],["ၢ","ၤ"],["ၧ","ၭ"],["ႃ","ႄ"],["ႇ","ႌ"],"ႏ",["ႚ","ႜ"],"ា",["ើ","ៅ"],["ះ","ៈ"],["ᤣ","ᤦ"],["ᤩ","ᤫ"],["ᤰ","ᤱ"],["ᤳ","ᤸ"],["ᨙ","ᨚ"],"ᩕ","ᩗ","ᩡ",["ᩣ","ᩤ"],["ᩭ","ᩲ"],"ᬄ","ᬵ","ᬻ",["ᬽ","ᭁ"],["ᭃ","᭄"],"ᮂ","ᮡ",["ᮦ","ᮧ"],"᮪","ᯧ",["ᯪ","ᯬ"],"ᯮ",["᯲","᯳"],["ᰤ","ᰫ"],["ᰴ","ᰵ"],"᳡",["ᳲ","ᳳ"],"᳷",["〮","〯"],["ꠣ","ꠤ"],"ꠧ",["ꢀ","ꢁ"],["ꢴ","ꣃ"],["ꥒ","꥓"],"ꦃ",["ꦴ","ꦵ"],["ꦺ","ꦻ"],["ꦽ","꧀"],["ꨯ","ꨰ"],["ꨳ","ꨴ"],"ꩍ","ꩻ","ꩽ","ꫫ",["ꫮ","ꫯ"],"ꫵ",["ꯣ","ꯤ"],["ꯦ","ꯧ"],["ꯩ","ꯪ"],"꯬"],"inverted":false,"ignoreCase":false},
+  #|  {"type":"class","value":[["̀","ͯ"],["҃","҇"],["֑","ֽ"],"ֿ",["ׁ","ׂ"],["ׄ","ׅ"],"ׇ",["ؐ","ؚ"],["ً","ٟ"],"ٰ",["ۖ","ۜ"],["۟","ۤ"],["ۧ","ۨ"],["۪","ۭ"],"ܑ",["ܰ","݊"],["ަ","ް"],["߫","߳"],"߽",["ࠖ","࠙"],["ࠛ","ࠣ"],["ࠥ","ࠧ"],["ࠩ","࠭"],["࡙","࡛"],["࣓","࣡"],["ࣣ","ं"],"ऺ","़",["ु","ै"],"्",["॑","ॗ"],["ॢ","ॣ"],"ঁ","়",["ু","ৄ"],"্",["ৢ","ৣ"],"৾",["ਁ","ਂ"],"਼",["ੁ","ੂ"],["ੇ","ੈ"],["ੋ","੍"],"ੑ",["ੰ","ੱ"],"ੵ",["ઁ","ં"],"઼",["ુ","ૅ"],["ે","ૈ"],"્",["ૢ","ૣ"],["ૺ","૿"],"ଁ","଼","ି",["ୁ","ୄ"],"୍","ୖ",["ୢ","ୣ"],"ஂ","ீ","்","ఀ","ఄ",["ా","ీ"],["ె","ై"],["ొ","్"],["ౕ","ౖ"],["ౢ","ౣ"],"ಁ","಼","ಿ","ೆ",["ೌ","್"],["ೢ","ೣ"],["ഀ","ഁ"],["഻","഼"],["ു","ൄ"],"്",["ൢ","ൣ"],"්",["ි","ු"],"ූ","ั",["ิ","ฺ"],["็","๎"],"ັ",["ິ","ູ"],["ົ","ຼ"],["່","ໍ"],["༘","༙"],"༵","༷","༹",["ཱ","ཾ"],["ྀ","྄"],["྆","྇"],["ྍ","ྗ"],["ྙ","ྼ"],"࿆",["ိ","ူ"],["ဲ","့"],["္","်"],["ွ","ှ"],["ၘ","ၙ"],["ၞ","ၠ"],["ၱ","ၴ"],"ႂ",["ႅ","ႆ"],"ႍ","ႝ",["፝","፟"],["ᜒ","᜔"],["ᜲ","᜴"],["ᝒ","ᝓ"],["ᝲ","ᝳ"],["឴","឵"],["ិ","ួ"],"ំ",["៉","៓"],"៝",["᠋","᠍"],["ᢅ","ᢆ"],"ᢩ",["ᤠ","ᤢ"],["ᤧ","ᤨ"],"ᤲ",["᤹","᤻"],["ᨗ","ᨘ"],"ᨛ","ᩖ",["ᩘ","ᩞ"],"᩠","ᩢ",["ᩥ","ᩬ"],["ᩳ","᩼"],"᩿",["᪰","᪽"],["ᬀ","ᬃ"],"᬴",["ᬶ","ᬺ"],"ᬼ","ᭂ",["᭫","᭳"],["ᮀ","ᮁ"],["ᮢ","ᮥ"],["ᮨ","ᮩ"],["᮫","ᮭ"],"᯦",["ᯨ","ᯩ"],"ᯭ",["ᯯ","ᯱ"],["ᰬ","ᰳ"],["ᰶ","᰷"],["᳐","᳒"],["᳔","᳠"],["᳢","᳨"],"᳭","᳴",["᳸","᳹"],["᷀","᷹"],["᷻","᷿"],["⃐","⃜"],"⃡",["⃥","⃰"],["⳯","⳱"],"⵿",["ⷠ","ⷿ"],["〪","〭"],["゙","゚"],"꙯",["ꙴ","꙽"],["ꚞ","ꚟ"],["꛰","꛱"],"ꠂ","꠆","ꠋ",["ꠥ","ꠦ"],["꣄","ꣅ"],["꣠","꣱"],"ꣿ",["ꤦ","꤭"],["ꥇ","ꥑ"],["ꦀ","ꦂ"],"꦳",["ꦶ","ꦹ"],"ꦼ","ꧥ",["ꨩ","ꨮ"],["ꨱ","ꨲ"],["ꨵ","ꨶ"],"ꩃ","ꩌ","ꩼ","ꪰ",["ꪲ","ꪴ"],["ꪷ","ꪸ"],["ꪾ","꪿"],"꫁",["ꫬ","ꫭ"],"꫶","ꯥ","ꯨ","꯭","ﬞ",["︀","️"],["︠","︯"]],"inverted":false,"ignoreCase":false},
+  #|  {"type":"class","value":[["0","9"],["٠","٩"],["۰","۹"],["߀","߉"],["०","९"],["০","৯"],["੦","੯"],["૦","૯"],["୦","୯"],["௦","௯"],["౦","౯"],["೦","೯"],["൦","൯"],["෦","෯"],["๐","๙"],["໐","໙"],["༠","༩"],["၀","၉"],["႐","႙"],["០","៩"],["᠐","᠙"],["᥆","᥏"],["᧐","᧙"],["᪀","᪉"],["᪐","᪙"],["᭐","᭙"],["᮰","᮹"],["᱀","᱉"],["᱐","᱙"],["꘠","꘩"],["꣐","꣙"],["꤀","꤉"],["꧐","꧙"],["꧰","꧹"],["꩐","꩙"],["꯰","꯹"],["０","９"]],"inverted":false,"ignoreCase":false},
+  #|  {"type":"class","value":[["ᛮ","ᛰ"],["Ⅰ","ↂ"],["ↅ","ↈ"],"〇",["〡","〩"],["〸","〺"],["ꛦ","ꛯ"]],"inverted":false,"ignoreCase":false},
+  #|  {"type":"class","value":["_",["‿","⁀"],"⁔",["︳","︴"],["﹍","﹏"],"＿"],"inverted":false,"ignoreCase":false},
+  #|  {"type":"literal","value":"break","ignoreCase":false},
+  #|  {"type":"literal","value":"case","ignoreCase":false},
+  #|  {"type":"literal","value":"catch","ignoreCase":false},
+  #|  {"type":"literal","value":"class","ignoreCase":false},
+  #|  {"type":"literal","value":"const","ignoreCase":false},
+  #|  {"type":"literal","value":"continue","ignoreCase":false},
+  #|  {"type":"literal","value":"debugger","ignoreCase":false},
+  #|  {"type":"literal","value":"default","ignoreCase":false},
+  #|  {"type":"literal","value":"delete","ignoreCase":false},
+  #|  {"type":"literal","value":"do","ignoreCase":false},
+  #|  {"type":"literal","value":"else","ignoreCase":false},
+  #|  {"type":"literal","value":"enum","ignoreCase":false},
+  #|  {"type":"literal","value":"export","ignoreCase":false},
+  #|  {"type":"literal","value":"extends","ignoreCase":false},
+  #|  {"type":"literal","value":"false","ignoreCase":false},
+  #|  {"type":"literal","value":"finally","ignoreCase":false},
+  #|  {"type":"literal","value":"for","ignoreCase":false},
+  #|  {"type":"literal","value":"function","ignoreCase":false},
+  #|  {"type":"literal","value":"get","ignoreCase":false},
+  #|  {"type":"literal","value":"if","ignoreCase":false},
+  #|  {"type":"literal","value":"import","ignoreCase":false},
+  #|  {"type":"literal","value":"instanceof","ignoreCase":false},
+  #|  {"type":"literal","value":"in","ignoreCase":false},
+  #|  {"type":"literal","value":"new","ignoreCase":false},
+  #|  {"type":"literal","value":"null","ignoreCase":false},
+  #|  {"type":"literal","value":"return","ignoreCase":false},
+  #|  {"type":"literal","value":"set","ignoreCase":false},
+  #|  {"type":"literal","value":"super","ignoreCase":false},
+  #|  {"type":"literal","value":"switch","ignoreCase":false},
+  #|  {"type":"literal","value":"this","ignoreCase":false},
+  #|  {"type":"literal","value":"throw","ignoreCase":false},
+  #|  {"type":"literal","value":"true","ignoreCase":false},
+  #|  {"type":"literal","value":"try","ignoreCase":false},
+  #|  {"type":"literal","value":"typeof","ignoreCase":false},
+  #|  {"type":"literal","value":"var","ignoreCase":false},
+  #|  {"type":"literal","value":"void","ignoreCase":false},
+  #|  {"type":"literal","value":"while","ignoreCase":false},
+  #|  {"type":"literal","value":"with","ignoreCase":false},
+  #|  {"type":"literal","value":";","ignoreCase":false},
+  #|  {"type":"literal","value":"}","ignoreCase":false},
+  #|  {"type":"literal","value":"(","ignoreCase":false},
+  #|  {"type":"literal","value":")","ignoreCase":false},
+  #|  {"type":"literal","value":"[","ignoreCase":false},
+  #|  {"type":"literal","value":"]","ignoreCase":false},
+  #|  {"type":"literal","value":",","ignoreCase":false},
+  #|  {"type":"literal","value":"{","ignoreCase":false},
+  #|  {"type":"literal","value":":","ignoreCase":false},
+  #|  {"type":"literal","value":".","ignoreCase":false},
+  #|  {"type":"literal","value":"++","ignoreCase":false},
+  #|  {"type":"literal","value":"--","ignoreCase":false},
+  #|  {"type":"literal","value":"+","ignoreCase":false},
+  #|  {"type":"literal","value":"=","ignoreCase":false},
+  #|  {"type":"literal","value":"-","ignoreCase":false},
+  #|  {"type":"literal","value":"~","ignoreCase":false},
+  #|  {"type":"literal","value":"!","ignoreCase":false},
+  #|  {"type":"literal","value":"*","ignoreCase":false},
+  #|  {"type":"literal","value":"/","ignoreCase":false},
+  #|  {"type":"literal","value":"%","ignoreCase":false},
+  #|  {"type":"class","value":["+","="],"inverted":false,"ignoreCase":false},
+  #|  {"type":"class","value":["-","="],"inverted":false,"ignoreCase":false},
+  #|  {"type":"literal","value":"<<","ignoreCase":false},
+  #|  {"type":"literal","value":">>>","ignoreCase":false},
+  #|  {"type":"literal","value":">>","ignoreCase":false},
+  #|  {"type":"literal","value":"<=","ignoreCase":false},
+  #|  {"type":"literal","value":">=","ignoreCase":false},
+  #|  {"type":"literal","value":"<","ignoreCase":false},
+  #|  {"type":"literal","value":">","ignoreCase":false},
+  #|  {"type":"literal","value":"===","ignoreCase":false},
+  #|  {"type":"literal","value":"!==","ignoreCase":false},
+  #|  {"type":"literal","value":"==","ignoreCase":false},
+  #|  {"type":"literal","value":"!=","ignoreCase":false},
+  #|  {"type":"literal","value":"&","ignoreCase":false},
+  #|  {"type":"class","value":["&","="],"inverted":false,"ignoreCase":false},
+  #|  {"type":"literal","value":"^","ignoreCase":false},
+  #|  {"type":"literal","value":"|","ignoreCase":false},
+  #|  {"type":"class","value":["|","="],"inverted":false,"ignoreCase":false},
+  #|  {"type":"literal","value":"&&","ignoreCase":false},
+  #|  {"type":"literal","value":"||","ignoreCase":false},
+  #|  {"type":"literal","value":"?","ignoreCase":false},
+  #|  {"type":"literal","value":"*=","ignoreCase":false},
+  #|  {"type":"literal","value":"/=","ignoreCase":false},
+  #|  {"type":"literal","value":"%=","ignoreCase":false},
+  #|  {"type":"literal","value":"+=","ignoreCase":false},
+  #|  {"type":"literal","value":"-=","ignoreCase":false},
+  #|  {"type":"literal","value":"<<=","ignoreCase":false},
+  #|  {"type":"literal","value":">>=","ignoreCase":false},
+  #|  {"type":"literal","value":">>>=","ignoreCase":false},
+  #|  {"type":"literal","value":"&=","ignoreCase":false},
+  #|  {"type":"literal","value":"^=","ignoreCase":false},
+  #|  {"type":"literal","value":"|=","ignoreCase":false}
+  #|],
+  #|"functions": [
+  #|  {"predicate":false,"params":["program"],"body":" return program; "},
+  #|  {"predicate":false,"params":["name"],"body":" return name; "},
+  #|  {"predicate":false,"params":["head","tail"],"body":"\n      return {\n        type: \"Identifier\",\n        name: head + tail.join(\"\")\n      };\n    "},
+  #|  {"predicate":false,"params":["sequence"],"body":" return sequence; "},
+  #|  {"predicate":false,"params":[],"body":" return { type: \"Literal\", value: null }; "},
+  #|  {"predicate":false,"params":[],"body":" return { type: \"Literal\", value: true  }; "},
+  #|  {"predicate":false,"params":[],"body":" return { type: \"Literal\", value: false }; "},
+  #|  {"predicate":false,"params":["literal"],"body":"\n      return literal;\n    "},
+  #|  {"predicate":false,"params":[],"body":"\n      return { type: \"Literal\", value: parseFloat(text()) };\n    "},
+  #|  {"predicate":false,"params":["digits"],"body":"\n      return { type: \"Literal\", value: parseInt(digits, 16) };\n     "},
+  #|  {"predicate":false,"params":["chars"],"body":"\n      return { type: \"Literal\", value: chars.join(\"\") };\n    "},
+  #|  {"predicate":false,"params":[],"body":" return text(); "},
+  #|  {"predicate":false,"params":[],"body":" return \"\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"\\0\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"\\b\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"\\f\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"\\n\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"\\r\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"\\t\"; "},
+  #|  {"predicate":false,"params":[],"body":" return \"\\v\"; "},
+  #|  {"predicate":false,"params":["digits"],"body":"\n      return String.fromCharCode(parseInt(digits, 16));\n    "},
+  #|  {"predicate":false,"params":["pattern","flags"],"body":"\n      var value;\n\n      try {\n        value = new RegExp(pattern, flags);\n      } catch (e) {\n        error(e.message);\n      }\n\n      return { type: \"Literal\", value: value };\n    "},
+  #|  {"predicate":false,"params":[],"body":" return { type: \"ThisExpression\" }; "},
+  #|  {"predicate":false,"params":["expression"],"body":" return expression; "},
+  #|  {"predicate":false,"params":["elision"],"body":"\n      return {\n        type: \"ArrayExpression\",\n        elements: optionalList(extractOptional(elision, 0))\n      };\n    "},
+  #|  {"predicate":false,"params":["elements"],"body":"\n      return {\n        type: \"ArrayExpression\",\n        elements: elements\n      };\n    "},
+  #|  {"predicate":false,"params":["elements","elision"],"body":"\n      return {\n        type: \"ArrayExpression\",\n        elements: elements.concat(optionalList(extractOptional(elision, 0)))\n      };\n    "},
+  #|  {"predicate":false,"params":["elision","element"],"body":"\n        return optionalList(extractOptional(elision, 0)).concat(element);\n      "},
+  #|  {"predicate":false,"params":["head","elision","element"],"body":"\n        return optionalList(extractOptional(elision, 0)).concat(element);\n      "},
+  #|  {"predicate":false,"params":["head","tail"],"body":" return Array.prototype.concat.apply(head, tail); "},
+  #|  {"predicate":false,"params":["commas"],"body":" return filledArray(commas.length + 1, null); "},
+  #|  {"predicate":false,"params":[],"body":" return { type: \"ObjectExpression\", properties: [] }; "},
+  #|  {"predicate":false,"params":["properties"],"body":"\n       return { type: \"ObjectExpression\", properties: properties };\n     "},
+  #|  {"predicate":false,"params":["head","tail"],"body":"\n      return buildList(head, tail, 3);\n    "},
+  #|  {"predicate":false,"params":["key","value"],"body":"\n      return { type: \"Property\", key: key, value: value, kind: \"init\" };\n    "},
+  #|  {"predicate":false,"params":["key","body"],"body":"\n      return {\n        type: \"Property\",\n        key: key,\n        value: {\n          type: \"FunctionExpression\",\n          id: null,\n          params: [],\n          body: body\n        },\n        kind: \"get\"\n      };\n    "},
+  #|  {"predicate":false,"params":["key","params","body"],"body":"\n      return {\n        type: \"Property\",\n        key: key,\n        value: {\n          type: \"FunctionExpression\",\n          id: null,\n          params: params,\n          body: body\n        },\n        kind: \"set\"\n      };\n    "},
+  #|  {"predicate":false,"params":["id"],"body":" return [id]; "},
+  #|  {"predicate":false,"params":["callee","args"],"body":"\n          return { type: \"NewExpression\", callee: callee, arguments: args };\n        "},
+  #|  {"predicate":false,"params":["head","property"],"body":"\n          return { property: property, computed: true };\n        "},
+  #|  {"predicate":false,"params":["head","property"],"body":"\n          return { property: property, computed: false };\n        "},
+  #|  {"predicate":false,"params":["head","tail"],"body":"\n      return tail.reduce(function(result, element) {\n        return {\n          type: \"MemberExpression\",\n          object: result,\n          property: element.property,\n          computed: element.computed\n        };\n      }, head);\n    "},
+  #|  {"predicate":false,"params":["callee"],"body":"\n      return { type: \"NewExpression\", callee: callee, arguments: [] };\n    "},
+  #|  {"predicate":false,"params":["callee","args"],"body":"\n        return { type: \"CallExpression\", callee: callee, arguments: args };\n      "},
+  #|  {"predicate":false,"params":["head","args"],"body":"\n          return { type: \"CallExpression\", arguments: args };\n        "},
+  #|  {"predicate":false,"params":["head","property"],"body":"\n          return {\n            type: \"MemberExpression\",\n            property: property,\n            computed: true\n          };\n        "},
+  #|  {"predicate":false,"params":["head","property"],"body":"\n          return {\n            type: \"MemberExpression\",\n            property: property,\n            computed: false\n          };\n        "},
+  #|  {"predicate":false,"params":["head","tail"],"body":"\n      return tail.reduce(function(result, element) {\n        element[TYPES_TO_PROPERTY_NAMES[element.type]] = result;\n\n        return element;\n      }, head);\n    "},
+  #|  {"predicate":false,"params":["args"],"body":"\n      return optionalList(extractOptional(args, 0));\n    "},
+  #|  {"predicate":false,"params":["argument","operator"],"body":"\n      return {\n        type: \"UpdateExpression\",\n        operator: operator,\n        argument: argument,\n        prefix: false\n      };\n    "},
+  #|  {"predicate":false,"params":["operator","argument"],"body":"\n      var type = (operator === \"++\" || operator === \"--\")\n        ? \"UpdateExpression\"\n        : \"UnaryExpression\";\n\n      return {\n        type: type,\n        operator: operator,\n        argument: argument,\n        prefix: true\n      };\n    "},
+  #|  {"predicate":false,"params":["head","tail"],"body":" return buildBinaryExpression(head, tail); "},
+  #|  {"predicate":false,"params":["head","tail"],"body":" return buildLogicalExpression(head, tail); "},
+  #|  {"predicate":false,"params":["test","consequent","alternate"],"body":"\n      return {\n        type: \"ConditionalExpression\",\n        test: test,\n        consequent: consequent,\n        alternate: alternate\n      };\n    "},
+  #|  {"predicate":false,"params":["left","right"],"body":"\n      return {\n        type: \"AssignmentExpression\",\n        operator: \"=\",\n        left: left,\n        right: right\n      };\n    "},
+  #|  {"predicate":false,"params":["left","operator","right"],"body":"\n      return {\n        type: \"AssignmentExpression\",\n        operator: operator,\n        left: left,\n        right: right\n      };\n    "},
+  #|  {"predicate":false,"params":["head","tail"],"body":"\n      return tail.length > 0\n        ? { type: \"SequenceExpression\", expressions: buildList(head, tail, 3) }\n        : head;\n    "},
+  #|  {"predicate":false,"params":["body"],"body":"\n      return {\n        type: \"BlockStatement\",\n        body: optionalList(extractOptional(body, 0))\n      };\n    "},
+  #|  {"predicate":false,"params":["head","tail"],"body":" return buildList(head, tail, 1); "},
+  #|  {"predicate":false,"params":["declarations"],"body":"\n      return {\n        type: \"VariableDeclaration\",\n        declarations: declarations,\n        kind: \"var\"\n      };\n    "},
+  #|  {"predicate":false,"params":["id","init"],"body":"\n      return {\n        type: \"VariableDeclarator\",\n        id: id,\n        init: extractOptional(init, 1)\n      };\n    "},
+  #|  {"predicate":false,"params":[],"body":" return { type: \"EmptyStatement\" }; "},
+  #|  {"predicate":false,"params":["expression"],"body":"\n      return {\n        type: \"ExpressionStatement\",\n        expression: expression\n      };\n    "},
+  #|  {"predicate":false,"params":["test","consequent","alternate"],"body":"\n      return {\n        type: \"IfStatement\",\n        test: test,\n        consequent: consequent,\n        alternate: alternate\n      };\n    "},
+  #|  {"predicate":false,"params":["test","consequent"],"body":"\n      return {\n        type: \"IfStatement\",\n        test: test,\n        consequent: consequent,\n        alternate: null\n      };\n    "},
+  #|  {"predicate":false,"params":["body","test"],"body":" return { type: \"DoWhileStatement\", body: body, test: test }; "},
+  #|  {"predicate":false,"params":["test","body"],"body":" return { type: \"WhileStatement\", test: test, body: body }; "},
+  #|  {"predicate":false,"params":["init","test","update","body"],"body":"\n      return {\n        type: \"ForStatement\",\n        init: extractOptional(init, 0),\n        test: extractOptional(test, 0),\n        update: extractOptional(update, 0),\n        body: body\n      };\n    "},
+  #|  {"predicate":false,"params":["declarations","test","update","body"],"body":"\n      return {\n        type: \"ForStatement\",\n        init: {\n          type: \"VariableDeclaration\",\n          declarations: declarations,\n          kind: \"var\"\n        },\n        test: extractOptional(test, 0),\n        update: extractOptional(update, 0),\n        body: body\n      };\n    "},
+  #|  {"predicate":false,"params":["left","right","body"],"body":"\n      return {\n        type: \"ForInStatement\",\n        left: left,\n        right: right,\n        body: body\n      };\n    "},
+  #|  {"predicate":false,"params":["declarations","right","body"],"body":"\n      return {\n        type: \"ForInStatement\",\n        left: {\n          type: \"VariableDeclaration\",\n          declarations: declarations,\n          kind: \"var\"\n        },\n        right: right,\n        body: body\n      };\n    "},
+  #|  {"predicate":false,"params":[],"body":"\n      return { type: \"ContinueStatement\", label: null };\n    "},
+  #|  {"predicate":false,"params":["label"],"body":"\n      return { type: \"ContinueStatement\", label: label };\n    "},
+  #|  {"predicate":false,"params":[],"body":"\n      return { type: \"BreakStatement\", label: null };\n    "},
+  #|  {"predicate":false,"params":["label"],"body":"\n      return { type: \"BreakStatement\", label: label };\n    "},
+  #|  {"predicate":false,"params":[],"body":"\n      return { type: \"ReturnStatement\", argument: null };\n    "},
+  #|  {"predicate":false,"params":["argument"],"body":"\n      return { type: \"ReturnStatement\", argument: argument };\n    "},
+  #|  {"predicate":false,"params":["object","body"],"body":" return { type: \"WithStatement\", object: object, body: body }; "},
+  #|  {"predicate":false,"params":["discriminant","cases"],"body":"\n      return {\n        type: \"SwitchStatement\",\n        discriminant: discriminant,\n        cases: cases\n      };\n    "},
+  #|  {"predicate":false,"params":["clauses"],"body":"\n      return optionalList(extractOptional(clauses, 0));\n    "},
+  #|  {"predicate":false,"params":["before","default_","after"],"body":"\n      return optionalList(extractOptional(before, 0))\n        .concat(default_)\n        .concat(optionalList(extractOptional(after, 0)));\n    "},
+  #|  {"predicate":false,"params":["test","consequent"],"body":"\n      return {\n        type: \"SwitchCase\",\n        test: test,\n        consequent: optionalList(extractOptional(consequent, 1))\n      };\n    "},
+  #|  {"predicate":false,"params":["consequent"],"body":"\n      return {\n        type: \"SwitchCase\",\n        test: null,\n        consequent: optionalList(extractOptional(consequent, 1))\n      };\n    "},
+  #|  {"predicate":false,"params":["label","body"],"body":"\n      return { type: \"LabeledStatement\", label: label, body: body };\n    "},
+  #|  {"predicate":false,"params":["argument"],"body":"\n      return { type: \"ThrowStatement\", argument: argument };\n    "},
+  #|  {"predicate":false,"params":["block","handler","finalizer"],"body":"\n      return {\n        type: \"TryStatement\",\n        block: block,\n        handler: handler,\n        finalizer: finalizer\n      };\n    "},
+  #|  {"predicate":false,"params":["block","handler"],"body":"\n      return {\n        type: \"TryStatement\",\n        block: block,\n        handler: handler,\n        finalizer: null\n      };\n    "},
+  #|  {"predicate":false,"params":["block","finalizer"],"body":"\n      return {\n        type: \"TryStatement\",\n        block: block,\n        handler: null,\n        finalizer: finalizer\n      };\n    "},
+  #|  {"predicate":false,"params":["param","body"],"body":"\n      return {\n        type: \"CatchClause\",\n        param: param,\n        body: body\n      };\n    "},
+  #|  {"predicate":false,"params":["block"],"body":" return block; "},
+  #|  {"predicate":false,"params":[],"body":" return { type: \"DebuggerStatement\" }; "},
+  #|  {"predicate":false,"params":["id","params","body"],"body":"\n      return {\n        type: \"FunctionDeclaration\",\n        id: id,\n        params: optionalList(extractOptional(params, 0)),\n        body: body\n      };\n    "},
+  #|  {"predicate":false,"params":["id","params","body"],"body":"\n      return {\n        type: \"FunctionExpression\",\n        id: extractOptional(id, 0),\n        params: optionalList(extractOptional(params, 0)),\n        body: body\n      };\n    "},
+  #|  {"predicate":false,"params":["body"],"body":"\n      return {\n        type: \"BlockStatement\",\n        body: optionalList(body)\n      };\n    "},
+  #|  {"predicate":false,"params":["body"],"body":"\n      return {\n        type: \"Program\",\n        body: optionalList(body)\n      };\n    "},
+  #|  {"predicate":false,"params":["head","tail"],"body":"\n      return buildList(head, tail, 1);\n    "}
+  #|]
+  #|}
+
+///|
 let example_cases : Array[(String, String, String)] = [
-  (
-    "arithmetics", "// Simple Arithmetics Grammar\n// ==========================\n//\n// Accepts expressions like \"2 * (3 + 4)\" and computes their value.\n\nExpression\n  = head:Term tail:(_ @(\"+\" / \"-\") _ @Term)* {\n      return tail.reduce(function(result, element) {\n        if (element[0] === \"+\") return result + element[1];\n        if (element[0] === \"-\") return result - element[1];\n      }, head);\n    }\n\nTerm\n  = head:Factor tail:(_ @(\"*\" / \"/\") _ @Factor)* {\n      return tail.reduce(function(result, element) {\n        if (element[0] === \"*\") return result * element[1];\n        if (element[0] === \"/\") return result / element[1];\n      }, head);\n    }\n\nFactor\n  = \"(\" _ @Expression _ \")\"\n  / Integer\n\nInteger \"integer\"\n  = _ [0-9]+ { return parseInt(text(), 10); }\n\n_ \"whitespace\"\n  = [ \\t\\n\\r]*\n",
-    "{\"rules\":[{\"name\":\"Expression\",\"bytecode\":[5,27,1,15,109,3,4,5,27,4,23,0,18,0,2,1,22,0,3,14,10,0,6,23,1,18,1,2,1,22,1,3,15,16,4,27,4,27,1,15,5,4,41,5,2,2,0,8,4,7,3,8,2,7,3,16,49,10,5,27,4,23,0,18,0,2,1,22,0,3,14,10,0,6,23,1,18,1,2,1,22,1,3,15,16,4,27,4,27,1,15,5,4,41,5,2,2,0,8,4,7,3,8,2,7,3,6,24,2,26,0,3,2,1,0,6,7,3]},{\"name\":\"Term\",\"bytecode\":[5,27,2,15,109,3,4,5,27,4,23,2,18,2,2,1,22,2,3,14,10,0,6,23,3,18,3,2,1,22,3,3,15,16,4,27,4,27,2,15,5,4,41,5,2,2,0,8,4,7,3,8,2,7,3,16,49,10,5,27,4,23,2,18,2,2,1,22,2,3,14,10,0,6,23,3,18,3,2,1,22,3,3,15,16,4,27,4,27,2,15,5,4,41,5,2,2,0,8,4,7,3,8,2,7,3,6,24,2,26,1,3,2,1,0,6,7,3]},{\"name\":\"Factor\",\"bytecode\":[5,23,4,18,4,2,1,22,4,3,15,33,3,27,4,27,0,15,22,4,27,4,23,5,18,5,2,1,22,5,3,15,4,4,41,6,1,2,8,5,7,3,8,3,7,3,6,7,3,14,3,0,6,27,3]},{\"name\":\"Integer\",\"bytecode\":[23,6,28,5,27,4,4,20,0,2,1,21,1,3,15,11,3,16,8,10,20,0,2,1,21,1,3,6,6,6,3,15,6,4,24,2,26,2,3,0,8,2,7,3,29]},{\"name\":\"_\",\"bytecode\":[23,7,28,4,20,1,2,1,21,1,3,16,8,10,20,1,2,1,21,1,3,6,29]}],\"literals\":[\"+\",\"-\",\"*\",\"/\",\"(\",\")\"],\"classes\":[{\"value\":[[\"0\",\"9\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\" \",\"\\t\",\"\\n\",\"\\r\"],\"inverted\":false,\"ignoreCase\":false}],\"expectations\":[{\"type\":\"literal\",\"value\":\"+\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"-\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"*\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"/\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"(\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\")\",\"ignoreCase\":false},{\"type\":\"rule\",\"value\":\"integer\"},{\"type\":\"rule\",\"value\":\"whitespace\"}],\"functions\":[{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\"\\n      return tail.reduce(function(result, element) {\\n        if (element[0] === \\\"+\\\") return result + element[1];\\n        if (element[0] === \\\"-\\\") return result - element[1];\\n      }, head);\\n    \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\"\\n      return tail.reduce(function(result, element) {\\n        if (element[0] === \\\"*\\\") return result * element[1];\\n        if (element[0] === \\\"/\\\") return result / element[1];\\n      }, head);\\n    \"},{\"predicate\":false,\"params\":[],\"body\":\" return parseInt(text(), 10); \"}]}",
-  ),
-  (
-    "json", "// JSON Grammar\n// ============\n//\n// Based on the grammar from RFC 7159 [1].\n//\n// Note that JSON is also specified in ECMA-262 [2], ECMA-404 [3], and on the\n// JSON website [4] (somewhat informally). The RFC seems the most authoritative\n// source, which is confirmed e.g. by [5].\n//\n// [1] http://tools.ietf.org/html/rfc7159\n// [2] http://www.ecma-international.org/publications/standards/Ecma-262.htm\n// [3] http://www.ecma-international.org/publications/standards/Ecma-404.htm\n// [4] http://json.org/\n// [5] https://www.tbray.org/ongoing/When/201x/2014/03/05/RFC7159-JSON\n\n// ----- 2. JSON Grammar -----\n\nJSON_text\n  = ws value:value ws { return value; }\n\nbegin_array     = ws \"[\" ws\nbegin_object    = ws \"{\" ws\nend_array       = ws \"]\" ws\nend_object      = ws \"}\" ws\nname_separator  = ws \":\" ws\nvalue_separator = ws \",\" ws\n\nws \"whitespace\" = [ \\t\\n\\r]*\n\n// ----- 3. Values -----\n\nvalue\n  = false\n  / null\n  / true\n  / object\n  / array\n  / number\n  / string\n\nfalse = \"false\" { return false; }\nnull  = \"null\"  { return null;  }\ntrue  = \"true\"  { return true;  }\n\n// ----- 4. Objects -----\n\nobject\n  = begin_object\n    members:(\n      head:member\n      tail:(value_separator m:member { return m; })*\n      {\n        var result = {};\n\n        [head].concat(tail).forEach(function(element) {\n          result[element.name] = element.value;\n        });\n\n        return result;\n      }\n    )?\n    end_object\n    { return members !== null ? members: {}; }\n\nmember\n  = name:string name_separator value:value {\n      return { name: name, value: value };\n    }\n\n// ----- 5. Arrays -----\n\narray\n  = begin_array\n    values:(\n      head:value\n      tail:(value_separator v:value { return v; })*\n      { return [head].concat(tail); }\n    )?\n    end_array\n    { return values !== null ? values : []; }\n\n// ----- 6. Numbers -----\n\nnumber \"number\"\n  = minus? int frac? exp? { return parseFloat(text()); }\n\ndecimal_point\n  = \".\"\n\ndigit1_9\n  = [1-9]\n\ne\n  = [eE]\n\nexp\n  = e (minus / plus)? DIGIT+\n\nfrac\n  = decimal_point DIGIT+\n\nint\n  = zero / (digit1_9 DIGIT*)\n\nminus\n  = \"-\"\n\nplus\n  = \"+\"\n\nzero\n  = \"0\"\n\n// ----- 7. Strings -----\n\nstring \"string\"\n  = quotation_mark chars:char* quotation_mark { return chars.join(\"\"); }\n\nchar\n  = unescaped\n  / escape\n    sequence:(\n        '\"'\n      / \"\\\\\"\n      / \"/\"\n      / \"b\" { return \"\\b\"; }\n      / \"f\" { return \"\\f\"; }\n      / \"n\" { return \"\\n\"; }\n      / \"r\" { return \"\\r\"; }\n      / \"t\" { return \"\\t\"; }\n      / \"u\" digits:$(HEXDIG HEXDIG HEXDIG HEXDIG) {\n          return String.fromCharCode(parseInt(digits, 16));\n        }\n    )\n    { return sequence; }\n\nescape\n  = \"\\\\\"\n\nquotation_mark\n  = '\"'\n\nunescaped\n  = [^\\0-\\x1F\\x22\\x5C]\n\n// ----- Core ABNF Rules -----\n\n// See RFC 4234, Appendix B (http://tools.ietf.org/html/rfc4234).\nDIGIT  = [0-9]\nHEXDIG = [0-9a-f]i\n",
-    "{\"rules\":[{\"name\":\"JSON_text\",\"bytecode\":[5,27,7,27,8,15,9,4,27,7,24,3,26,0,4,1,1,8,2,7,3]},{\"name\":\"begin_array\",\"bytecode\":[5,27,7,23,0,18,0,2,1,22,0,3,15,5,4,27,7,11,3,9,8,2,7,3]},{\"name\":\"begin_object\",\"bytecode\":[5,27,7,23,1,18,1,2,1,22,1,3,15,5,4,27,7,11,3,9,8,2,7,3]},{\"name\":\"end_array\",\"bytecode\":[5,27,7,23,2,18,2,2,1,22,2,3,15,5,4,27,7,11,3,9,8,2,7,3]},{\"name\":\"end_object\",\"bytecode\":[5,27,7,23,3,18,3,2,1,22,3,3,15,5,4,27,7,11,3,9,8,2,7,3]},{\"name\":\"name_separator\",\"bytecode\":[5,27,7,23,4,18,4,2,1,22,4,3,15,5,4,27,7,11,3,9,8,2,7,3]},{\"name\":\"value_separator\",\"bytecode\":[5,27,7,23,5,18,5,2,1,22,5,3,15,5,4,27,7,11,3,9,8,2,7,3]},{\"name\":\"ws\",\"bytecode\":[23,6,28,4,20,0,2,1,21,1,3,16,8,10,20,0,2,1,21,1,3,6,29]},{\"name\":\"value\",\"bytecode\":[27,9,14,33,0,6,27,10,14,27,0,6,27,11,14,21,0,6,27,12,14,15,0,6,27,14,14,9,0,6,27,15,14,3,0,6,27,25]},{\"name\":\"false\",\"bytecode\":[5,23,7,18,6,2,1,22,6,3,15,6,0,24,1,26,1,1,0,9]},{\"name\":\"null\",\"bytecode\":[5,23,8,18,7,2,1,22,7,3,15,6,0,24,1,26,2,1,0,9]},{\"name\":\"true\",\"bytecode\":[5,23,9,18,8,2,1,22,8,3,15,6,0,24,1,26,3,1,0,9]},{\"name\":\"object\",\"bytecode\":[5,27,2,15,95,3,5,27,13,15,65,3,4,5,27,6,15,17,3,27,13,15,8,4,24,2,26,4,3,2,4,0,8,2,7,3,6,7,3,16,27,10,5,27,6,15,17,3,27,13,15,8,4,24,2,26,4,3,2,4,0,8,2,7,3,6,7,3,6,24,2,26,5,3,2,1,0,6,7,3,14,2,0,6,2,27,4,15,7,4,24,3,26,6,4,1,1,8,3,7,3,6,7,3]},{\"name\":\"member\",\"bytecode\":[5,27,25,15,26,3,27,5,15,17,4,27,8,15,8,4,24,3,26,7,4,2,2,0,8,3,7,3,8,2,7,3,6,7,3]},{\"name\":\"array\",\"bytecode\":[5,27,1,15,95,3,5,27,8,15,65,3,4,5,27,6,15,17,3,27,8,15,8,4,24,2,26,8,3,2,4,0,8,2,7,3,6,7,3,16,27,10,5,27,6,15,17,3,27,8,15,8,4,24,2,26,8,3,2,4,0,8,2,7,3,6,7,3,6,24,2,26,9,3,2,1,0,6,7,3,14,2,0,6,2,27,3,15,7,4,24,3,26,10,4,1,1,8,3,7,3,6,7,3]},{\"name\":\"number\",\"bytecode\":[23,10,28,5,27,22,14,2,0,6,2,27,21,15,20,4,27,20,14,2,0,6,2,27,19,14,2,0,6,2,24,4,26,11,5,0,8,2,7,3,29]},{\"name\":\"decimal_point\",\"bytecode\":[18,9,2,1,22,9,3]},{\"name\":\"digit1_9\",\"bytecode\":[20,1,2,1,21,1,3]},{\"name\":\"e\",\"bytecode\":[20,2,2,1,21,1,3]},{\"name\":\"exp\",\"bytecode\":[5,27,18,15,38,3,27,22,14,3,0,6,27,23,14,2,0,6,2,4,27,30,15,6,3,16,3,10,27,30,6,6,6,3,15,3,4,11,3,9,8,3,7,3,6,7,3]},{\"name\":\"frac\",\"bytecode\":[5,27,16,15,25,3,4,27,30,15,6,3,16,3,10,27,30,6,6,6,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"int\",\"bytecode\":[27,24,14,22,0,6,5,27,17,15,12,3,4,27,30,16,3,10,27,30,6,11,2,9,6,7,3]},{\"name\":\"minus\",\"bytecode\":[18,10,2,1,22,10,3]},{\"name\":\"plus\",\"bytecode\":[18,11,2,1,22,11,3]},{\"name\":\"zero\",\"bytecode\":[18,12,2,1,22,12,3]},{\"name\":\"string\",\"bytecode\":[23,11,28,5,27,28,15,25,3,4,27,26,16,3,10,27,26,6,27,28,15,7,4,24,3,26,12,4,1,1,8,3,7,3,6,7,3,29]},{\"name\":\"char\",\"bytecode\":[27,29,14,241,0,6,5,27,27,15,231,3,18,13,2,1,22,13,3,14,207,0,6,18,14,2,1,22,14,3,14,196,0,6,18,15,2,1,22,15,3,14,185,0,6,5,18,16,2,1,22,16,3,15,6,0,24,1,26,13,1,0,9,14,163,0,6,5,18,17,2,1,22,17,3,15,6,0,24,1,26,14,1,0,9,14,141,0,6,5,18,18,2,1,22,18,3,15,6,0,24,1,26,15,1,0,9,14,119,0,6,5,18,19,2,1,22,19,3,15,6,0,24,1,26,16,1,0,9,14,97,0,6,5,18,20,2,1,22,20,3,15,6,0,24,1,26,17,1,0,9,14,75,0,6,5,18,21,2,1,22,21,3,15,60,3,5,5,27,31,15,30,3,27,31,15,21,4,27,31,15,12,4,27,31,15,3,4,11,4,9,8,4,7,3,8,3,7,3,8,2,7,3,6,7,3,15,2,1,6,12,9,15,7,4,24,2,26,18,3,1,0,8,2,7,3,6,7,3,15,7,4,24,2,26,19,3,1,0,8,2,7,3,6,7,3]},{\"name\":\"escape\",\"bytecode\":[18,14,2,1,22,14,3]},{\"name\":\"quotation_mark\",\"bytecode\":[18,13,2,1,22,13,3]},{\"name\":\"unescaped\",\"bytecode\":[20,3,2,1,21,1,3]},{\"name\":\"DIGIT\",\"bytecode\":[20,4,2,1,21,1,3]},{\"name\":\"HEXDIG\",\"bytecode\":[20,5,2,1,21,1,3]}],\"literals\":[\"[\",\"{\",\"]\",\"}\",\":\",\",\",\"false\",\"null\",\"true\",\".\",\"-\",\"+\",\"0\",\"\\\"\",\"\\\\\",\"/\",\"b\",\"f\",\"n\",\"r\",\"t\",\"u\"],\"classes\":[{\"value\":[\" \",\"\\t\",\"\\n\",\"\\r\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"1\",\"9\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"e\",\"E\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"\\u0000\",\"\\u001f\"],\"\\\"\",\"\\\\\"],\"inverted\":true,\"ignoreCase\":false},{\"value\":[[\"0\",\"9\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"0\",\"9\"],[\"a\",\"f\"]],\"inverted\":false,\"ignoreCase\":true}],\"expectations\":[{\"type\":\"literal\",\"value\":\"[\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"{\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"]\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"}\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\":\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\",\",\"ignoreCase\":false},{\"type\":\"rule\",\"value\":\"whitespace\"},{\"type\":\"literal\",\"value\":\"false\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"null\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"true\",\"ignoreCase\":false},{\"type\":\"rule\",\"value\":\"number\"},{\"type\":\"rule\",\"value\":\"string\"}],\"functions\":[{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return value; \"},{\"predicate\":false,\"params\":[],\"body\":\" return false; \"},{\"predicate\":false,\"params\":[],\"body\":\" return null;  \"},{\"predicate\":false,\"params\":[],\"body\":\" return true;  \"},{\"predicate\":false,\"params\":[\"head\",\"m\"],\"body\":\" return m; \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\"\\n        var result = {};\\n\\n        [head].concat(tail).forEach(function(element) {\\n          result[element.name] = element.value;\\n        });\\n\\n        return result;\\n      \"},{\"predicate\":false,\"params\":[\"members\"],\"body\":\" return members !== null ? members: {}; \"},{\"predicate\":false,\"params\":[\"name\",\"value\"],\"body\":\"\\n      return { name: name, value: value };\\n    \"},{\"predicate\":false,\"params\":[\"head\",\"v\"],\"body\":\" return v; \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\" return [head].concat(tail); \"},{\"predicate\":false,\"params\":[\"values\"],\"body\":\" return values !== null ? values : []; \"},{\"predicate\":false,\"params\":[],\"body\":\" return parseFloat(text()); \"},{\"predicate\":false,\"params\":[\"chars\"],\"body\":\" return chars.join(\\\"\\\"); \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\\b\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\\f\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\\n\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\\r\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\\t\\\"; \"},{\"predicate\":false,\"params\":[\"digits\"],\"body\":\"\\n          return String.fromCharCode(parseInt(digits, 16));\\n        \"},{\"predicate\":false,\"params\":[\"sequence\"],\"body\":\" return sequence; \"}]}",
-  ),
-  (
-    "css", "// CSS Grammar\n// ===========\n//\n// Based on grammar from CSS 2.1 specification [1] (including the errata [2]).\n// Generated parser builds a syntax tree composed of nested JavaScript objects,\n// vaguely inspired by CSS DOM [3]. The CSS DOM itself wasn't used as it is not\n// expressive enough (e.g. selectors are reflected as text, not structured\n// objects) and somewhat cumbersome.\n//\n// Limitations:\n//\n//   * Many errors which should be recovered from according to the specification\n//     (e.g. malformed declarations or unexpected end of stylesheet) are fatal.\n//     This is a result of straightforward rewrite of the CSS grammar to PEG.js.\n//\n// [1] http://www.w3.org/TR/2011/REC-CSS2-20110607\n// [2] http://www.w3.org/Style/css2-updates/REC-CSS2-20110607-errata.html\n// [3] http://www.w3.org/TR/DOM-Level-2-Style/css.html\n\n{\n  function extractOptional(optional, index) {\n    return optional ? optional[index] : null;\n  }\n\n  function extractList(list, index) {\n    return list.map(function(element) { return element[index]; });\n  }\n\n  function buildList(head, tail, index) {\n    return [head].concat(extractList(tail, index))\n      .filter(function(element) { return element !== null; });\n  }\n\n  function buildExpression(head, tail) {\n    return tail.reduce(function(result, element) {\n      return {\n        type: \"Expression\",\n        operator: element[0],\n        left: result,\n        right: element[1]\n      };\n    }, head);\n  }\n}\n\nstart\n  = stylesheet:stylesheet comment* { return stylesheet; }\n\n// ----- G.1 Grammar -----\n\nstylesheet\n  = charset:(CHARSET_SYM STRING \";\")? (S / CDO / CDC)*\n    imports:(import (CDO S* / CDC S*)*)*\n    rules:((ruleset / media / page) (CDO S* / CDC S*)*)*\n    {\n      return {\n        type: \"StyleSheet\",\n        charset: extractOptional(charset, 1),\n        imports: extractList(imports, 0),\n        rules: extractList(rules, 0)\n      };\n    }\n\nimport\n  = IMPORT_SYM S* href:(STRING / URI) S* media:media_list? \";\" S* {\n      return {\n        type: \"ImportRule\",\n        href: href,\n        media: media !== null ? media : []\n      };\n    }\n\nmedia\n  = MEDIA_SYM S* media:media_list \"{\" S* rules:ruleset* \"}\" S* {\n      return {\n        type: \"MediaRule\",\n        media: media,\n        rules: rules\n      };\n    }\n\nmedia_list\n  = head:medium tail:(\",\" S* medium)* { return buildList(head, tail, 2); }\n\nmedium\n  = name:IDENT S* { return name; }\n\npage\n  = PAGE_SYM S* selector:pseudo_page?\n    \"{\" S*\n    declarationsHead:declaration?\n    declarationsTail:(\";\" S* declaration?)*\n    \"}\" S*\n    {\n      return {\n        type: \"PageRule\",\n        selector: selector,\n        declarations: buildList(declarationsHead, declarationsTail, 2)\n      };\n    }\n\npseudo_page\n  = \":\" value:IDENT S* { return { type: \"PseudoSelector\", value: value }; }\n\noperator\n  = \"/\" S* { return \"/\"; }\n  / \",\" S* { return \",\"; }\n\ncombinator\n  = \"+\" S* { return \"+\"; }\n  / \">\" S* { return \">\"; }\n\nproperty\n  = name:IDENT S* { return name; }\n\nruleset\n  = selectorsHead:selector\n    selectorsTail:(\",\" S* selector)*\n    \"{\" S*\n    declarationsHead:declaration?\n    declarationsTail:(\";\" S* declaration?)*\n    \"}\" S*\n    {\n      return {\n        type: \"RuleSet\",\n        selectors: buildList(selectorsHead, selectorsTail, 2),\n        declarations: buildList(declarationsHead, declarationsTail, 2)\n      };\n    }\n\nselector\n  = left:simple_selector S* combinator:combinator right:selector {\n      return {\n        type: \"Selector\",\n        combinator: combinator,\n        left: left,\n        right: right\n      };\n    }\n  / left:simple_selector S+ right:selector {\n      return {\n        type: \"Selector\",\n        combinator: \" \",\n        left: left,\n        right: right\n      };\n    }\n  / selector:simple_selector S* { return selector; }\n\nsimple_selector\n  = element:element_name qualifiers:(id / class / attrib / pseudo)* {\n      return {\n        type: \"SimpleSelector\",\n        element: element,\n        qualifiers: qualifiers\n      };\n    }\n  / qualifiers:(id / class / attrib / pseudo)+ {\n      return {\n        type: \"SimpleSelector\",\n        element: \"*\",\n        qualifiers: qualifiers\n      };\n    }\n\nid\n  = id:HASH { return { type: \"IDSelector\", id: id }; }\n\nclass\n  = \".\" class_:IDENT { return { type: \"ClassSelector\", \"class\": class_ }; }\n\nelement_name\n  = IDENT\n  / \"*\"\n\nattrib\n  = \"[\" S*\n    attribute:IDENT S*\n    operatorAndValue:((\"=\" / INCLUDES / DASHMATCH) S* (IDENT / STRING) S*)?\n    \"]\"\n    {\n      return {\n        type: \"AttributeSelector\",\n        attribute: attribute,\n        operator: extractOptional(operatorAndValue, 0),\n        value: extractOptional(operatorAndValue, 2)\n      };\n    }\n\npseudo\n  = \":\"\n    value:(\n        name:FUNCTION S* params:(IDENT S*)? \")\" {\n          return {\n            type: \"Function\",\n            name: name,\n            params: params !== null ? [params[0]] : []\n          };\n        }\n      / IDENT\n    )\n    { return { type: \"PseudoSelector\", value: value }; }\n\ndeclaration\n  = name:property ':' S* value:expr prio:prio? {\n      return {\n        type: \"Declaration\",\n        name: name,\n        value: value,\n        important: prio !== null\n      };\n    }\n\nprio\n  = IMPORTANT_SYM S*\n\nexpr\n  = head:term tail:(operator? term)* { return buildExpression(head, tail); }\n\nterm\n  = quantity:(PERCENTAGE / LENGTH / EMS / EXS / ANGLE / TIME / FREQ / NUMBER)\n    S*\n    {\n      return {\n        type: \"Quantity\",\n        value: quantity.value,\n        unit: quantity.unit\n      };\n    }\n  / value:STRING S* { return { type: \"String\", value: value }; }\n  / value:URI S*    { return { type: \"URI\",    value: value }; }\n  / function\n  / hexcolor\n  / value:IDENT S*  { return { type: \"Ident\",  value: value }; }\n\nfunction\n  = name:FUNCTION S* params:expr \")\" S* {\n      return { type: \"Function\", name: name, params: params };\n    }\n\nhexcolor\n  = value:HASH S* { return { type: \"Hexcolor\", value: value }; }\n\n// ----- G.2 Lexical scanner -----\n\n// Macros\n\nh\n  = [0-9a-f]i\n\nnonascii\n  = [\\x80-\\uFFFF]\n\nunicode\n  = \"\\\\\" digits:$(h h? h? h? h? h?) (\"\\r\\n\" / [ \\t\\r\\n\\f])? {\n      return String.fromCharCode(parseInt(digits, 16));\n    }\n\nescape\n  = unicode\n  / \"\\\\\" ch:[^\\r\\n\\f0-9a-f]i { return ch; }\n\nnmstart\n  = [_a-z]i\n  / nonascii\n  / escape\n\nnmchar\n  = [_a-z0-9-]i\n  / nonascii\n  / escape\n\nstring1\n  = '\"' chars:([^\\n\\r\\f\\\\\"] / \"\\\\\" nl:nl { return \"\"; } / escape)* '\"' {\n      return chars.join(\"\");\n    }\n\nstring2\n  = \"'\" chars:([^\\n\\r\\f\\\\'] / \"\\\\\" nl:nl { return \"\"; } / escape)* \"'\" {\n      return chars.join(\"\");\n    }\n\ncomment\n  = \"/*\" [^*]* \"*\"+ ([^/*] [^*]* \"*\"+)* \"/\"\n\nident\n  = prefix:$\"-\"? start:nmstart chars:nmchar* {\n      return prefix + start + chars.join(\"\");\n    }\n\nname\n  = chars:nmchar+ { return chars.join(\"\"); }\n\nnum\n  = [+-]? ([0-9]* \".\" [0-9]+ / [0-9]+) (\"e\" [+-]? [0-9]+)? {\n      return parseFloat(text());\n    }\n\nstring\n  = string1\n  / string2\n\nurl\n  = chars:([!#$%&*-\\[\\]-~] / nonascii / escape)* { return chars.join(\"\"); }\n\ns\n  = [ \\t\\r\\n\\f]+\n\nw\n  = s?\n\nnl\n  = \"\\n\"\n  / \"\\r\\n\"\n  / \"\\r\"\n  / \"\\f\"\n\nA  = \"a\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x41\\x61] (\"\\r\\n\" / [ \\t\\r\\n\\f])? { return \"a\"; }\nC  = \"c\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x43\\x63] (\"\\r\\n\" / [ \\t\\r\\n\\f])? { return \"c\"; }\nD  = \"d\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x44\\x64] (\"\\r\\n\" / [ \\t\\r\\n\\f])? { return \"d\"; }\nE  = \"e\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x45\\x65] (\"\\r\\n\" / [ \\t\\r\\n\\f])? { return \"e\"; }\nG  = \"g\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x47\\x67] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\g\"i { return \"g\"; }\nH  = \"h\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x48\\x68] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\h\"i { return \"h\"; }\nI  = \"i\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x49\\x69] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\i\"i { return \"i\"; }\nK  = \"k\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x4b\\x6b] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\k\"i { return \"k\"; }\nL  = \"l\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x4c\\x6c] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\l\"i { return \"l\"; }\nM  = \"m\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x4d\\x6d] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\m\"i { return \"m\"; }\nN  = \"n\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x4e\\x6e] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\n\"i { return \"n\"; }\nO  = \"o\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x4f\\x6f] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\o\"i { return \"o\"; }\nP  = \"p\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x50\\x70] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\p\"i { return \"p\"; }\nR  = \"r\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x52\\x72] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\r\"i { return \"r\"; }\nS_ = \"s\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x53\\x73] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\s\"i { return \"s\"; }\nT  = \"t\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x54\\x74] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\t\"i { return \"t\"; }\nU  = \"u\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x55\\x75] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\u\"i { return \"u\"; }\nX  = \"x\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x58\\x78] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\x\"i { return \"x\"; }\nZ  = \"z\"i / \"\\\\\" \"0\"? \"0\"? \"0\"? \"0\"? [\\x5a\\x7a] (\"\\r\\n\" / [ \\t\\r\\n\\f])? / \"\\\\z\"i { return \"z\"; }\n\n// Tokens\n\nS \"whitespace\"\n  = comment* s\n\nCDO \"<!--\"\n  = comment* \"<!--\"\n\nCDC \"-->\"\n  = comment* \"-->\"\n\nINCLUDES \"~=\"\n  = comment* \"~=\"\n\nDASHMATCH \"|=\"\n  = comment* \"|=\"\n\nSTRING \"string\"\n  = comment* string:string { return string; }\n\nIDENT \"identifier\"\n  = comment* ident:ident { return ident; }\n\nHASH \"hash\"\n  = comment* \"#\" name:name { return \"#\" + name; }\n\nIMPORT_SYM \"@import\"\n  = comment* \"@\" I M P O R T\n\nPAGE_SYM \"@page\"\n  = comment* \"@\" P A G E\n\nMEDIA_SYM \"@media\"\n  = comment* \"@\" M E D I A\n\nCHARSET_SYM \"@charset\"\n  = comment* \"@charset \"\n\n// We use |s| instead of |w| here to avoid infinite recursion.\nIMPORTANT_SYM \"!important\"\n  = comment* \"!\" (s / comment)* I M P O R T A N T\n\nEMS \"length\"\n  = comment* value:num E M { return { value: value, unit: \"em\" }; }\n\nEXS \"length\"\n  = comment* value:num E X { return { value: value, unit: \"ex\" }; }\n\nLENGTH \"length\"\n  = comment* value:num P X { return { value: value, unit: \"px\" }; }\n  / comment* value:num C M { return { value: value, unit: \"cm\" }; }\n  / comment* value:num M M { return { value: value, unit: \"mm\" }; }\n  / comment* value:num I N { return { value: value, unit: \"in\" }; }\n  / comment* value:num P T { return { value: value, unit: \"pt\" }; }\n  / comment* value:num P C { return { value: value, unit: \"pc\" }; }\n\nANGLE \"angle\"\n  = comment* value:num D E G   { return { value: value, unit: \"deg\"  }; }\n  / comment* value:num R A D   { return { value: value, unit: \"rad\"  }; }\n  / comment* value:num G R A D { return { value: value, unit: \"grad\" }; }\n\nTIME \"time\"\n  = comment* value:num M S_ { return { value: value, unit: \"ms\" }; }\n  / comment* value:num S_   { return { value: value, unit: \"s\"  }; }\n\nFREQ \"frequency\"\n  = comment* value:num H Z   { return { value: value, unit: \"hz\" }; }\n  / comment* value:num K H Z { return { value: value, unit: \"kh\" }; }\n\nPERCENTAGE \"percentage\"\n  = comment* value:num \"%\" { return { value: value, unit: \"%\" }; }\n\nNUMBER \"number\"\n  = comment* value:num { return { value: value, unit: null }; }\n\nURI \"uri\"\n  = comment* U R L \"(\"i w url:string w \")\" { return url; }\n  / comment* U R L \"(\"i w url:url w \")\"    { return url; }\n\nFUNCTION \"function\"\n  = comment* name:ident \"(\" { return name; }\n",
-    "{\"rules\":[{\"name\":\"start\",\"bytecode\":[5,27,1,4,27,33,16,3,10,27,33,6,24,2,26,0,3,1,1]},{\"name\":\"stylesheet\",\"bytecode\":[5,5,27,72,15,28,3,27,66,15,19,4,23,0,18,0,2,1,22,0,3,15,3,4,11,3,9,8,3,7,3,8,2,7,3,6,7,3,14,2,0,6,2,4,27,61,14,9,0,6,27,62,14,3,0,6,27,63,16,15,10,27,61,14,9,0,6,27,62,14,3,0,6,27,63,6,4,5,27,2,15,100,3,4,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,16,47,10,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,6,11,2,9,6,7,3,16,110,10,5,27,2,15,100,3,4,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,16,47,10,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,6,11,2,9,6,7,3,6,4,5,27,11,14,9,0,6,27,3,14,3,0,6,27,6,15,100,3,4,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,16,47,10,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,6,11,2,9,6,7,3,16,122,10,5,27,11,14,9,0,6,27,3,14,3,0,6,27,6,15,100,3,4,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,16,47,10,5,27,62,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,22,0,6,5,27,63,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,6,11,2,9,6,7,3,6,24,4,26,1,5,3,3,1,0]},{\"name\":\"import\",\"bytecode\":[5,27,69,15,73,3,4,27,61,16,3,10,27,61,6,27,66,14,3,0,6,27,82,15,49,4,4,27,61,16,3,10,27,61,6,27,4,14,2,0,6,2,23,0,18,0,2,1,22,0,3,15,17,4,4,27,61,16,3,10,27,61,6,24,7,26,2,8,2,4,2,8,6,7,3,8,3,7,3,6,7,3]},{\"name\":\"media\",\"bytecode\":[5,27,71,15,85,3,4,27,61,16,3,10,27,61,6,27,4,15,67,4,23,1,18,1,2,1,22,1,3,15,51,4,4,27,61,16,3,10,27,61,6,4,27,11,16,3,10,27,11,6,23,2,18,2,2,1,22,2,3,15,17,4,4,27,61,16,3,10,27,61,6,24,8,26,3,9,2,5,2,8,7,7,3,8,4,7,3,8,3,7,3,6,7,3]},{\"name\":\"media_list\",\"bytecode\":[5,27,5,15,87,3,4,5,23,3,18,3,2,1,22,3,3,15,21,3,4,27,61,16,3,10,27,61,6,27,5,15,3,4,11,3,9,8,3,7,3,6,7,3,16,38,10,5,23,3,18,3,2,1,22,3,3,15,21,3,4,27,61,16,3,10,27,61,6,27,5,15,3,4,11,3,9,8,3,7,3,6,7,3,6,24,2,26,4,3,2,1,0,6,7,3]},{\"name\":\"medium\",\"bytecode\":[5,27,67,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,5,3,1,1,6,7,3]},{\"name\":\"page\",\"bytecode\":[5,27,70,15,157,3,4,27,61,16,3,10,27,61,6,27,7,14,2,0,6,2,23,1,18,1,2,1,22,1,3,15,125,4,4,27,61,16,3,10,27,61,6,27,19,14,2,0,6,2,4,5,23,0,18,0,2,1,22,0,3,15,19,3,4,27,61,16,3,10,27,61,6,27,19,14,2,0,6,2,11,3,9,6,7,3,16,36,10,5,23,0,18,0,2,1,22,0,3,15,19,3,4,27,61,16,3,10,27,61,6,27,19,14,2,0,6,2,11,3,9,6,7,3,6,23,2,18,2,2,1,22,2,3,15,18,4,4,27,61,16,3,10,27,61,6,24,9,26,6,10,3,6,3,2,8,8,7,3,8,4,7,3,6,7,3]},{\"name\":\"pseudo_page\",\"bytecode\":[5,23,4,18,4,2,1,22,4,3,15,25,3,27,67,15,16,4,4,27,61,16,3,10,27,61,6,24,3,26,7,4,1,1,8,2,7,3,6,7,3]},{\"name\":\"operator\",\"bytecode\":[5,23,5,18,5,2,1,22,5,3,15,15,3,4,27,61,16,3,10,27,61,6,24,2,26,8,3,0,6,7,3,14,32,0,6,5,23,3,18,3,2,1,22,3,3,15,15,3,4,27,61,16,3,10,27,61,6,24,2,26,9,3,0,6,7,3]},{\"name\":\"combinator\",\"bytecode\":[5,23,6,18,6,2,1,22,6,3,15,15,3,4,27,61,16,3,10,27,61,6,24,2,26,10,3,0,6,7,3,14,32,0,6,5,23,7,18,7,2,1,22,7,3,15,15,3,4,27,61,16,3,10,27,61,6,24,2,26,11,3,0,6,7,3]},{\"name\":\"property\",\"bytecode\":[5,27,67,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,5,3,1,1,6,7,3]},{\"name\":\"ruleset\",\"bytecode\":[5,27,12,15,221,3,4,5,23,3,18,3,2,1,22,3,3,15,21,3,4,27,61,16,3,10,27,61,6,27,12,15,3,4,11,3,9,8,3,7,3,6,7,3,16,38,10,5,23,3,18,3,2,1,22,3,3,15,21,3,4,27,61,16,3,10,27,61,6,27,12,15,3,4,11,3,9,8,3,7,3,6,7,3,6,23,1,18,1,2,1,22,1,3,15,126,4,4,27,61,16,3,10,27,61,6,27,19,14,2,0,6,2,4,5,23,0,18,0,2,1,22,0,3,15,19,3,4,27,61,16,3,10,27,61,6,27,19,14,2,0,6,2,11,3,9,6,7,3,16,36,10,5,23,0,18,0,2,1,22,0,3,15,19,3,4,27,61,16,3,10,27,61,6,27,19,14,2,0,6,2,11,3,9,6,7,3,6,23,2,18,2,2,1,22,2,3,15,19,4,4,27,61,16,3,10,27,61,6,24,8,26,12,9,4,7,6,3,2,8,7,7,3,8,3,7,3,6,7,3]},{\"name\":\"selector\",\"bytecode\":[5,27,13,15,36,3,4,27,61,16,3,10,27,61,6,27,9,15,18,4,27,12,15,9,4,24,4,26,13,5,3,3,1,0,8,4,7,3,8,3,7,3,6,7,3,14,78,0,6,5,27,13,15,39,3,4,27,61,15,6,3,16,3,10,27,61,6,6,6,3,15,17,4,27,12,15,8,4,24,3,26,14,4,2,2,0,8,3,7,3,8,2,7,3,6,7,3,14,26,0,6,5,27,13,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,15,3,1,1,6,7,3]},{\"name\":\"simple_selector\",\"bytecode\":[5,27,16,15,53,3,4,27,14,14,15,0,6,27,15,14,9,0,6,27,17,14,3,0,6,27,18,16,21,10,27,14,14,15,0,6,27,15,14,9,0,6,27,17,14,3,0,6,27,18,6,24,2,26,16,3,2,1,0,6,7,3,14,64,0,6,5,4,27,14,14,15,0,6,27,15,14,9,0,6,27,17,14,3,0,6,27,18,15,24,3,16,21,10,27,14,14,15,0,6,27,15,14,9,0,6,27,17,14,3,0,6,27,18,6,6,6,3,15,7,0,24,1,26,17,1,1,0,9]},{\"name\":\"id\",\"bytecode\":[5,27,68,15,7,0,24,1,26,18,1,1,0,9]},{\"name\":\"class\",\"bytecode\":[5,23,8,18,8,2,1,22,8,3,15,16,3,27,67,15,7,4,24,2,26,19,3,1,0,8,2,7,3,6,7,3]},{\"name\":\"element_name\",\"bytecode\":[27,67,14,10,0,6,23,9,18,9,2,1,22,9,3]},{\"name\":\"attrib\",\"bytecode\":[5,23,10,18,10,2,1,22,10,3,15,120,3,4,27,61,16,3,10,27,61,6,27,67,15,102,4,4,27,61,16,3,10,27,61,6,5,23,11,18,11,2,1,22,11,3,14,9,0,6,27,64,14,3,0,6,27,65,15,36,3,4,27,61,16,3,10,27,61,6,27,67,14,3,0,6,27,66,15,12,4,4,27,61,16,3,10,27,61,6,11,4,9,8,3,7,3,6,7,3,14,2,0,6,2,23,12,18,12,2,1,22,12,3,15,8,4,24,6,26,20,7,2,3,1,8,6,7,3,8,3,7,3,6,7,3]},{\"name\":\"pseudo\",\"bytecode\":[5,23,4,18,4,2,1,22,4,3,15,88,3,5,27,83,15,59,3,4,27,61,16,3,10,27,61,6,5,27,67,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3,14,2,0,6,2,23,13,18,13,2,1,22,13,3,15,8,4,24,4,26,21,5,2,3,1,8,4,7,3,6,7,3,14,3,0,6,27,67,15,7,4,24,2,26,7,3,1,0,8,2,7,3,6,7,3]},{\"name\":\"declaration\",\"bytecode\":[5,27,10,15,50,3,23,4,18,4,2,1,22,4,3,15,34,4,4,27,61,16,3,10,27,61,6,27,21,15,16,4,27,20,14,2,0,6,2,24,5,26,22,6,3,4,1,0,8,4,7,3,8,2,7,3,6,7,3]},{\"name\":\"prio\",\"bytecode\":[5,27,73,15,12,3,4,27,61,16,3,10,27,61,6,11,2,9,6,7,3]},{\"name\":\"expr\",\"bytecode\":[5,27,22,15,53,3,4,5,27,8,14,2,0,6,2,27,22,15,3,4,11,2,9,8,2,7,3,16,21,10,5,27,8,14,2,0,6,2,27,22,15,3,4,11,2,9,8,2,7,3,6,24,2,26,23,3,2,1,0,6,7,3]},{\"name\":\"term\",\"bytecode\":[5,27,80,14,39,0,6,27,76,14,33,0,6,27,74,14,27,0,6,27,75,14,21,0,6,27,77,14,15,0,6,27,78,14,9,0,6,27,79,14,3,0,6,27,81,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,24,3,1,1,6,7,3,14,96,0,6,5,27,66,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,25,3,1,1,6,7,3,14,67,0,6,5,27,82,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,26,3,1,1,6,7,3,14,38,0,6,27,23,14,32,0,6,27,24,14,26,0,6,5,27,67,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,27,3,1,1,6,7,3]},{\"name\":\"function\",\"bytecode\":[5,27,83,15,51,3,4,27,61,16,3,10,27,61,6,27,21,15,33,4,23,13,18,13,2,1,22,13,3,15,17,4,4,27,61,16,3,10,27,61,6,24,5,26,28,6,2,4,2,8,4,7,3,8,3,7,3,6,7,3]},{\"name\":\"hexcolor\",\"bytecode\":[5,27,68,15,16,3,4,27,61,16,3,10,27,61,6,24,2,26,29,3,1,1,6,7,3]},{\"name\":\"h\",\"bytecode\":[20,0,2,1,21,1,3]},{\"name\":\"nonascii\",\"bytecode\":[20,1,2,1,21,1,3]},{\"name\":\"unicode\",\"bytecode\":[5,18,14,2,1,22,14,3,15,91,3,5,5,27,25,15,38,3,27,25,14,2,0,6,2,27,25,14,2,0,6,2,27,25,14,2,0,6,2,27,25,14,2,0,6,2,27,25,14,2,0,6,2,11,6,9,6,7,3,15,2,1,6,12,9,15,30,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,24,3,26,30,4,1,1,8,2,7,3,6,7,3]},{\"name\":\"escape\",\"bytecode\":[27,27,14,36,0,6,5,18,14,2,1,22,14,3,15,21,3,20,3,2,1,21,1,3,15,7,4,24,2,26,31,3,1,0,8,2,7,3,6,7,3]},{\"name\":\"nmstart\",\"bytecode\":[20,4,2,1,21,1,3,14,9,0,6,27,26,14,3,0,6,27,28]},{\"name\":\"nmchar\",\"bytecode\":[20,5,2,1,21,1,3,14,9,0,6,27,26,14,3,0,6,27,28]},{\"name\":\"string1\",\"bytecode\":[5,18,16,2,1,22,16,3,15,120,3,4,20,6,2,1,21,1,3,14,37,0,6,5,18,14,2,1,22,14,3,15,16,3,27,41,15,7,4,24,2,26,32,3,1,0,8,2,7,3,6,7,3,14,3,0,6,27,28,16,48,10,20,6,2,1,21,1,3,14,37,0,6,5,18,14,2,1,22,14,3,15,16,3,27,41,15,7,4,24,2,26,32,3,1,0,8,2,7,3,6,7,3,14,3,0,6,27,28,6,18,16,2,1,22,16,3,15,7,4,24,3,26,33,4,1,1,8,3,7,3,6,7,3]},{\"name\":\"string2\",\"bytecode\":[5,18,17,2,1,22,17,3,15,120,3,4,20,7,2,1,21,1,3,14,37,0,6,5,18,14,2,1,22,14,3,15,16,3,27,41,15,7,4,24,2,26,32,3,1,0,8,2,7,3,6,7,3,14,3,0,6,27,28,16,48,10,20,7,2,1,21,1,3,14,37,0,6,5,18,14,2,1,22,14,3,15,16,3,27,41,15,7,4,24,2,26,32,3,1,0,8,2,7,3,6,7,3,14,3,0,6,27,28,6,18,17,2,1,22,17,3,15,7,4,24,3,26,33,4,1,1,8,3,7,3,6,7,3]},{\"name\":\"comment\",\"bytecode\":[5,23,14,18,18,2,1,22,18,3,15,239,3,4,23,15,20,8,2,1,21,1,3,16,10,10,23,15,20,8,2,1,21,1,3,6,4,23,9,18,9,2,1,22,9,3,15,13,3,16,10,10,23,9,18,9,2,1,22,9,3,6,6,6,3,15,180,4,4,5,23,16,20,9,2,1,21,1,3,15,62,3,4,23,15,20,8,2,1,21,1,3,16,10,10,23,15,20,8,2,1,21,1,3,6,4,23,9,18,9,2,1,22,9,3,15,13,3,16,10,10,23,9,18,9,2,1,22,9,3,6,6,6,3,15,3,4,11,3,9,8,3,7,3,6,7,3,16,79,10,5,23,16,20,9,2,1,21,1,3,15,62,3,4,23,15,20,8,2,1,21,1,3,16,10,10,23,15,20,8,2,1,21,1,3,6,4,23,9,18,9,2,1,22,9,3,15,13,3,16,10,10,23,9,18,9,2,1,22,9,3,6,6,6,3,15,3,4,11,3,9,8,3,7,3,6,7,3,6,23,5,18,5,2,1,22,5,3,15,3,4,11,5,9,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"ident\",\"bytecode\":[5,5,18,19,2,1,22,19,3,14,2,0,6,2,6,12,27,29,15,18,4,4,27,30,16,3,10,27,30,6,24,3,26,34,4,3,2,1,0,8,2,7,3]},{\"name\":\"name\",\"bytecode\":[5,4,27,30,15,6,3,16,3,10,27,30,6,6,6,3,15,7,0,24,1,26,35,1,1,0,9]},{\"name\":\"num\",\"bytecode\":[5,20,10,2,1,21,1,3,14,2,0,6,2,5,4,20,11,2,1,21,1,3,16,8,10,20,11,2,1,21,1,3,6,18,8,2,1,22,8,3,15,35,4,4,20,11,2,1,21,1,3,15,11,3,16,8,10,20,11,2,1,21,1,3,6,6,6,3,15,3,4,11,3,9,8,3,7,3,8,2,7,3,14,26,0,6,4,20,11,2,1,21,1,3,15,11,3,16,8,10,20,11,2,1,21,1,3,6,6,6,3,15,72,4,5,18,20,2,1,22,20,3,15,47,3,20,10,2,1,21,1,3,14,2,0,6,2,4,20,11,2,1,21,1,3,15,11,3,16,8,10,20,11,2,1,21,1,3,6,6,6,3,15,3,4,11,3,9,8,3,7,3,6,7,3,14,2,0,6,2,24,3,26,36,4,0,8,2,7,3]},{\"name\":\"string\",\"bytecode\":[27,31,14,3,0,6,27,32]},{\"name\":\"url\",\"bytecode\":[5,4,20,12,2,1,21,1,3,14,9,0,6,27,26,14,3,0,6,27,28,16,20,10,20,12,2,1,21,1,3,14,9,0,6,27,26,14,3,0,6,27,28,6,24,1,26,35,1,1,0,9]},{\"name\":\"s\",\"bytecode\":[4,20,2,2,1,21,1,3,15,11,3,16,8,10,20,2,2,1,21,1,3,6,6,6,3]},{\"name\":\"w\",\"bytecode\":[27,39,14,2,0,6,2]},{\"name\":\"nl\",\"bytecode\":[18,21,2,1,22,21,3,14,30,0,6,18,15,2,1,22,15,3,14,19,0,6,18,22,2,1,22,22,3,14,8,0,6,18,23,2,1,22,23,3]},{\"name\":\"A\",\"bytecode\":[19,24,2,1,21,1,3,14,106,0,6,5,18,14,2,1,22,14,3,15,91,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,13,2,1,21,1,3,15,29,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,24,7,26,37,8,0,8,6,7,3,6,7,3]},{\"name\":\"C\",\"bytecode\":[19,26,2,1,21,1,3,14,106,0,6,5,18,14,2,1,22,14,3,15,91,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,14,2,1,21,1,3,15,29,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,24,7,26,38,8,0,8,6,7,3,6,7,3]},{\"name\":\"D\",\"bytecode\":[19,27,2,1,21,1,3,14,106,0,6,5,18,14,2,1,22,14,3,15,91,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,15,2,1,21,1,3,15,29,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,24,7,26,39,8,0,8,6,7,3,6,7,3]},{\"name\":\"E\",\"bytecode\":[19,20,2,1,21,1,3,14,106,0,6,5,18,14,2,1,22,14,3,15,91,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,16,2,1,21,1,3,15,29,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,24,7,26,40,8,0,8,6,7,3,6,7,3]},{\"name\":\"G\",\"bytecode\":[19,28,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,17,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,29,2,1,21,2,3,15,6,0,24,1,26,41,1,0,9]},{\"name\":\"H\",\"bytecode\":[19,30,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,18,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,31,2,1,21,2,3,15,6,0,24,1,26,42,1,0,9]},{\"name\":\"I\",\"bytecode\":[19,32,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,19,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,33,2,1,21,2,3,15,6,0,24,1,26,43,1,0,9]},{\"name\":\"K\",\"bytecode\":[19,34,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,20,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,35,2,1,21,2,3,15,6,0,24,1,26,44,1,0,9]},{\"name\":\"L\",\"bytecode\":[19,36,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,21,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,37,2,1,21,2,3,15,6,0,24,1,26,45,1,0,9]},{\"name\":\"M\",\"bytecode\":[19,38,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,22,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,39,2,1,21,2,3,15,6,0,24,1,26,46,1,0,9]},{\"name\":\"N\",\"bytecode\":[19,40,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,23,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,41,2,1,21,2,3,15,6,0,24,1,26,47,1,0,9]},{\"name\":\"O\",\"bytecode\":[19,42,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,24,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,43,2,1,21,2,3,15,6,0,24,1,26,48,1,0,9]},{\"name\":\"P\",\"bytecode\":[19,44,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,25,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,45,2,1,21,2,3,15,6,0,24,1,26,49,1,0,9]},{\"name\":\"R\",\"bytecode\":[19,46,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,26,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,47,2,1,21,2,3,15,6,0,24,1,26,50,1,0,9]},{\"name\":\"S_\",\"bytecode\":[19,48,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,27,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,49,2,1,21,2,3,15,6,0,24,1,26,51,1,0,9]},{\"name\":\"T\",\"bytecode\":[19,50,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,28,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,51,2,1,21,2,3,15,6,0,24,1,26,52,1,0,9]},{\"name\":\"U\",\"bytecode\":[19,52,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,29,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,53,2,1,21,2,3,15,6,0,24,1,26,53,1,0,9]},{\"name\":\"X\",\"bytecode\":[19,54,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,30,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,55,2,1,21,2,3,15,6,0,24,1,26,54,1,0,9]},{\"name\":\"Z\",\"bytecode\":[19,56,2,1,21,1,3,14,125,0,6,5,18,14,2,1,22,14,3,15,88,3,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,18,25,2,1,22,25,3,14,2,0,6,2,20,31,2,1,21,1,3,15,26,4,18,15,2,1,22,15,3,14,8,0,6,20,2,2,1,21,1,3,14,2,0,6,2,11,7,9,8,6,7,3,6,7,3,14,19,0,6,5,19,57,2,1,21,2,3,15,6,0,24,1,26,55,1,0,9]},{\"name\":\"S\",\"bytecode\":[23,17,28,5,4,27,33,16,3,10,27,33,6,27,39,15,3,4,11,2,9,8,2,7,3,29]},{\"name\":\"CDO\",\"bytecode\":[23,18,28,5,4,27,33,16,3,10,27,33,6,18,58,2,1,22,58,3,15,3,4,11,2,9,8,2,7,3,29]},{\"name\":\"CDC\",\"bytecode\":[23,19,28,5,4,27,33,16,3,10,27,33,6,18,59,2,1,22,59,3,15,3,4,11,2,9,8,2,7,3,29]},{\"name\":\"INCLUDES\",\"bytecode\":[23,20,28,5,4,27,33,16,3,10,27,33,6,18,60,2,1,22,60,3,15,3,4,11,2,9,8,2,7,3,29]},{\"name\":\"DASHMATCH\",\"bytecode\":[23,21,28,5,4,27,33,16,3,10,27,33,6,18,61,2,1,22,61,3,15,3,4,11,2,9,8,2,7,3,29]},{\"name\":\"STRING\",\"bytecode\":[23,22,28,5,4,27,33,16,3,10,27,33,6,27,37,15,7,4,24,2,26,56,3,1,0,8,2,7,3,29]},{\"name\":\"IDENT\",\"bytecode\":[23,23,28,5,4,27,33,16,3,10,27,33,6,27,34,15,7,4,24,2,26,57,3,1,0,8,2,7,3,29]},{\"name\":\"HASH\",\"bytecode\":[23,24,28,5,4,27,33,16,3,10,27,33,6,18,62,2,1,22,62,3,15,16,4,27,35,15,7,4,24,3,26,58,4,1,0,8,3,7,3,8,2,7,3,29]},{\"name\":\"IMPORT_SYM\",\"bytecode\":[23,25,28,5,4,27,33,16,3,10,27,33,6,18,63,2,1,22,63,3,15,57,4,27,48,15,48,4,27,51,15,39,4,27,54,15,30,4,27,53,15,21,4,27,55,15,12,4,27,57,15,3,4,11,8,9,8,8,7,3,8,7,7,3,8,6,7,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,29]},{\"name\":\"PAGE_SYM\",\"bytecode\":[23,26,28,5,4,27,33,16,3,10,27,33,6,18,63,2,1,22,63,3,15,39,4,27,54,15,30,4,27,42,15,21,4,27,46,15,12,4,27,45,15,3,4,11,6,9,8,6,7,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,29]},{\"name\":\"MEDIA_SYM\",\"bytecode\":[23,27,28,5,4,27,33,16,3,10,27,33,6,18,63,2,1,22,63,3,15,48,4,27,51,15,39,4,27,45,15,30,4,27,44,15,21,4,27,48,15,12,4,27,42,15,3,4,11,7,9,8,7,7,3,8,6,7,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,29]},{\"name\":\"CHARSET_SYM\",\"bytecode\":[23,28,28,5,4,27,33,16,3,10,27,33,6,18,64,2,1,22,64,3,15,3,4,11,2,9,8,2,7,3,29]},{\"name\":\"IMPORTANT_SYM\",\"bytecode\":[23,29,28,5,4,27,33,16,3,10,27,33,6,18,65,2,1,22,65,3,15,105,4,4,27,39,14,3,0,6,27,33,16,9,10,27,39,14,3,0,6,27,33,6,27,48,15,75,4,27,51,15,66,4,27,54,15,57,4,27,53,15,48,4,27,55,15,39,4,27,57,15,30,4,27,42,15,21,4,27,52,15,12,4,27,57,15,3,4,11,12,9,8,12,7,3,8,11,7,3,8,10,7,3,8,9,7,3,8,8,7,3,8,7,7,3,8,6,7,3,8,5,7,3,8,4,7,3,8,2,7,3,29]},{\"name\":\"EMS\",\"bytecode\":[23,30,28,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,45,15,16,4,27,51,15,7,4,24,4,26,59,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,29]},{\"name\":\"EXS\",\"bytecode\":[23,30,28,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,45,15,16,4,27,59,15,7,4,24,4,26,60,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,29]},{\"name\":\"LENGTH\",\"bytecode\":[23,30,28,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,54,15,16,4,27,59,15,7,4,24,4,26,61,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,237,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,43,15,16,4,27,51,15,7,4,24,4,26,62,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,189,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,51,15,16,4,27,51,15,7,4,24,4,26,63,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,141,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,48,15,16,4,27,52,15,7,4,24,4,26,64,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,93,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,54,15,16,4,27,57,15,7,4,24,4,26,65,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,45,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,54,15,16,4,27,43,15,7,4,24,4,26,66,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,29]},{\"name\":\"ANGLE\",\"bytecode\":[23,31,28,5,4,27,33,16,3,10,27,33,6,27,36,15,34,4,27,44,15,25,4,27,45,15,16,4,27,46,15,7,4,24,5,26,67,6,1,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,14,120,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,34,4,27,55,15,25,4,27,42,15,16,4,27,44,15,7,4,24,5,26,68,6,1,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,14,63,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,43,4,27,46,15,34,4,27,55,15,25,4,27,42,15,16,4,27,44,15,7,4,24,6,26,69,7,1,4,8,6,7,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,29]},{\"name\":\"TIME\",\"bytecode\":[23,32,28,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,51,15,16,4,27,56,15,7,4,24,4,26,70,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,36,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,16,4,27,56,15,7,4,24,3,26,71,4,1,1,8,3,7,3,8,2,7,3,29]},{\"name\":\"FREQ\",\"bytecode\":[23,33,28,5,4,27,33,16,3,10,27,33,6,27,36,15,25,4,27,47,15,16,4,27,60,15,7,4,24,4,26,72,5,1,2,8,4,7,3,8,3,7,3,8,2,7,3,14,54,0,6,5,4,27,33,16,3,10,27,33,6,27,36,15,34,4,27,49,15,25,4,27,47,15,16,4,27,60,15,7,4,24,5,26,73,6,1,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,29]},{\"name\":\"PERCENTAGE\",\"bytecode\":[23,34,28,5,4,27,33,16,3,10,27,33,6,27,36,15,21,4,18,66,2,1,22,66,3,15,7,4,24,3,26,74,4,1,1,8,3,7,3,8,2,7,3,29]},{\"name\":\"NUMBER\",\"bytecode\":[23,35,28,5,4,27,33,16,3,10,27,33,6,27,36,15,7,4,24,2,26,75,3,1,0,8,2,7,3,29]},{\"name\":\"URI\",\"bytecode\":[23,36,28,5,4,27,33,16,3,10,27,33,6,27,58,15,66,4,27,55,15,57,4,27,50,15,48,4,19,67,2,1,21,1,3,15,34,4,27,40,27,37,15,23,4,27,40,18,13,2,1,22,13,3,15,7,4,24,9,26,76,10,1,2,8,9,7,3,8,7,7,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,14,79,0,6,5,4,27,33,16,3,10,27,33,6,27,58,15,59,4,27,55,15,50,4,27,50,15,41,4,19,67,2,1,21,1,3,15,27,4,27,40,27,38,27,40,18,13,2,1,22,13,3,15,7,4,24,9,26,76,10,1,2,8,9,7,3,8,5,7,3,8,4,7,3,8,3,7,3,8,2,7,3,29]},{\"name\":\"FUNCTION\",\"bytecode\":[23,37,28,5,4,27,33,16,3,10,27,33,6,27,34,15,21,4,18,67,2,1,22,67,3,15,7,4,24,3,26,5,4,1,1,8,3,7,3,8,2,7,3,29]}],\"literals\":[\";\",\"{\",\"}\",\",\",\":\",\"/\",\"+\",\">\",\".\",\"*\",\"[\",\"=\",\"]\",\")\",\"\\\\\",\"\\r\\n\",\"\\\"\",\"'\",\"/*\",\"-\",\"e\",\"\\n\",\"\\r\",\"\\f\",\"a\",\"0\",\"c\",\"d\",\"g\",\"\\\\g\",\"h\",\"\\\\h\",\"i\",\"\\\\i\",\"k\",\"\\\\k\",\"l\",\"\\\\l\",\"m\",\"\\\\m\",\"n\",\"\\\\n\",\"o\",\"\\\\o\",\"p\",\"\\\\p\",\"r\",\"\\\\r\",\"s\",\"\\\\s\",\"t\",\"\\\\t\",\"u\",\"\\\\u\",\"x\",\"\\\\x\",\"z\",\"\\\\z\",\"<!--\",\"-->\",\"~=\",\"|=\",\"#\",\"@\",\"@charset \",\"!\",\"%\",\"(\"],\"classes\":[{\"value\":[[\"0\",\"9\"],[\"a\",\"f\"]],\"inverted\":false,\"ignoreCase\":true},{\"value\":[[\"\u{80}\",\"\u{ffff}\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\" \",\"\\t\",\"\\r\",\"\\n\",\"\\f\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"\\r\",\"\\n\",\"\\f\",[\"0\",\"9\"],[\"a\",\"f\"]],\"inverted\":true,\"ignoreCase\":true},{\"value\":[\"_\",[\"a\",\"z\"]],\"inverted\":false,\"ignoreCase\":true},{\"value\":[\"_\",[\"a\",\"z\"],[\"0\",\"9\"],\"-\"],\"inverted\":false,\"ignoreCase\":true},{\"value\":[\"\\n\",\"\\r\",\"\\f\",\"\\\\\",\"\\\"\"],\"inverted\":true,\"ignoreCase\":false},{\"value\":[\"\\n\",\"\\r\",\"\\f\",\"\\\\\",\"'\"],\"inverted\":true,\"ignoreCase\":false},{\"value\":[\"*\"],\"inverted\":true,\"ignoreCase\":false},{\"value\":[\"/\",\"*\"],\"inverted\":true,\"ignoreCase\":false},{\"value\":[\"+\",\"-\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"0\",\"9\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"!\",\"#\",\"$\",\"%\",\"&\",[\"*\",\"[\"],[\"]\",\"~\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"A\",\"a\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"C\",\"c\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"D\",\"d\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"E\",\"e\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"G\",\"g\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"H\",\"h\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"I\",\"i\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"K\",\"k\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"L\",\"l\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"M\",\"m\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"N\",\"n\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"O\",\"o\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"P\",\"p\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"R\",\"r\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"S\",\"s\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"T\",\"t\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"U\",\"u\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"X\",\"x\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"Z\",\"z\"],\"inverted\":false,\"ignoreCase\":false}],\"expectations\":[{\"type\":\"literal\",\"value\":\";\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"{\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"}\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\",\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\":\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"/\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"+\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\">\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\".\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"*\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"[\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"]\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\")\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"/*\",\"ignoreCase\":false},{\"type\":\"class\",\"value\":[\"*\"],\"inverted\":true,\"ignoreCase\":false},{\"type\":\"class\",\"value\":[\"/\",\"*\"],\"inverted\":true,\"ignoreCase\":false},{\"type\":\"rule\",\"value\":\"whitespace\"},{\"type\":\"rule\",\"value\":\"<!--\"},{\"type\":\"rule\",\"value\":\"-->\"},{\"type\":\"rule\",\"value\":\"~=\"},{\"type\":\"rule\",\"value\":\"|=\"},{\"type\":\"rule\",\"value\":\"string\"},{\"type\":\"rule\",\"value\":\"identifier\"},{\"type\":\"rule\",\"value\":\"hash\"},{\"type\":\"rule\",\"value\":\"@import\"},{\"type\":\"rule\",\"value\":\"@page\"},{\"type\":\"rule\",\"value\":\"@media\"},{\"type\":\"rule\",\"value\":\"@charset\"},{\"type\":\"rule\",\"value\":\"!important\"},{\"type\":\"rule\",\"value\":\"length\"},{\"type\":\"rule\",\"value\":\"angle\"},{\"type\":\"rule\",\"value\":\"time\"},{\"type\":\"rule\",\"value\":\"frequency\"},{\"type\":\"rule\",\"value\":\"percentage\"},{\"type\":\"rule\",\"value\":\"number\"},{\"type\":\"rule\",\"value\":\"uri\"},{\"type\":\"rule\",\"value\":\"function\"}],\"functions\":[{\"predicate\":false,\"params\":[\"stylesheet\"],\"body\":\" return stylesheet; \"},{\"predicate\":false,\"params\":[\"charset\",\"imports\",\"rules\"],\"body\":\"\\n      return {\\n        type: \\\"StyleSheet\\\",\\n        charset: extractOptional(charset, 1),\\n        imports: extractList(imports, 0),\\n        rules: extractList(rules, 0)\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"href\",\"media\"],\"body\":\"\\n      return {\\n        type: \\\"ImportRule\\\",\\n        href: href,\\n        media: media !== null ? media : []\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"media\",\"rules\"],\"body\":\"\\n      return {\\n        type: \\\"MediaRule\\\",\\n        media: media,\\n        rules: rules\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\" return buildList(head, tail, 2); \"},{\"predicate\":false,\"params\":[\"name\"],\"body\":\" return name; \"},{\"predicate\":false,\"params\":[\"selector\",\"declarationsHead\",\"declarationsTail\"],\"body\":\"\\n      return {\\n        type: \\\"PageRule\\\",\\n        selector: selector,\\n        declarations: buildList(declarationsHead, declarationsTail, 2)\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { type: \\\"PseudoSelector\\\", value: value }; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"/\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\",\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"+\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\">\\\"; \"},{\"predicate\":false,\"params\":[\"selectorsHead\",\"selectorsTail\",\"declarationsHead\",\"declarationsTail\"],\"body\":\"\\n      return {\\n        type: \\\"RuleSet\\\",\\n        selectors: buildList(selectorsHead, selectorsTail, 2),\\n        declarations: buildList(declarationsHead, declarationsTail, 2)\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"left\",\"combinator\",\"right\"],\"body\":\"\\n      return {\\n        type: \\\"Selector\\\",\\n        combinator: combinator,\\n        left: left,\\n        right: right\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"left\",\"right\"],\"body\":\"\\n      return {\\n        type: \\\"Selector\\\",\\n        combinator: \\\" \\\",\\n        left: left,\\n        right: right\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"selector\"],\"body\":\" return selector; \"},{\"predicate\":false,\"params\":[\"element\",\"qualifiers\"],\"body\":\"\\n      return {\\n        type: \\\"SimpleSelector\\\",\\n        element: element,\\n        qualifiers: qualifiers\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"qualifiers\"],\"body\":\"\\n      return {\\n        type: \\\"SimpleSelector\\\",\\n        element: \\\"*\\\",\\n        qualifiers: qualifiers\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"id\"],\"body\":\" return { type: \\\"IDSelector\\\", id: id }; \"},{\"predicate\":false,\"params\":[\"class_\"],\"body\":\" return { type: \\\"ClassSelector\\\", \\\"class\\\": class_ }; \"},{\"predicate\":false,\"params\":[\"attribute\",\"operatorAndValue\"],\"body\":\"\\n      return {\\n        type: \\\"AttributeSelector\\\",\\n        attribute: attribute,\\n        operator: extractOptional(operatorAndValue, 0),\\n        value: extractOptional(operatorAndValue, 2)\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"name\",\"params\"],\"body\":\"\\n          return {\\n            type: \\\"Function\\\",\\n            name: name,\\n            params: params !== null ? [params[0]] : []\\n          };\\n        \"},{\"predicate\":false,\"params\":[\"name\",\"value\",\"prio\"],\"body\":\"\\n      return {\\n        type: \\\"Declaration\\\",\\n        name: name,\\n        value: value,\\n        important: prio !== null\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\" return buildExpression(head, tail); \"},{\"predicate\":false,\"params\":[\"quantity\"],\"body\":\"\\n      return {\\n        type: \\\"Quantity\\\",\\n        value: quantity.value,\\n        unit: quantity.unit\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { type: \\\"String\\\", value: value }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { type: \\\"URI\\\",    value: value }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { type: \\\"Ident\\\",  value: value }; \"},{\"predicate\":false,\"params\":[\"name\",\"params\"],\"body\":\"\\n      return { type: \\\"Function\\\", name: name, params: params };\\n    \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { type: \\\"Hexcolor\\\", value: value }; \"},{\"predicate\":false,\"params\":[\"digits\"],\"body\":\"\\n      return String.fromCharCode(parseInt(digits, 16));\\n    \"},{\"predicate\":false,\"params\":[\"ch\"],\"body\":\" return ch; \"},{\"predicate\":false,\"params\":[\"nl\"],\"body\":\" return \\\"\\\"; \"},{\"predicate\":false,\"params\":[\"chars\"],\"body\":\"\\n      return chars.join(\\\"\\\");\\n    \"},{\"predicate\":false,\"params\":[\"prefix\",\"start\",\"chars\"],\"body\":\"\\n      return prefix + start + chars.join(\\\"\\\");\\n    \"},{\"predicate\":false,\"params\":[\"chars\"],\"body\":\" return chars.join(\\\"\\\"); \"},{\"predicate\":false,\"params\":[],\"body\":\"\\n      return parseFloat(text());\\n    \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"a\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"c\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"d\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"e\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"g\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"h\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"i\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"k\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"l\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"m\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"n\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"o\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"p\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"r\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"s\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"t\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"u\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"x\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"z\\\"; \"},{\"predicate\":false,\"params\":[\"string\"],\"body\":\" return string; \"},{\"predicate\":false,\"params\":[\"ident\"],\"body\":\" return ident; \"},{\"predicate\":false,\"params\":[\"name\"],\"body\":\" return \\\"#\\\" + name; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"em\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"ex\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"px\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"cm\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"mm\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"in\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"pt\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"pc\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"deg\\\"  }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"rad\\\"  }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"grad\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"ms\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"s\\\"  }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"hz\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"kh\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: \\\"%\\\" }; \"},{\"predicate\":false,\"params\":[\"value\"],\"body\":\" return { value: value, unit: null }; \"},{\"predicate\":false,\"params\":[\"url\"],\"body\":\" return url; \"}]}",
-  ),
-  (
-    "javascript", "// JavaScript Grammar\n// ==================\n//\n// Based on grammar from ECMA-262, 5.1 Edition [1]. Generated parser builds a\n// syntax tree compatible with the ESTree spec [2].\n//\n// Limitations:\n//\n//   * Non-BMP characters are completely ignored to avoid surrogate pair\n//     handling.\n//\n//   * One can create identifiers containing illegal characters using Unicode\n//     escape sequences. For example, \"abcd\\u0020efgh\" is not a valid\n//     identifier, but it is accepted by the parser.\n//\n//   * Strict mode is not recognized. This means that within strict mode code,\n//     \"implements\", \"interface\", \"let\", \"package\", \"private\", \"protected\",\n//     \"public\", \"static\" and \"yield\" can be used as names. Many other\n//     restrictions and exceptions from Annex C are also not applied.\n//\n// All the limitations could be resolved, but the costs would likely outweigh\n// the benefits.\n//\n// Many thanks to inimino [3] for his grammar [4] which helped me to solve some\n// problems (such as automatic semicolon insertion) and also served to double\n// check that I converted the original grammar correctly.\n//\n// [1] http://www.ecma-international.org/publications/standards/Ecma-262.htm\n// [2] https://github.com/estree/estree\n// [3] http://inimino.org/~inimino/blog/\n// [4] http://boshi.inimino.org/3box/asof/1270029991384/PEG/ECMAScript_unified.peg\n\n{\n  var TYPES_TO_PROPERTY_NAMES = {\n    CallExpression:   \"callee\",\n    MemberExpression: \"object\",\n  };\n\n  function filledArray(count, value) {\n    return Array.apply(null, new Array(count))\n      .map(function() { return value; });\n  }\n\n  function extractOptional(optional, index) {\n    return optional ? optional[index] : null;\n  }\n\n  function extractList(list, index) {\n    return list.map(function(element) { return element[index]; });\n  }\n\n  function buildList(head, tail, index) {\n    return [head].concat(extractList(tail, index));\n  }\n\n  function buildBinaryExpression(head, tail) {\n    return tail.reduce(function(result, element) {\n      return {\n        type: \"BinaryExpression\",\n        operator: element[1],\n        left: result,\n        right: element[3]\n      };\n    }, head);\n  }\n\n  function buildLogicalExpression(head, tail) {\n    return tail.reduce(function(result, element) {\n      return {\n        type: \"LogicalExpression\",\n        operator: element[1],\n        left: result,\n        right: element[3]\n      };\n    }, head);\n  }\n\n  function optionalList(value) {\n    return value !== null ? value : [];\n  }\n}\n\nStart\n  = __ program:Program __ { return program; }\n\n// ----- A.1 Lexical Grammar -----\n\nSourceCharacter\n  = .\n\nWhiteSpace \"whitespace\"\n  = \"\\t\"\n  / \"\\v\"\n  / \"\\f\"\n  / \" \"\n  / \"\\u00A0\"\n  / \"\\uFEFF\"\n  / Zs\n\nLineTerminator\n  = [\\n\\r\\u2028\\u2029]\n\nLineTerminatorSequence \"end of line\"\n  = \"\\n\"\n  / \"\\r\\n\"\n  / \"\\r\"\n  / \"\\u2028\"\n  / \"\\u2029\"\n\nComment \"comment\"\n  = MultiLineComment\n  / SingleLineComment\n\nMultiLineComment\n  = \"/*\" (!\"*/\" SourceCharacter)* \"*/\"\n\nMultiLineCommentNoLineTerminator\n  = \"/*\" (!(\"*/\" / LineTerminator) SourceCharacter)* \"*/\"\n\nSingleLineComment\n  = \"//\" (!LineTerminator SourceCharacter)*\n\nIdentifier\n  = !ReservedWord name:IdentifierName { return name; }\n\nIdentifierName \"identifier\"\n  = head:IdentifierStart tail:IdentifierPart* {\n      return {\n        type: \"Identifier\",\n        name: head + tail.join(\"\")\n      };\n    }\n\nIdentifierStart\n  = UnicodeLetter\n  / \"$\"\n  / \"_\"\n  / \"\\\\\" sequence:UnicodeEscapeSequence { return sequence; }\n\nIdentifierPart\n  = IdentifierStart\n  / UnicodeCombiningMark\n  / UnicodeDigit\n  / UnicodeConnectorPunctuation\n  / \"\\u200C\"\n  / \"\\u200D\"\n\nUnicodeLetter\n  = Lu\n  / Ll\n  / Lt\n  / Lm\n  / Lo\n  / Nl\n\nUnicodeCombiningMark\n  = Mn\n  / Mc\n\nUnicodeDigit\n  = Nd\n\nUnicodeConnectorPunctuation\n  = Pc\n\nReservedWord\n  = Keyword\n  / FutureReservedWord\n  / NullLiteral\n  / BooleanLiteral\n\nKeyword\n  = BreakToken\n  / CaseToken\n  / CatchToken\n  / ContinueToken\n  / DebuggerToken\n  / DefaultToken\n  / DeleteToken\n  / DoToken\n  / ElseToken\n  / FinallyToken\n  / ForToken\n  / FunctionToken\n  / IfToken\n  / InstanceofToken\n  / InToken\n  / NewToken\n  / ReturnToken\n  / SwitchToken\n  / ThisToken\n  / ThrowToken\n  / TryToken\n  / TypeofToken\n  / VarToken\n  / VoidToken\n  / WhileToken\n  / WithToken\n\nFutureReservedWord\n  = ClassToken\n  / ConstToken\n  / EnumToken\n  / ExportToken\n  / ExtendsToken\n  / ImportToken\n  / SuperToken\n\nLiteral\n  = NullLiteral\n  / BooleanLiteral\n  / NumericLiteral\n  / StringLiteral\n  / RegularExpressionLiteral\n\nNullLiteral\n  = NullToken { return { type: \"Literal\", value: null }; }\n\nBooleanLiteral\n  = TrueToken  { return { type: \"Literal\", value: true  }; }\n  / FalseToken { return { type: \"Literal\", value: false }; }\n\n// The \"!(IdentifierStart / DecimalDigit)\" predicate is not part of the official\n// grammar, it comes from text in section 7.8.3.\nNumericLiteral \"number\"\n  = literal:HexIntegerLiteral !(IdentifierStart / DecimalDigit) {\n      return literal;\n    }\n  / literal:DecimalLiteral !(IdentifierStart / DecimalDigit) {\n      return literal;\n    }\n\nDecimalLiteral\n  = DecimalIntegerLiteral \".\" DecimalDigit* ExponentPart? {\n      return { type: \"Literal\", value: parseFloat(text()) };\n    }\n  / \".\" DecimalDigit+ ExponentPart? {\n      return { type: \"Literal\", value: parseFloat(text()) };\n    }\n  / DecimalIntegerLiteral ExponentPart? {\n      return { type: \"Literal\", value: parseFloat(text()) };\n    }\n\nDecimalIntegerLiteral\n  = \"0\"\n  / NonZeroDigit DecimalDigit*\n\nDecimalDigit\n  = [0-9]\n\nNonZeroDigit\n  = [1-9]\n\nExponentPart\n  = ExponentIndicator SignedInteger\n\nExponentIndicator\n  = \"e\"i\n\nSignedInteger\n  = [+-]? DecimalDigit+\n\nHexIntegerLiteral\n  = \"0x\"i digits:$HexDigit+ {\n      return { type: \"Literal\", value: parseInt(digits, 16) };\n     }\n\nHexDigit\n  = [0-9a-f]i\n\nStringLiteral \"string\"\n  = '\"' chars:DoubleStringCharacter* '\"' {\n      return { type: \"Literal\", value: chars.join(\"\") };\n    }\n  / \"'\" chars:SingleStringCharacter* \"'\" {\n      return { type: \"Literal\", value: chars.join(\"\") };\n    }\n\nDoubleStringCharacter\n  = !('\"' / \"\\\\\" / LineTerminator) SourceCharacter { return text(); }\n  / \"\\\\\" sequence:EscapeSequence { return sequence; }\n  / LineContinuation\n\nSingleStringCharacter\n  = !(\"'\" / \"\\\\\" / LineTerminator) SourceCharacter { return text(); }\n  / \"\\\\\" sequence:EscapeSequence { return sequence; }\n  / LineContinuation\n\nLineContinuation\n  = \"\\\\\" LineTerminatorSequence { return \"\"; }\n\nEscapeSequence\n  = CharacterEscapeSequence\n  / \"0\" !DecimalDigit { return \"\\0\"; }\n  / HexEscapeSequence\n  / UnicodeEscapeSequence\n\nCharacterEscapeSequence\n  = SingleEscapeCharacter\n  / NonEscapeCharacter\n\nSingleEscapeCharacter\n  = \"'\"\n  / '\"'\n  / \"\\\\\"\n  / \"b\"  { return \"\\b\"; }\n  / \"f\"  { return \"\\f\"; }\n  / \"n\"  { return \"\\n\"; }\n  / \"r\"  { return \"\\r\"; }\n  / \"t\"  { return \"\\t\"; }\n  / \"v\"  { return \"\\v\"; }\n\nNonEscapeCharacter\n  = !(EscapeCharacter / LineTerminator) SourceCharacter { return text(); }\n\nEscapeCharacter\n  = SingleEscapeCharacter\n  / DecimalDigit\n  / \"x\"\n  / \"u\"\n\nHexEscapeSequence\n  = \"x\" digits:$(HexDigit HexDigit) {\n      return String.fromCharCode(parseInt(digits, 16));\n    }\n\nUnicodeEscapeSequence\n  = \"u\" digits:$(HexDigit HexDigit HexDigit HexDigit) {\n      return String.fromCharCode(parseInt(digits, 16));\n    }\n\nRegularExpressionLiteral \"regular expression\"\n  = \"/\" pattern:$RegularExpressionBody \"/\" flags:$RegularExpressionFlags {\n      var value;\n\n      try {\n        value = new RegExp(pattern, flags);\n      } catch (e) {\n        error(e.message);\n      }\n\n      return { type: \"Literal\", value: value };\n    }\n\nRegularExpressionBody\n  = RegularExpressionFirstChar RegularExpressionChar*\n\nRegularExpressionFirstChar\n  = ![*\\\\/[] RegularExpressionNonTerminator\n  / RegularExpressionBackslashSequence\n  / RegularExpressionClass\n\nRegularExpressionChar\n  = ![\\\\/[] RegularExpressionNonTerminator\n  / RegularExpressionBackslashSequence\n  / RegularExpressionClass\n\nRegularExpressionBackslashSequence\n  = \"\\\\\" RegularExpressionNonTerminator\n\nRegularExpressionNonTerminator\n  = !LineTerminator SourceCharacter\n\nRegularExpressionClass\n  = \"[\" RegularExpressionClassChar* \"]\"\n\nRegularExpressionClassChar\n  = ![\\]\\\\] RegularExpressionNonTerminator\n  / RegularExpressionBackslashSequence\n\nRegularExpressionFlags\n  = IdentifierPart*\n\n// Unicode Character Categories\n//\n// Extracted from the following Unicode Character Database file:\n//\n//   http://www.unicode.org/Public/11.0.0/ucd/extracted/DerivedGeneralCategory.txt\n//\n// Unix magic used:\n//\n//   grep \"; $CATEGORY\" DerivedGeneralCategory.txt |   # Filter characters\n//     cut -f1 -d \" \" |                                # Extract code points\n//     grep -v '[0-9a-fA-F]\\{5\\}' |                    # Exclude non-BMP characters\n//     sed -e 's/\\.\\./-/' |                            # Adjust formatting\n//     sed -e 's/\\([0-9a-fA-F]\\{4\\}\\)/\\\\u\\1/g' |       # Adjust formatting\n//     tr -d '\\n'                                      # Join lines\n//\n// ECMA-262 allows using Unicode 3.0 or later, version 8.0.0 was the latest one\n// at the time of writing.\n//\n// Non-BMP characters are completely ignored to avoid surrogate pair handling\n// (detecting surrogate pairs isn't possible with a simple character class and\n// other methods would degrade performance). I don't consider it a big deal as\n// even parsers in JavaScript engines of common browsers seem to ignore them.\n\n// Letter, Lowercase\nLl = [\\u0061-\\u007A\\u00B5\\u00DF-\\u00F6\\u00F8-\\u00FF\\u0101\\u0103\\u0105\\u0107\\u0109\\u010B\\u010D\\u010F\\u0111\\u0113\\u0115\\u0117\\u0119\\u011B\\u011D\\u011F\\u0121\\u0123\\u0125\\u0127\\u0129\\u012B\\u012D\\u012F\\u0131\\u0133\\u0135\\u0137-\\u0138\\u013A\\u013C\\u013E\\u0140\\u0142\\u0144\\u0146\\u0148-\\u0149\\u014B\\u014D\\u014F\\u0151\\u0153\\u0155\\u0157\\u0159\\u015B\\u015D\\u015F\\u0161\\u0163\\u0165\\u0167\\u0169\\u016B\\u016D\\u016F\\u0171\\u0173\\u0175\\u0177\\u017A\\u017C\\u017E-\\u0180\\u0183\\u0185\\u0188\\u018C-\\u018D\\u0192\\u0195\\u0199-\\u019B\\u019E\\u01A1\\u01A3\\u01A5\\u01A8\\u01AA-\\u01AB\\u01AD\\u01B0\\u01B4\\u01B6\\u01B9-\\u01BA\\u01BD-\\u01BF\\u01C6\\u01C9\\u01CC\\u01CE\\u01D0\\u01D2\\u01D4\\u01D6\\u01D8\\u01DA\\u01DC-\\u01DD\\u01DF\\u01E1\\u01E3\\u01E5\\u01E7\\u01E9\\u01EB\\u01ED\\u01EF-\\u01F0\\u01F3\\u01F5\\u01F9\\u01FB\\u01FD\\u01FF\\u0201\\u0203\\u0205\\u0207\\u0209\\u020B\\u020D\\u020F\\u0211\\u0213\\u0215\\u0217\\u0219\\u021B\\u021D\\u021F\\u0221\\u0223\\u0225\\u0227\\u0229\\u022B\\u022D\\u022F\\u0231\\u0233-\\u0239\\u023C\\u023F-\\u0240\\u0242\\u0247\\u0249\\u024B\\u024D\\u024F-\\u0293\\u0295-\\u02AF\\u0371\\u0373\\u0377\\u037B-\\u037D\\u0390\\u03AC-\\u03CE\\u03D0-\\u03D1\\u03D5-\\u03D7\\u03D9\\u03DB\\u03DD\\u03DF\\u03E1\\u03E3\\u03E5\\u03E7\\u03E9\\u03EB\\u03ED\\u03EF-\\u03F3\\u03F5\\u03F8\\u03FB-\\u03FC\\u0430-\\u045F\\u0461\\u0463\\u0465\\u0467\\u0469\\u046B\\u046D\\u046F\\u0471\\u0473\\u0475\\u0477\\u0479\\u047B\\u047D\\u047F\\u0481\\u048B\\u048D\\u048F\\u0491\\u0493\\u0495\\u0497\\u0499\\u049B\\u049D\\u049F\\u04A1\\u04A3\\u04A5\\u04A7\\u04A9\\u04AB\\u04AD\\u04AF\\u04B1\\u04B3\\u04B5\\u04B7\\u04B9\\u04BB\\u04BD\\u04BF\\u04C2\\u04C4\\u04C6\\u04C8\\u04CA\\u04CC\\u04CE-\\u04CF\\u04D1\\u04D3\\u04D5\\u04D7\\u04D9\\u04DB\\u04DD\\u04DF\\u04E1\\u04E3\\u04E5\\u04E7\\u04E9\\u04EB\\u04ED\\u04EF\\u04F1\\u04F3\\u04F5\\u04F7\\u04F9\\u04FB\\u04FD\\u04FF\\u0501\\u0503\\u0505\\u0507\\u0509\\u050B\\u050D\\u050F\\u0511\\u0513\\u0515\\u0517\\u0519\\u051B\\u051D\\u051F\\u0521\\u0523\\u0525\\u0527\\u0529\\u052B\\u052D\\u052F\\u0560-\\u0588\\u10D0-\\u10FA\\u10FD-\\u10FF\\u13F8-\\u13FD\\u1C80-\\u1C88\\u1D00-\\u1D2B\\u1D6B-\\u1D77\\u1D79-\\u1D9A\\u1E01\\u1E03\\u1E05\\u1E07\\u1E09\\u1E0B\\u1E0D\\u1E0F\\u1E11\\u1E13\\u1E15\\u1E17\\u1E19\\u1E1B\\u1E1D\\u1E1F\\u1E21\\u1E23\\u1E25\\u1E27\\u1E29\\u1E2B\\u1E2D\\u1E2F\\u1E31\\u1E33\\u1E35\\u1E37\\u1E39\\u1E3B\\u1E3D\\u1E3F\\u1E41\\u1E43\\u1E45\\u1E47\\u1E49\\u1E4B\\u1E4D\\u1E4F\\u1E51\\u1E53\\u1E55\\u1E57\\u1E59\\u1E5B\\u1E5D\\u1E5F\\u1E61\\u1E63\\u1E65\\u1E67\\u1E69\\u1E6B\\u1E6D\\u1E6F\\u1E71\\u1E73\\u1E75\\u1E77\\u1E79\\u1E7B\\u1E7D\\u1E7F\\u1E81\\u1E83\\u1E85\\u1E87\\u1E89\\u1E8B\\u1E8D\\u1E8F\\u1E91\\u1E93\\u1E95-\\u1E9D\\u1E9F\\u1EA1\\u1EA3\\u1EA5\\u1EA7\\u1EA9\\u1EAB\\u1EAD\\u1EAF\\u1EB1\\u1EB3\\u1EB5\\u1EB7\\u1EB9\\u1EBB\\u1EBD\\u1EBF\\u1EC1\\u1EC3\\u1EC5\\u1EC7\\u1EC9\\u1ECB\\u1ECD\\u1ECF\\u1ED1\\u1ED3\\u1ED5\\u1ED7\\u1ED9\\u1EDB\\u1EDD\\u1EDF\\u1EE1\\u1EE3\\u1EE5\\u1EE7\\u1EE9\\u1EEB\\u1EED\\u1EEF\\u1EF1\\u1EF3\\u1EF5\\u1EF7\\u1EF9\\u1EFB\\u1EFD\\u1EFF-\\u1F07\\u1F10-\\u1F15\\u1F20-\\u1F27\\u1F30-\\u1F37\\u1F40-\\u1F45\\u1F50-\\u1F57\\u1F60-\\u1F67\\u1F70-\\u1F7D\\u1F80-\\u1F87\\u1F90-\\u1F97\\u1FA0-\\u1FA7\\u1FB0-\\u1FB4\\u1FB6-\\u1FB7\\u1FBE\\u1FC2-\\u1FC4\\u1FC6-\\u1FC7\\u1FD0-\\u1FD3\\u1FD6-\\u1FD7\\u1FE0-\\u1FE7\\u1FF2-\\u1FF4\\u1FF6-\\u1FF7\\u210A\\u210E-\\u210F\\u2113\\u212F\\u2134\\u2139\\u213C-\\u213D\\u2146-\\u2149\\u214E\\u2184\\u2C30-\\u2C5E\\u2C61\\u2C65-\\u2C66\\u2C68\\u2C6A\\u2C6C\\u2C71\\u2C73-\\u2C74\\u2C76-\\u2C7B\\u2C81\\u2C83\\u2C85\\u2C87\\u2C89\\u2C8B\\u2C8D\\u2C8F\\u2C91\\u2C93\\u2C95\\u2C97\\u2C99\\u2C9B\\u2C9D\\u2C9F\\u2CA1\\u2CA3\\u2CA5\\u2CA7\\u2CA9\\u2CAB\\u2CAD\\u2CAF\\u2CB1\\u2CB3\\u2CB5\\u2CB7\\u2CB9\\u2CBB\\u2CBD\\u2CBF\\u2CC1\\u2CC3\\u2CC5\\u2CC7\\u2CC9\\u2CCB\\u2CCD\\u2CCF\\u2CD1\\u2CD3\\u2CD5\\u2CD7\\u2CD9\\u2CDB\\u2CDD\\u2CDF\\u2CE1\\u2CE3-\\u2CE4\\u2CEC\\u2CEE\\u2CF3\\u2D00-\\u2D25\\u2D27\\u2D2D\\uA641\\uA643\\uA645\\uA647\\uA649\\uA64B\\uA64D\\uA64F\\uA651\\uA653\\uA655\\uA657\\uA659\\uA65B\\uA65D\\uA65F\\uA661\\uA663\\uA665\\uA667\\uA669\\uA66B\\uA66D\\uA681\\uA683\\uA685\\uA687\\uA689\\uA68B\\uA68D\\uA68F\\uA691\\uA693\\uA695\\uA697\\uA699\\uA69B\\uA723\\uA725\\uA727\\uA729\\uA72B\\uA72D\\uA72F-\\uA731\\uA733\\uA735\\uA737\\uA739\\uA73B\\uA73D\\uA73F\\uA741\\uA743\\uA745\\uA747\\uA749\\uA74B\\uA74D\\uA74F\\uA751\\uA753\\uA755\\uA757\\uA759\\uA75B\\uA75D\\uA75F\\uA761\\uA763\\uA765\\uA767\\uA769\\uA76B\\uA76D\\uA76F\\uA771-\\uA778\\uA77A\\uA77C\\uA77F\\uA781\\uA783\\uA785\\uA787\\uA78C\\uA78E\\uA791\\uA793-\\uA795\\uA797\\uA799\\uA79B\\uA79D\\uA79F\\uA7A1\\uA7A3\\uA7A5\\uA7A7\\uA7A9\\uA7AF\\uA7B5\\uA7B7\\uA7B9\\uA7FA\\uAB30-\\uAB5A\\uAB60-\\uAB65\\uAB70-\\uABBF\\uFB00-\\uFB06\\uFB13-\\uFB17\\uFF41-\\uFF5A]\n\n// Letter, Modifier\nLm = [\\u02B0-\\u02C1\\u02C6-\\u02D1\\u02E0-\\u02E4\\u02EC\\u02EE\\u0374\\u037A\\u0559\\u0640\\u06E5-\\u06E6\\u07F4-\\u07F5\\u07FA\\u081A\\u0824\\u0828\\u0971\\u0E46\\u0EC6\\u10FC\\u17D7\\u1843\\u1AA7\\u1C78-\\u1C7D\\u1D2C-\\u1D6A\\u1D78\\u1D9B-\\u1DBF\\u2071\\u207F\\u2090-\\u209C\\u2C7C-\\u2C7D\\u2D6F\\u2E2F\\u3005\\u3031-\\u3035\\u303B\\u309D-\\u309E\\u30FC-\\u30FE\\uA015\\uA4F8-\\uA4FD\\uA60C\\uA67F\\uA69C-\\uA69D\\uA717-\\uA71F\\uA770\\uA788\\uA7F8-\\uA7F9\\uA9CF\\uA9E6\\uAA70\\uAADD\\uAAF3-\\uAAF4\\uAB5C-\\uAB5F\\uFF70\\uFF9E-\\uFF9F]\n\n// Letter, Other\nLo = [\\u00AA\\u00BA\\u01BB\\u01C0-\\u01C3\\u0294\\u05D0-\\u05EA\\u05EF-\\u05F2\\u0620-\\u063F\\u0641-\\u064A\\u066E-\\u066F\\u0671-\\u06D3\\u06D5\\u06EE-\\u06EF\\u06FA-\\u06FC\\u06FF\\u0710\\u0712-\\u072F\\u074D-\\u07A5\\u07B1\\u07CA-\\u07EA\\u0800-\\u0815\\u0840-\\u0858\\u0860-\\u086A\\u08A0-\\u08B4\\u08B6-\\u08BD\\u0904-\\u0939\\u093D\\u0950\\u0958-\\u0961\\u0972-\\u0980\\u0985-\\u098C\\u098F-\\u0990\\u0993-\\u09A8\\u09AA-\\u09B0\\u09B2\\u09B6-\\u09B9\\u09BD\\u09CE\\u09DC-\\u09DD\\u09DF-\\u09E1\\u09F0-\\u09F1\\u09FC\\u0A05-\\u0A0A\\u0A0F-\\u0A10\\u0A13-\\u0A28\\u0A2A-\\u0A30\\u0A32-\\u0A33\\u0A35-\\u0A36\\u0A38-\\u0A39\\u0A59-\\u0A5C\\u0A5E\\u0A72-\\u0A74\\u0A85-\\u0A8D\\u0A8F-\\u0A91\\u0A93-\\u0AA8\\u0AAA-\\u0AB0\\u0AB2-\\u0AB3\\u0AB5-\\u0AB9\\u0ABD\\u0AD0\\u0AE0-\\u0AE1\\u0AF9\\u0B05-\\u0B0C\\u0B0F-\\u0B10\\u0B13-\\u0B28\\u0B2A-\\u0B30\\u0B32-\\u0B33\\u0B35-\\u0B39\\u0B3D\\u0B5C-\\u0B5D\\u0B5F-\\u0B61\\u0B71\\u0B83\\u0B85-\\u0B8A\\u0B8E-\\u0B90\\u0B92-\\u0B95\\u0B99-\\u0B9A\\u0B9C\\u0B9E-\\u0B9F\\u0BA3-\\u0BA4\\u0BA8-\\u0BAA\\u0BAE-\\u0BB9\\u0BD0\\u0C05-\\u0C0C\\u0C0E-\\u0C10\\u0C12-\\u0C28\\u0C2A-\\u0C39\\u0C3D\\u0C58-\\u0C5A\\u0C60-\\u0C61\\u0C80\\u0C85-\\u0C8C\\u0C8E-\\u0C90\\u0C92-\\u0CA8\\u0CAA-\\u0CB3\\u0CB5-\\u0CB9\\u0CBD\\u0CDE\\u0CE0-\\u0CE1\\u0CF1-\\u0CF2\\u0D05-\\u0D0C\\u0D0E-\\u0D10\\u0D12-\\u0D3A\\u0D3D\\u0D4E\\u0D54-\\u0D56\\u0D5F-\\u0D61\\u0D7A-\\u0D7F\\u0D85-\\u0D96\\u0D9A-\\u0DB1\\u0DB3-\\u0DBB\\u0DBD\\u0DC0-\\u0DC6\\u0E01-\\u0E30\\u0E32-\\u0E33\\u0E40-\\u0E45\\u0E81-\\u0E82\\u0E84\\u0E87-\\u0E88\\u0E8A\\u0E8D\\u0E94-\\u0E97\\u0E99-\\u0E9F\\u0EA1-\\u0EA3\\u0EA5\\u0EA7\\u0EAA-\\u0EAB\\u0EAD-\\u0EB0\\u0EB2-\\u0EB3\\u0EBD\\u0EC0-\\u0EC4\\u0EDC-\\u0EDF\\u0F00\\u0F40-\\u0F47\\u0F49-\\u0F6C\\u0F88-\\u0F8C\\u1000-\\u102A\\u103F\\u1050-\\u1055\\u105A-\\u105D\\u1061\\u1065-\\u1066\\u106E-\\u1070\\u1075-\\u1081\\u108E\\u1100-\\u1248\\u124A-\\u124D\\u1250-\\u1256\\u1258\\u125A-\\u125D\\u1260-\\u1288\\u128A-\\u128D\\u1290-\\u12B0\\u12B2-\\u12B5\\u12B8-\\u12BE\\u12C0\\u12C2-\\u12C5\\u12C8-\\u12D6\\u12D8-\\u1310\\u1312-\\u1315\\u1318-\\u135A\\u1380-\\u138F\\u1401-\\u166C\\u166F-\\u167F\\u1681-\\u169A\\u16A0-\\u16EA\\u16F1-\\u16F8\\u1700-\\u170C\\u170E-\\u1711\\u1720-\\u1731\\u1740-\\u1751\\u1760-\\u176C\\u176E-\\u1770\\u1780-\\u17B3\\u17DC\\u1820-\\u1842\\u1844-\\u1878\\u1880-\\u1884\\u1887-\\u18A8\\u18AA\\u18B0-\\u18F5\\u1900-\\u191E\\u1950-\\u196D\\u1970-\\u1974\\u1980-\\u19AB\\u19B0-\\u19C9\\u1A00-\\u1A16\\u1A20-\\u1A54\\u1B05-\\u1B33\\u1B45-\\u1B4B\\u1B83-\\u1BA0\\u1BAE-\\u1BAF\\u1BBA-\\u1BE5\\u1C00-\\u1C23\\u1C4D-\\u1C4F\\u1C5A-\\u1C77\\u1CE9-\\u1CEC\\u1CEE-\\u1CF1\\u1CF5-\\u1CF6\\u2135-\\u2138\\u2D30-\\u2D67\\u2D80-\\u2D96\\u2DA0-\\u2DA6\\u2DA8-\\u2DAE\\u2DB0-\\u2DB6\\u2DB8-\\u2DBE\\u2DC0-\\u2DC6\\u2DC8-\\u2DCE\\u2DD0-\\u2DD6\\u2DD8-\\u2DDE\\u3006\\u303C\\u3041-\\u3096\\u309F\\u30A1-\\u30FA\\u30FF\\u3105-\\u312F\\u3131-\\u318E\\u31A0-\\u31BA\\u31F0-\\u31FF\\u3400-\\u4DB5\\u4E00-\\u9FEF\\uA000-\\uA014\\uA016-\\uA48C\\uA4D0-\\uA4F7\\uA500-\\uA60B\\uA610-\\uA61F\\uA62A-\\uA62B\\uA66E\\uA6A0-\\uA6E5\\uA78F\\uA7F7\\uA7FB-\\uA801\\uA803-\\uA805\\uA807-\\uA80A\\uA80C-\\uA822\\uA840-\\uA873\\uA882-\\uA8B3\\uA8F2-\\uA8F7\\uA8FB\\uA8FD-\\uA8FE\\uA90A-\\uA925\\uA930-\\uA946\\uA960-\\uA97C\\uA984-\\uA9B2\\uA9E0-\\uA9E4\\uA9E7-\\uA9EF\\uA9FA-\\uA9FE\\uAA00-\\uAA28\\uAA40-\\uAA42\\uAA44-\\uAA4B\\uAA60-\\uAA6F\\uAA71-\\uAA76\\uAA7A\\uAA7E-\\uAAAF\\uAAB1\\uAAB5-\\uAAB6\\uAAB9-\\uAABD\\uAAC0\\uAAC2\\uAADB-\\uAADC\\uAAE0-\\uAAEA\\uAAF2\\uAB01-\\uAB06\\uAB09-\\uAB0E\\uAB11-\\uAB16\\uAB20-\\uAB26\\uAB28-\\uAB2E\\uABC0-\\uABE2\\uAC00-\\uD7A3\\uD7B0-\\uD7C6\\uD7CB-\\uD7FB\\uF900-\\uFA6D\\uFA70-\\uFAD9\\uFB1D\\uFB1F-\\uFB28\\uFB2A-\\uFB36\\uFB38-\\uFB3C\\uFB3E\\uFB40-\\uFB41\\uFB43-\\uFB44\\uFB46-\\uFBB1\\uFBD3-\\uFD3D\\uFD50-\\uFD8F\\uFD92-\\uFDC7\\uFDF0-\\uFDFB\\uFE70-\\uFE74\\uFE76-\\uFEFC\\uFF66-\\uFF6F\\uFF71-\\uFF9D\\uFFA0-\\uFFBE\\uFFC2-\\uFFC7\\uFFCA-\\uFFCF\\uFFD2-\\uFFD7\\uFFDA-\\uFFDC]\n\n// Letter, Titlecase\nLt = [\\u01C5\\u01C8\\u01CB\\u01F2\\u1F88-\\u1F8F\\u1F98-\\u1F9F\\u1FA8-\\u1FAF\\u1FBC\\u1FCC\\u1FFC]\n\n// Letter, Uppercase\nLu = [\\u0041-\\u005A\\u00C0-\\u00D6\\u00D8-\\u00DE\\u0100\\u0102\\u0104\\u0106\\u0108\\u010A\\u010C\\u010E\\u0110\\u0112\\u0114\\u0116\\u0118\\u011A\\u011C\\u011E\\u0120\\u0122\\u0124\\u0126\\u0128\\u012A\\u012C\\u012E\\u0130\\u0132\\u0134\\u0136\\u0139\\u013B\\u013D\\u013F\\u0141\\u0143\\u0145\\u0147\\u014A\\u014C\\u014E\\u0150\\u0152\\u0154\\u0156\\u0158\\u015A\\u015C\\u015E\\u0160\\u0162\\u0164\\u0166\\u0168\\u016A\\u016C\\u016E\\u0170\\u0172\\u0174\\u0176\\u0178-\\u0179\\u017B\\u017D\\u0181-\\u0182\\u0184\\u0186-\\u0187\\u0189-\\u018B\\u018E-\\u0191\\u0193-\\u0194\\u0196-\\u0198\\u019C-\\u019D\\u019F-\\u01A0\\u01A2\\u01A4\\u01A6-\\u01A7\\u01A9\\u01AC\\u01AE-\\u01AF\\u01B1-\\u01B3\\u01B5\\u01B7-\\u01B8\\u01BC\\u01C4\\u01C7\\u01CA\\u01CD\\u01CF\\u01D1\\u01D3\\u01D5\\u01D7\\u01D9\\u01DB\\u01DE\\u01E0\\u01E2\\u01E4\\u01E6\\u01E8\\u01EA\\u01EC\\u01EE\\u01F1\\u01F4\\u01F6-\\u01F8\\u01FA\\u01FC\\u01FE\\u0200\\u0202\\u0204\\u0206\\u0208\\u020A\\u020C\\u020E\\u0210\\u0212\\u0214\\u0216\\u0218\\u021A\\u021C\\u021E\\u0220\\u0222\\u0224\\u0226\\u0228\\u022A\\u022C\\u022E\\u0230\\u0232\\u023A-\\u023B\\u023D-\\u023E\\u0241\\u0243-\\u0246\\u0248\\u024A\\u024C\\u024E\\u0370\\u0372\\u0376\\u037F\\u0386\\u0388-\\u038A\\u038C\\u038E-\\u038F\\u0391-\\u03A1\\u03A3-\\u03AB\\u03CF\\u03D2-\\u03D4\\u03D8\\u03DA\\u03DC\\u03DE\\u03E0\\u03E2\\u03E4\\u03E6\\u03E8\\u03EA\\u03EC\\u03EE\\u03F4\\u03F7\\u03F9-\\u03FA\\u03FD-\\u042F\\u0460\\u0462\\u0464\\u0466\\u0468\\u046A\\u046C\\u046E\\u0470\\u0472\\u0474\\u0476\\u0478\\u047A\\u047C\\u047E\\u0480\\u048A\\u048C\\u048E\\u0490\\u0492\\u0494\\u0496\\u0498\\u049A\\u049C\\u049E\\u04A0\\u04A2\\u04A4\\u04A6\\u04A8\\u04AA\\u04AC\\u04AE\\u04B0\\u04B2\\u04B4\\u04B6\\u04B8\\u04BA\\u04BC\\u04BE\\u04C0-\\u04C1\\u04C3\\u04C5\\u04C7\\u04C9\\u04CB\\u04CD\\u04D0\\u04D2\\u04D4\\u04D6\\u04D8\\u04DA\\u04DC\\u04DE\\u04E0\\u04E2\\u04E4\\u04E6\\u04E8\\u04EA\\u04EC\\u04EE\\u04F0\\u04F2\\u04F4\\u04F6\\u04F8\\u04FA\\u04FC\\u04FE\\u0500\\u0502\\u0504\\u0506\\u0508\\u050A\\u050C\\u050E\\u0510\\u0512\\u0514\\u0516\\u0518\\u051A\\u051C\\u051E\\u0520\\u0522\\u0524\\u0526\\u0528\\u052A\\u052C\\u052E\\u0531-\\u0556\\u10A0-\\u10C5\\u10C7\\u10CD\\u13A0-\\u13F5\\u1C90-\\u1CBA\\u1CBD-\\u1CBF\\u1E00\\u1E02\\u1E04\\u1E06\\u1E08\\u1E0A\\u1E0C\\u1E0E\\u1E10\\u1E12\\u1E14\\u1E16\\u1E18\\u1E1A\\u1E1C\\u1E1E\\u1E20\\u1E22\\u1E24\\u1E26\\u1E28\\u1E2A\\u1E2C\\u1E2E\\u1E30\\u1E32\\u1E34\\u1E36\\u1E38\\u1E3A\\u1E3C\\u1E3E\\u1E40\\u1E42\\u1E44\\u1E46\\u1E48\\u1E4A\\u1E4C\\u1E4E\\u1E50\\u1E52\\u1E54\\u1E56\\u1E58\\u1E5A\\u1E5C\\u1E5E\\u1E60\\u1E62\\u1E64\\u1E66\\u1E68\\u1E6A\\u1E6C\\u1E6E\\u1E70\\u1E72\\u1E74\\u1E76\\u1E78\\u1E7A\\u1E7C\\u1E7E\\u1E80\\u1E82\\u1E84\\u1E86\\u1E88\\u1E8A\\u1E8C\\u1E8E\\u1E90\\u1E92\\u1E94\\u1E9E\\u1EA0\\u1EA2\\u1EA4\\u1EA6\\u1EA8\\u1EAA\\u1EAC\\u1EAE\\u1EB0\\u1EB2\\u1EB4\\u1EB6\\u1EB8\\u1EBA\\u1EBC\\u1EBE\\u1EC0\\u1EC2\\u1EC4\\u1EC6\\u1EC8\\u1ECA\\u1ECC\\u1ECE\\u1ED0\\u1ED2\\u1ED4\\u1ED6\\u1ED8\\u1EDA\\u1EDC\\u1EDE\\u1EE0\\u1EE2\\u1EE4\\u1EE6\\u1EE8\\u1EEA\\u1EEC\\u1EEE\\u1EF0\\u1EF2\\u1EF4\\u1EF6\\u1EF8\\u1EFA\\u1EFC\\u1EFE\\u1F08-\\u1F0F\\u1F18-\\u1F1D\\u1F28-\\u1F2F\\u1F38-\\u1F3F\\u1F48-\\u1F4D\\u1F59\\u1F5B\\u1F5D\\u1F5F\\u1F68-\\u1F6F\\u1FB8-\\u1FBB\\u1FC8-\\u1FCB\\u1FD8-\\u1FDB\\u1FE8-\\u1FEC\\u1FF8-\\u1FFB\\u2102\\u2107\\u210B-\\u210D\\u2110-\\u2112\\u2115\\u2119-\\u211D\\u2124\\u2126\\u2128\\u212A-\\u212D\\u2130-\\u2133\\u213E-\\u213F\\u2145\\u2183\\u2C00-\\u2C2E\\u2C60\\u2C62-\\u2C64\\u2C67\\u2C69\\u2C6B\\u2C6D-\\u2C70\\u2C72\\u2C75\\u2C7E-\\u2C80\\u2C82\\u2C84\\u2C86\\u2C88\\u2C8A\\u2C8C\\u2C8E\\u2C90\\u2C92\\u2C94\\u2C96\\u2C98\\u2C9A\\u2C9C\\u2C9E\\u2CA0\\u2CA2\\u2CA4\\u2CA6\\u2CA8\\u2CAA\\u2CAC\\u2CAE\\u2CB0\\u2CB2\\u2CB4\\u2CB6\\u2CB8\\u2CBA\\u2CBC\\u2CBE\\u2CC0\\u2CC2\\u2CC4\\u2CC6\\u2CC8\\u2CCA\\u2CCC\\u2CCE\\u2CD0\\u2CD2\\u2CD4\\u2CD6\\u2CD8\\u2CDA\\u2CDC\\u2CDE\\u2CE0\\u2CE2\\u2CEB\\u2CED\\u2CF2\\uA640\\uA642\\uA644\\uA646\\uA648\\uA64A\\uA64C\\uA64E\\uA650\\uA652\\uA654\\uA656\\uA658\\uA65A\\uA65C\\uA65E\\uA660\\uA662\\uA664\\uA666\\uA668\\uA66A\\uA66C\\uA680\\uA682\\uA684\\uA686\\uA688\\uA68A\\uA68C\\uA68E\\uA690\\uA692\\uA694\\uA696\\uA698\\uA69A\\uA722\\uA724\\uA726\\uA728\\uA72A\\uA72C\\uA72E\\uA732\\uA734\\uA736\\uA738\\uA73A\\uA73C\\uA73E\\uA740\\uA742\\uA744\\uA746\\uA748\\uA74A\\uA74C\\uA74E\\uA750\\uA752\\uA754\\uA756\\uA758\\uA75A\\uA75C\\uA75E\\uA760\\uA762\\uA764\\uA766\\uA768\\uA76A\\uA76C\\uA76E\\uA779\\uA77B\\uA77D-\\uA77E\\uA780\\uA782\\uA784\\uA786\\uA78B\\uA78D\\uA790\\uA792\\uA796\\uA798\\uA79A\\uA79C\\uA79E\\uA7A0\\uA7A2\\uA7A4\\uA7A6\\uA7A8\\uA7AA-\\uA7AE\\uA7B0-\\uA7B4\\uA7B6\\uA7B8\\uFF21-\\uFF3A]\n\n// Mark, Spacing Combining\nMc = [\\u0903\\u093B\\u093E-\\u0940\\u0949-\\u094C\\u094E-\\u094F\\u0982-\\u0983\\u09BE-\\u09C0\\u09C7-\\u09C8\\u09CB-\\u09CC\\u09D7\\u0A03\\u0A3E-\\u0A40\\u0A83\\u0ABE-\\u0AC0\\u0AC9\\u0ACB-\\u0ACC\\u0B02-\\u0B03\\u0B3E\\u0B40\\u0B47-\\u0B48\\u0B4B-\\u0B4C\\u0B57\\u0BBE-\\u0BBF\\u0BC1-\\u0BC2\\u0BC6-\\u0BC8\\u0BCA-\\u0BCC\\u0BD7\\u0C01-\\u0C03\\u0C41-\\u0C44\\u0C82-\\u0C83\\u0CBE\\u0CC0-\\u0CC4\\u0CC7-\\u0CC8\\u0CCA-\\u0CCB\\u0CD5-\\u0CD6\\u0D02-\\u0D03\\u0D3E-\\u0D40\\u0D46-\\u0D48\\u0D4A-\\u0D4C\\u0D57\\u0D82-\\u0D83\\u0DCF-\\u0DD1\\u0DD8-\\u0DDF\\u0DF2-\\u0DF3\\u0F3E-\\u0F3F\\u0F7F\\u102B-\\u102C\\u1031\\u1038\\u103B-\\u103C\\u1056-\\u1057\\u1062-\\u1064\\u1067-\\u106D\\u1083-\\u1084\\u1087-\\u108C\\u108F\\u109A-\\u109C\\u17B6\\u17BE-\\u17C5\\u17C7-\\u17C8\\u1923-\\u1926\\u1929-\\u192B\\u1930-\\u1931\\u1933-\\u1938\\u1A19-\\u1A1A\\u1A55\\u1A57\\u1A61\\u1A63-\\u1A64\\u1A6D-\\u1A72\\u1B04\\u1B35\\u1B3B\\u1B3D-\\u1B41\\u1B43-\\u1B44\\u1B82\\u1BA1\\u1BA6-\\u1BA7\\u1BAA\\u1BE7\\u1BEA-\\u1BEC\\u1BEE\\u1BF2-\\u1BF3\\u1C24-\\u1C2B\\u1C34-\\u1C35\\u1CE1\\u1CF2-\\u1CF3\\u1CF7\\u302E-\\u302F\\uA823-\\uA824\\uA827\\uA880-\\uA881\\uA8B4-\\uA8C3\\uA952-\\uA953\\uA983\\uA9B4-\\uA9B5\\uA9BA-\\uA9BB\\uA9BD-\\uA9C0\\uAA2F-\\uAA30\\uAA33-\\uAA34\\uAA4D\\uAA7B\\uAA7D\\uAAEB\\uAAEE-\\uAAEF\\uAAF5\\uABE3-\\uABE4\\uABE6-\\uABE7\\uABE9-\\uABEA\\uABEC]\n\n// Mark, Nonspacing\nMn = [\\u0300-\\u036F\\u0483-\\u0487\\u0591-\\u05BD\\u05BF\\u05C1-\\u05C2\\u05C4-\\u05C5\\u05C7\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06DC\\u06DF-\\u06E4\\u06E7-\\u06E8\\u06EA-\\u06ED\\u0711\\u0730-\\u074A\\u07A6-\\u07B0\\u07EB-\\u07F3\\u07FD\\u0816-\\u0819\\u081B-\\u0823\\u0825-\\u0827\\u0829-\\u082D\\u0859-\\u085B\\u08D3-\\u08E1\\u08E3-\\u0902\\u093A\\u093C\\u0941-\\u0948\\u094D\\u0951-\\u0957\\u0962-\\u0963\\u0981\\u09BC\\u09C1-\\u09C4\\u09CD\\u09E2-\\u09E3\\u09FE\\u0A01-\\u0A02\\u0A3C\\u0A41-\\u0A42\\u0A47-\\u0A48\\u0A4B-\\u0A4D\\u0A51\\u0A70-\\u0A71\\u0A75\\u0A81-\\u0A82\\u0ABC\\u0AC1-\\u0AC5\\u0AC7-\\u0AC8\\u0ACD\\u0AE2-\\u0AE3\\u0AFA-\\u0AFF\\u0B01\\u0B3C\\u0B3F\\u0B41-\\u0B44\\u0B4D\\u0B56\\u0B62-\\u0B63\\u0B82\\u0BC0\\u0BCD\\u0C00\\u0C04\\u0C3E-\\u0C40\\u0C46-\\u0C48\\u0C4A-\\u0C4D\\u0C55-\\u0C56\\u0C62-\\u0C63\\u0C81\\u0CBC\\u0CBF\\u0CC6\\u0CCC-\\u0CCD\\u0CE2-\\u0CE3\\u0D00-\\u0D01\\u0D3B-\\u0D3C\\u0D41-\\u0D44\\u0D4D\\u0D62-\\u0D63\\u0DCA\\u0DD2-\\u0DD4\\u0DD6\\u0E31\\u0E34-\\u0E3A\\u0E47-\\u0E4E\\u0EB1\\u0EB4-\\u0EB9\\u0EBB-\\u0EBC\\u0EC8-\\u0ECD\\u0F18-\\u0F19\\u0F35\\u0F37\\u0F39\\u0F71-\\u0F7E\\u0F80-\\u0F84\\u0F86-\\u0F87\\u0F8D-\\u0F97\\u0F99-\\u0FBC\\u0FC6\\u102D-\\u1030\\u1032-\\u1037\\u1039-\\u103A\\u103D-\\u103E\\u1058-\\u1059\\u105E-\\u1060\\u1071-\\u1074\\u1082\\u1085-\\u1086\\u108D\\u109D\\u135D-\\u135F\\u1712-\\u1714\\u1732-\\u1734\\u1752-\\u1753\\u1772-\\u1773\\u17B4-\\u17B5\\u17B7-\\u17BD\\u17C6\\u17C9-\\u17D3\\u17DD\\u180B-\\u180D\\u1885-\\u1886\\u18A9\\u1920-\\u1922\\u1927-\\u1928\\u1932\\u1939-\\u193B\\u1A17-\\u1A18\\u1A1B\\u1A56\\u1A58-\\u1A5E\\u1A60\\u1A62\\u1A65-\\u1A6C\\u1A73-\\u1A7C\\u1A7F\\u1AB0-\\u1ABD\\u1B00-\\u1B03\\u1B34\\u1B36-\\u1B3A\\u1B3C\\u1B42\\u1B6B-\\u1B73\\u1B80-\\u1B81\\u1BA2-\\u1BA5\\u1BA8-\\u1BA9\\u1BAB-\\u1BAD\\u1BE6\\u1BE8-\\u1BE9\\u1BED\\u1BEF-\\u1BF1\\u1C2C-\\u1C33\\u1C36-\\u1C37\\u1CD0-\\u1CD2\\u1CD4-\\u1CE0\\u1CE2-\\u1CE8\\u1CED\\u1CF4\\u1CF8-\\u1CF9\\u1DC0-\\u1DF9\\u1DFB-\\u1DFF\\u20D0-\\u20DC\\u20E1\\u20E5-\\u20F0\\u2CEF-\\u2CF1\\u2D7F\\u2DE0-\\u2DFF\\u302A-\\u302D\\u3099-\\u309A\\uA66F\\uA674-\\uA67D\\uA69E-\\uA69F\\uA6F0-\\uA6F1\\uA802\\uA806\\uA80B\\uA825-\\uA826\\uA8C4-\\uA8C5\\uA8E0-\\uA8F1\\uA8FF\\uA926-\\uA92D\\uA947-\\uA951\\uA980-\\uA982\\uA9B3\\uA9B6-\\uA9B9\\uA9BC\\uA9E5\\uAA29-\\uAA2E\\uAA31-\\uAA32\\uAA35-\\uAA36\\uAA43\\uAA4C\\uAA7C\\uAAB0\\uAAB2-\\uAAB4\\uAAB7-\\uAAB8\\uAABE-\\uAABF\\uAAC1\\uAAEC-\\uAAED\\uAAF6\\uABE5\\uABE8\\uABED\\uFB1E\\uFE00-\\uFE0F\\uFE20-\\uFE2F]\n\n// Number, Decimal Digit\nNd = [\\u0030-\\u0039\\u0660-\\u0669\\u06F0-\\u06F9\\u07C0-\\u07C9\\u0966-\\u096F\\u09E6-\\u09EF\\u0A66-\\u0A6F\\u0AE6-\\u0AEF\\u0B66-\\u0B6F\\u0BE6-\\u0BEF\\u0C66-\\u0C6F\\u0CE6-\\u0CEF\\u0D66-\\u0D6F\\u0DE6-\\u0DEF\\u0E50-\\u0E59\\u0ED0-\\u0ED9\\u0F20-\\u0F29\\u1040-\\u1049\\u1090-\\u1099\\u17E0-\\u17E9\\u1810-\\u1819\\u1946-\\u194F\\u19D0-\\u19D9\\u1A80-\\u1A89\\u1A90-\\u1A99\\u1B50-\\u1B59\\u1BB0-\\u1BB9\\u1C40-\\u1C49\\u1C50-\\u1C59\\uA620-\\uA629\\uA8D0-\\uA8D9\\uA900-\\uA909\\uA9D0-\\uA9D9\\uA9F0-\\uA9F9\\uAA50-\\uAA59\\uABF0-\\uABF9\\uFF10-\\uFF19]\n\n// Number, Letter\nNl = [\\u16EE-\\u16F0\\u2160-\\u2182\\u2185-\\u2188\\u3007\\u3021-\\u3029\\u3038-\\u303A\\uA6E6-\\uA6EF]\n\n// Punctuation, Connector\nPc = [\\u005F\\u203F-\\u2040\\u2054\\uFE33-\\uFE34\\uFE4D-\\uFE4F\\uFF3F]\n\n// Separator, Space\nZs = [\\u0020\\u00A0\\u1680\\u2000-\\u200A\\u202F\\u205F\\u3000]\n\n// Tokens\n\nBreakToken      = \"break\"      !IdentifierPart\nCaseToken       = \"case\"       !IdentifierPart\nCatchToken      = \"catch\"      !IdentifierPart\nClassToken      = \"class\"      !IdentifierPart\nConstToken      = \"const\"      !IdentifierPart\nContinueToken   = \"continue\"   !IdentifierPart\nDebuggerToken   = \"debugger\"   !IdentifierPart\nDefaultToken    = \"default\"    !IdentifierPart\nDeleteToken     = \"delete\"     !IdentifierPart\nDoToken         = \"do\"         !IdentifierPart\nElseToken       = \"else\"       !IdentifierPart\nEnumToken       = \"enum\"       !IdentifierPart\nExportToken     = \"export\"     !IdentifierPart\nExtendsToken    = \"extends\"    !IdentifierPart\nFalseToken      = \"false\"      !IdentifierPart\nFinallyToken    = \"finally\"    !IdentifierPart\nForToken        = \"for\"        !IdentifierPart\nFunctionToken   = \"function\"   !IdentifierPart\nGetToken        = \"get\"        !IdentifierPart\nIfToken         = \"if\"         !IdentifierPart\nImportToken     = \"import\"     !IdentifierPart\nInstanceofToken = \"instanceof\" !IdentifierPart\nInToken         = \"in\"         !IdentifierPart\nNewToken        = \"new\"        !IdentifierPart\nNullToken       = \"null\"       !IdentifierPart\nReturnToken     = \"return\"     !IdentifierPart\nSetToken        = \"set\"        !IdentifierPart\nSuperToken      = \"super\"      !IdentifierPart\nSwitchToken     = \"switch\"     !IdentifierPart\nThisToken       = \"this\"       !IdentifierPart\nThrowToken      = \"throw\"      !IdentifierPart\nTrueToken       = \"true\"       !IdentifierPart\nTryToken        = \"try\"        !IdentifierPart\nTypeofToken     = \"typeof\"     !IdentifierPart\nVarToken        = \"var\"        !IdentifierPart\nVoidToken       = \"void\"       !IdentifierPart\nWhileToken      = \"while\"      !IdentifierPart\nWithToken       = \"with\"       !IdentifierPart\n\n// Skipped\n\n__\n  = (WhiteSpace / LineTerminatorSequence / Comment)*\n\n_\n  = (WhiteSpace / MultiLineCommentNoLineTerminator)*\n\n// Automatic Semicolon Insertion\n\nEOS\n  = __ \";\"\n  / _ SingleLineComment? LineTerminatorSequence\n  / _ &\"}\"\n  / __ EOF\n\nEOF\n  = !.\n\n// ----- A.2 Number Conversions -----\n\n// Irrelevant.\n\n// ----- A.3 Expressions -----\n\nPrimaryExpression\n  = ThisToken { return { type: \"ThisExpression\" }; }\n  / Identifier\n  / Literal\n  / ArrayLiteral\n  / ObjectLiteral\n  / \"(\" __ expression:Expression __ \")\" { return expression; }\n\nArrayLiteral\n  = \"[\" __ elision:(Elision __)? \"]\" {\n      return {\n        type: \"ArrayExpression\",\n        elements: optionalList(extractOptional(elision, 0))\n      };\n    }\n  / \"[\" __ elements:ElementList __ \"]\" {\n      return {\n        type: \"ArrayExpression\",\n        elements: elements\n      };\n    }\n  / \"[\" __ elements:ElementList __ \",\" __ elision:(Elision __)? \"]\" {\n      return {\n        type: \"ArrayExpression\",\n        elements: elements.concat(optionalList(extractOptional(elision, 0)))\n      };\n    }\n\nElementList\n  = head:(\n      elision:(Elision __)? element:AssignmentExpression {\n        return optionalList(extractOptional(elision, 0)).concat(element);\n      }\n    )\n    tail:(\n      __ \",\" __ elision:(Elision __)? element:AssignmentExpression {\n        return optionalList(extractOptional(elision, 0)).concat(element);\n      }\n    )*\n    { return Array.prototype.concat.apply(head, tail); }\n\nElision\n  = \",\" commas:(__ \",\")* { return filledArray(commas.length + 1, null); }\n\nObjectLiteral\n  = \"{\" __ \"}\" { return { type: \"ObjectExpression\", properties: [] }; }\n  / \"{\" __ properties:PropertyNameAndValueList __ \"}\" {\n       return { type: \"ObjectExpression\", properties: properties };\n     }\n  / \"{\" __ properties:PropertyNameAndValueList __ \",\" __ \"}\" {\n       return { type: \"ObjectExpression\", properties: properties };\n     }\nPropertyNameAndValueList\n  = head:PropertyAssignment tail:(__ \",\" __ PropertyAssignment)* {\n      return buildList(head, tail, 3);\n    }\n\nPropertyAssignment\n  = key:PropertyName __ \":\" __ value:AssignmentExpression {\n      return { type: \"Property\", key: key, value: value, kind: \"init\" };\n    }\n  / GetToken __ key:PropertyName __\n    \"(\" __ \")\" __\n    \"{\" __ body:FunctionBody __ \"}\"\n    {\n      return {\n        type: \"Property\",\n        key: key,\n        value: {\n          type: \"FunctionExpression\",\n          id: null,\n          params: [],\n          body: body\n        },\n        kind: \"get\"\n      };\n    }\n  / SetToken __ key:PropertyName __\n    \"(\" __ params:PropertySetParameterList __ \")\" __\n    \"{\" __ body:FunctionBody __ \"}\"\n    {\n      return {\n        type: \"Property\",\n        key: key,\n        value: {\n          type: \"FunctionExpression\",\n          id: null,\n          params: params,\n          body: body\n        },\n        kind: \"set\"\n      };\n    }\n\nPropertyName\n  = IdentifierName\n  / StringLiteral\n  / NumericLiteral\n\nPropertySetParameterList\n  = id:Identifier { return [id]; }\n\nMemberExpression\n  = head:(\n        PrimaryExpression\n      / FunctionExpression\n      / NewToken __ callee:MemberExpression __ args:Arguments {\n          return { type: \"NewExpression\", callee: callee, arguments: args };\n        }\n    )\n    tail:(\n        __ \"[\" __ property:Expression __ \"]\" {\n          return { property: property, computed: true };\n        }\n      / __ \".\" __ property:IdentifierName {\n          return { property: property, computed: false };\n        }\n    )*\n    {\n      return tail.reduce(function(result, element) {\n        return {\n          type: \"MemberExpression\",\n          object: result,\n          property: element.property,\n          computed: element.computed\n        };\n      }, head);\n    }\n\nNewExpression\n  = MemberExpression\n  / NewToken __ callee:NewExpression {\n      return { type: \"NewExpression\", callee: callee, arguments: [] };\n    }\n\nCallExpression\n  = head:(\n      callee:MemberExpression __ args:Arguments {\n        return { type: \"CallExpression\", callee: callee, arguments: args };\n      }\n    )\n    tail:(\n        __ args:Arguments {\n          return { type: \"CallExpression\", arguments: args };\n        }\n      / __ \"[\" __ property:Expression __ \"]\" {\n          return {\n            type: \"MemberExpression\",\n            property: property,\n            computed: true\n          };\n        }\n      / __ \".\" __ property:IdentifierName {\n          return {\n            type: \"MemberExpression\",\n            property: property,\n            computed: false\n          };\n        }\n    )*\n    {\n      return tail.reduce(function(result, element) {\n        element[TYPES_TO_PROPERTY_NAMES[element.type]] = result;\n\n        return element;\n      }, head);\n    }\n\nArguments\n  = \"(\" __ args:(ArgumentList __)? \")\" {\n      return optionalList(extractOptional(args, 0));\n    }\n\nArgumentList\n  = head:AssignmentExpression tail:(__ \",\" __ AssignmentExpression)* {\n      return buildList(head, tail, 3);\n    }\n\nLeftHandSideExpression\n  = CallExpression\n  / NewExpression\n\nPostfixExpression\n  = argument:LeftHandSideExpression _ operator:PostfixOperator {\n      return {\n        type: \"UpdateExpression\",\n        operator: operator,\n        argument: argument,\n        prefix: false\n      };\n    }\n  / LeftHandSideExpression\n\nPostfixOperator\n  = \"++\"\n  / \"--\"\n\nUnaryExpression\n  = PostfixExpression\n  / operator:UnaryOperator __ argument:UnaryExpression {\n      var type = (operator === \"++\" || operator === \"--\")\n        ? \"UpdateExpression\"\n        : \"UnaryExpression\";\n\n      return {\n        type: type,\n        operator: operator,\n        argument: argument,\n        prefix: true\n      };\n    }\n\nUnaryOperator\n  = $DeleteToken\n  / $VoidToken\n  / $TypeofToken\n  / \"++\"\n  / \"--\"\n  / $(\"+\" !\"=\")\n  / $(\"-\" !\"=\")\n  / \"~\"\n  / \"!\"\n\nMultiplicativeExpression\n  = head:UnaryExpression\n    tail:(__ MultiplicativeOperator __ UnaryExpression)*\n    { return buildBinaryExpression(head, tail); }\n\nMultiplicativeOperator\n  = $(\"*\" !\"=\")\n  / $(\"/\" !\"=\")\n  / $(\"%\" !\"=\")\n\nAdditiveExpression\n  = head:MultiplicativeExpression\n    tail:(__ AdditiveOperator __ MultiplicativeExpression)*\n    { return buildBinaryExpression(head, tail); }\n\nAdditiveOperator\n  = $(\"+\" ![+=])\n  / $(\"-\" ![-=])\n\nShiftExpression\n  = head:AdditiveExpression\n    tail:(__ ShiftOperator __ AdditiveExpression)*\n    { return buildBinaryExpression(head, tail); }\n\nShiftOperator\n  = $(\"<<\"  !\"=\")\n  / $(\">>>\" !\"=\")\n  / $(\">>\"  !\"=\")\n\nRelationalExpression\n  = head:ShiftExpression\n    tail:(__ RelationalOperator __ ShiftExpression)*\n    { return buildBinaryExpression(head, tail); }\n\nRelationalOperator\n  = \"<=\"\n  / \">=\"\n  / $(\"<\" !\"<\")\n  / $(\">\" !\">\")\n  / $InstanceofToken\n  / $InToken\n\nRelationalExpressionNoIn\n  = head:ShiftExpression\n    tail:(__ RelationalOperatorNoIn __ ShiftExpression)*\n    { return buildBinaryExpression(head, tail); }\n\nRelationalOperatorNoIn\n  = \"<=\"\n  / \">=\"\n  / $(\"<\" !\"<\")\n  / $(\">\" !\">\")\n  / $InstanceofToken\n\nEqualityExpression\n  = head:RelationalExpression\n    tail:(__ EqualityOperator __ RelationalExpression)*\n    { return buildBinaryExpression(head, tail); }\n\nEqualityExpressionNoIn\n  = head:RelationalExpressionNoIn\n    tail:(__ EqualityOperator __ RelationalExpressionNoIn)*\n    { return buildBinaryExpression(head, tail); }\n\nEqualityOperator\n  = \"===\"\n  / \"!==\"\n  / \"==\"\n  / \"!=\"\n\nBitwiseANDExpression\n  = head:EqualityExpression\n    tail:(__ BitwiseANDOperator __ EqualityExpression)*\n    { return buildBinaryExpression(head, tail); }\n\nBitwiseANDExpressionNoIn\n  = head:EqualityExpressionNoIn\n    tail:(__ BitwiseANDOperator __ EqualityExpressionNoIn)*\n    { return buildBinaryExpression(head, tail); }\n\nBitwiseANDOperator\n  = $(\"&\" ![&=])\n\nBitwiseXORExpression\n  = head:BitwiseANDExpression\n    tail:(__ BitwiseXOROperator __ BitwiseANDExpression)*\n    { return buildBinaryExpression(head, tail); }\n\nBitwiseXORExpressionNoIn\n  = head:BitwiseANDExpressionNoIn\n    tail:(__ BitwiseXOROperator __ BitwiseANDExpressionNoIn)*\n    { return buildBinaryExpression(head, tail); }\n\nBitwiseXOROperator\n  = $(\"^\" !\"=\")\n\nBitwiseORExpression\n  = head:BitwiseXORExpression\n    tail:(__ BitwiseOROperator __ BitwiseXORExpression)*\n    { return buildBinaryExpression(head, tail); }\n\nBitwiseORExpressionNoIn\n  = head:BitwiseXORExpressionNoIn\n    tail:(__ BitwiseOROperator __ BitwiseXORExpressionNoIn)*\n    { return buildBinaryExpression(head, tail); }\n\nBitwiseOROperator\n  = $(\"|\" ![|=])\n\nLogicalANDExpression\n  = head:BitwiseORExpression\n    tail:(__ LogicalANDOperator __ BitwiseORExpression)*\n    { return buildLogicalExpression(head, tail); }\n\nLogicalANDExpressionNoIn\n  = head:BitwiseORExpressionNoIn\n    tail:(__ LogicalANDOperator __ BitwiseORExpressionNoIn)*\n    { return buildLogicalExpression(head, tail); }\n\nLogicalANDOperator\n  = \"&&\"\n\nLogicalORExpression\n  = head:LogicalANDExpression\n    tail:(__ LogicalOROperator __ LogicalANDExpression)*\n    { return buildLogicalExpression(head, tail); }\n\nLogicalORExpressionNoIn\n  = head:LogicalANDExpressionNoIn\n    tail:(__ LogicalOROperator __ LogicalANDExpressionNoIn)*\n    { return buildLogicalExpression(head, tail); }\n\nLogicalOROperator\n  = \"||\"\n\nConditionalExpression\n  = test:LogicalORExpression __\n    \"?\" __ consequent:AssignmentExpression __\n    \":\" __ alternate:AssignmentExpression\n    {\n      return {\n        type: \"ConditionalExpression\",\n        test: test,\n        consequent: consequent,\n        alternate: alternate\n      };\n    }\n  / LogicalORExpression\n\nConditionalExpressionNoIn\n  = test:LogicalORExpressionNoIn __\n    \"?\" __ consequent:AssignmentExpression __\n    \":\" __ alternate:AssignmentExpressionNoIn\n    {\n      return {\n        type: \"ConditionalExpression\",\n        test: test,\n        consequent: consequent,\n        alternate: alternate\n      };\n    }\n  / LogicalORExpressionNoIn\n\nAssignmentExpression\n  = left:LeftHandSideExpression __\n    \"=\" !\"=\" __\n    right:AssignmentExpression\n    {\n      return {\n        type: \"AssignmentExpression\",\n        operator: \"=\",\n        left: left,\n        right: right\n      };\n    }\n  / left:LeftHandSideExpression __\n    operator:AssignmentOperator __\n    right:AssignmentExpression\n    {\n      return {\n        type: \"AssignmentExpression\",\n        operator: operator,\n        left: left,\n        right: right\n      };\n    }\n  / ConditionalExpression\n\nAssignmentExpressionNoIn\n  = left:LeftHandSideExpression __\n    \"=\" !\"=\" __\n    right:AssignmentExpressionNoIn\n    {\n      return {\n        type: \"AssignmentExpression\",\n        operator: \"=\",\n        left: left,\n        right: right\n      };\n    }\n  / left:LeftHandSideExpression __\n    operator:AssignmentOperator __\n    right:AssignmentExpressionNoIn\n    {\n      return {\n        type: \"AssignmentExpression\",\n        operator: operator,\n        left: left,\n        right: right\n      };\n    }\n  / ConditionalExpressionNoIn\n\nAssignmentOperator\n  = \"*=\"\n  / \"/=\"\n  / \"%=\"\n  / \"+=\"\n  / \"-=\"\n  / \"<<=\"\n  / \">>=\"\n  / \">>>=\"\n  / \"&=\"\n  / \"^=\"\n  / \"|=\"\n\nExpression\n  = head:AssignmentExpression tail:(__ \",\" __ AssignmentExpression)* {\n      return tail.length > 0\n        ? { type: \"SequenceExpression\", expressions: buildList(head, tail, 3) }\n        : head;\n    }\n\nExpressionNoIn\n  = head:AssignmentExpressionNoIn tail:(__ \",\" __ AssignmentExpressionNoIn)* {\n      return tail.length > 0\n        ? { type: \"SequenceExpression\", expressions: buildList(head, tail, 3) }\n        : head;\n    }\n\n// ----- A.4 Statements -----\n\nStatement\n  = Block\n  / VariableStatement\n  / EmptyStatement\n  / ExpressionStatement\n  / IfStatement\n  / IterationStatement\n  / ContinueStatement\n  / BreakStatement\n  / ReturnStatement\n  / WithStatement\n  / LabelledStatement\n  / SwitchStatement\n  / ThrowStatement\n  / TryStatement\n  / DebuggerStatement\n\nBlock\n  = \"{\" __ body:(StatementList __)? \"}\" {\n      return {\n        type: \"BlockStatement\",\n        body: optionalList(extractOptional(body, 0))\n      };\n    }\n\nStatementList\n  = head:Statement tail:(__ Statement)* { return buildList(head, tail, 1); }\n\nVariableStatement\n  = VarToken __ declarations:VariableDeclarationList EOS {\n      return {\n        type: \"VariableDeclaration\",\n        declarations: declarations,\n        kind: \"var\"\n      };\n    }\n\nVariableDeclarationList\n  = head:VariableDeclaration tail:(__ \",\" __ VariableDeclaration)* {\n      return buildList(head, tail, 3);\n    }\n\nVariableDeclarationListNoIn\n  = head:VariableDeclarationNoIn tail:(__ \",\" __ VariableDeclarationNoIn)* {\n      return buildList(head, tail, 3);\n    }\n\nVariableDeclaration\n  = id:Identifier init:(__ Initialiser)? {\n      return {\n        type: \"VariableDeclarator\",\n        id: id,\n        init: extractOptional(init, 1)\n      };\n    }\n\nVariableDeclarationNoIn\n  = id:Identifier init:(__ InitialiserNoIn)? {\n      return {\n        type: \"VariableDeclarator\",\n        id: id,\n        init: extractOptional(init, 1)\n      };\n    }\n\nInitialiser\n  = \"=\" !\"=\" __ expression:AssignmentExpression { return expression; }\n\nInitialiserNoIn\n  = \"=\" !\"=\" __ expression:AssignmentExpressionNoIn { return expression; }\n\nEmptyStatement\n  = \";\" { return { type: \"EmptyStatement\" }; }\n\nExpressionStatement\n  = !(\"{\" / FunctionToken) expression:Expression EOS {\n      return {\n        type: \"ExpressionStatement\",\n        expression: expression\n      };\n    }\n\nIfStatement\n  = IfToken __ \"(\" __ test:Expression __ \")\" __\n    consequent:Statement __\n    ElseToken __\n    alternate:Statement\n    {\n      return {\n        type: \"IfStatement\",\n        test: test,\n        consequent: consequent,\n        alternate: alternate\n      };\n    }\n  / IfToken __ \"(\" __ test:Expression __ \")\" __\n    consequent:Statement {\n      return {\n        type: \"IfStatement\",\n        test: test,\n        consequent: consequent,\n        alternate: null\n      };\n    }\n\nIterationStatement\n  = DoToken __\n    body:Statement __\n    WhileToken __ \"(\" __ test:Expression __ \")\" EOS\n    { return { type: \"DoWhileStatement\", body: body, test: test }; }\n  / WhileToken __ \"(\" __ test:Expression __ \")\" __\n    body:Statement\n    { return { type: \"WhileStatement\", test: test, body: body }; }\n  / ForToken __\n    \"(\" __\n    init:(ExpressionNoIn __)? \";\" __\n    test:(Expression __)? \";\" __\n    update:(Expression __)?\n    \")\" __\n    body:Statement\n    {\n      return {\n        type: \"ForStatement\",\n        init: extractOptional(init, 0),\n        test: extractOptional(test, 0),\n        update: extractOptional(update, 0),\n        body: body\n      };\n    }\n  / ForToken __\n    \"(\" __\n    VarToken __ declarations:VariableDeclarationListNoIn __ \";\" __\n    test:(Expression __)? \";\" __\n    update:(Expression __)?\n    \")\" __\n    body:Statement\n    {\n      return {\n        type: \"ForStatement\",\n        init: {\n          type: \"VariableDeclaration\",\n          declarations: declarations,\n          kind: \"var\"\n        },\n        test: extractOptional(test, 0),\n        update: extractOptional(update, 0),\n        body: body\n      };\n    }\n  / ForToken __\n    \"(\" __\n    left:LeftHandSideExpression __\n    InToken __\n    right:Expression __\n    \")\" __\n    body:Statement\n    {\n      return {\n        type: \"ForInStatement\",\n        left: left,\n        right: right,\n        body: body\n      };\n    }\n  / ForToken __\n    \"(\" __\n    VarToken __ declarations:VariableDeclarationListNoIn __\n    InToken __\n    right:Expression __\n    \")\" __\n    body:Statement\n    {\n      return {\n        type: \"ForInStatement\",\n        left: {\n          type: \"VariableDeclaration\",\n          declarations: declarations,\n          kind: \"var\"\n        },\n        right: right,\n        body: body\n      };\n    }\n\nContinueStatement\n  = ContinueToken EOS {\n      return { type: \"ContinueStatement\", label: null };\n    }\n  / ContinueToken _ label:Identifier EOS {\n      return { type: \"ContinueStatement\", label: label };\n    }\n\nBreakStatement\n  = BreakToken EOS {\n      return { type: \"BreakStatement\", label: null };\n    }\n  / BreakToken _ label:Identifier EOS {\n      return { type: \"BreakStatement\", label: label };\n    }\n\nReturnStatement\n  = ReturnToken EOS {\n      return { type: \"ReturnStatement\", argument: null };\n    }\n  / ReturnToken _ argument:Expression EOS {\n      return { type: \"ReturnStatement\", argument: argument };\n    }\n\nWithStatement\n  = WithToken __ \"(\" __ object:Expression __ \")\" __\n    body:Statement\n    { return { type: \"WithStatement\", object: object, body: body }; }\n\nSwitchStatement\n  = SwitchToken __ \"(\" __ discriminant:Expression __ \")\" __\n    cases:CaseBlock\n    {\n      return {\n        type: \"SwitchStatement\",\n        discriminant: discriminant,\n        cases: cases\n      };\n    }\n\nCaseBlock\n  = \"{\" __ clauses:(CaseClauses __)? \"}\" {\n      return optionalList(extractOptional(clauses, 0));\n    }\n  / \"{\" __\n    before:(CaseClauses __)?\n    default_:DefaultClause __\n    after:(CaseClauses __)? \"}\"\n    {\n      return optionalList(extractOptional(before, 0))\n        .concat(default_)\n        .concat(optionalList(extractOptional(after, 0)));\n    }\n\nCaseClauses\n  = head:CaseClause tail:(__ CaseClause)* { return buildList(head, tail, 1); }\n\nCaseClause\n  = CaseToken __ test:Expression __ \":\" consequent:(__ StatementList)? {\n      return {\n        type: \"SwitchCase\",\n        test: test,\n        consequent: optionalList(extractOptional(consequent, 1))\n      };\n    }\n\nDefaultClause\n  = DefaultToken __ \":\" consequent:(__ StatementList)? {\n      return {\n        type: \"SwitchCase\",\n        test: null,\n        consequent: optionalList(extractOptional(consequent, 1))\n      };\n    }\n\nLabelledStatement\n  = label:Identifier __ \":\" __ body:Statement {\n      return { type: \"LabeledStatement\", label: label, body: body };\n    }\n\nThrowStatement\n  = ThrowToken _ argument:Expression EOS {\n      return { type: \"ThrowStatement\", argument: argument };\n    }\n\nTryStatement\n  = TryToken __ block:Block __ handler:Catch __ finalizer:Finally {\n      return {\n        type: \"TryStatement\",\n        block: block,\n        handler: handler,\n        finalizer: finalizer\n      };\n    }\n  / TryToken __ block:Block __ handler:Catch {\n      return {\n        type: \"TryStatement\",\n        block: block,\n        handler: handler,\n        finalizer: null\n      };\n    }\n  / TryToken __ block:Block __ finalizer:Finally {\n      return {\n        type: \"TryStatement\",\n        block: block,\n        handler: null,\n        finalizer: finalizer\n      };\n    }\n\nCatch\n  = CatchToken __ \"(\" __ param:Identifier __ \")\" __ body:Block {\n      return {\n        type: \"CatchClause\",\n        param: param,\n        body: body\n      };\n    }\n\nFinally\n  = FinallyToken __ block:Block { return block; }\n\nDebuggerStatement\n  = DebuggerToken EOS { return { type: \"DebuggerStatement\" }; }\n\n// ----- A.5 Functions and Programs -----\n\nFunctionDeclaration\n  = FunctionToken __ id:Identifier __\n    \"(\" __ params:(FormalParameterList __)? \")\" __\n    \"{\" __ body:FunctionBody __ \"}\"\n    {\n      return {\n        type: \"FunctionDeclaration\",\n        id: id,\n        params: optionalList(extractOptional(params, 0)),\n        body: body\n      };\n    }\n\nFunctionExpression\n  = FunctionToken __ id:(Identifier __)?\n    \"(\" __ params:(FormalParameterList __)? \")\" __\n    \"{\" __ body:FunctionBody __ \"}\"\n    {\n      return {\n        type: \"FunctionExpression\",\n        id: extractOptional(id, 0),\n        params: optionalList(extractOptional(params, 0)),\n        body: body\n      };\n    }\n\nFormalParameterList\n  = head:Identifier tail:(__ \",\" __ Identifier)* {\n      return buildList(head, tail, 3);\n    }\n\nFunctionBody\n  = body:SourceElements? {\n      return {\n        type: \"BlockStatement\",\n        body: optionalList(body)\n      };\n    }\n\nProgram\n  = body:SourceElements? {\n      return {\n        type: \"Program\",\n        body: optionalList(body)\n      };\n    }\n\nSourceElements\n  = head:SourceElement tail:(__ SourceElement)* {\n      return buildList(head, tail, 1);\n    }\n\nSourceElement\n  = Statement\n  / FunctionDeclaration\n\n// ----- A.6 Universal Resource Identifier Character Classes -----\n\n// Irrelevant.\n\n// ----- A.7 Regular Expressions -----\n\n// Irrelevant.\n\n// ----- A.8 JSON -----\n\n// Irrelevant.\n",
-    "{\"rules\":[{\"name\":\"Start\",\"bytecode\":[5,27,100,27,191,27,100,24,3,26,0,4,1,1]},{\"name\":\"SourceCharacter\",\"bytecode\":[23,0,17,2,1,21,1,3]},{\"name\":\"WhiteSpace\",\"bytecode\":[23,1,28,18,0,2,1,22,0,3,14,58,0,6,18,1,2,1,22,1,3,14,47,0,6,18,2,2,1,22,2,3,14,36,0,6,18,3,2,1,22,3,3,14,25,0,6,18,4,2,1,22,4,3,14,14,0,6,18,5,2,1,22,5,3,14,3,0,6,27,61,29]},{\"name\":\"LineTerminator\",\"bytecode\":[23,2,20,0,2,1,21,1,3]},{\"name\":\"LineTerminatorSequence\",\"bytecode\":[23,3,28,18,6,2,1,22,6,3,14,41,0,6,18,7,2,1,22,7,3,14,30,0,6,18,8,2,1,22,8,3,14,19,0,6,18,9,2,1,22,9,3,14,8,0,6,18,10,2,1,22,10,3,29]},{\"name\":\"Comment\",\"bytecode\":[23,4,28,27,6,14,3,0,6,27,8,29]},{\"name\":\"MultiLineComment\",\"bytecode\":[5,18,11,2,1,22,11,3,15,100,3,4,5,5,38,18,12,2,1,22,12,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3,16,40,10,5,5,38,18,12,2,1,22,12,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3,6,18,12,2,1,22,12,3,15,3,4,11,3,9,8,3,7,3,6,7,3]},{\"name\":\"MultiLineCommentNoLineTerminator\",\"bytecode\":[5,23,5,18,11,2,1,22,11,3,15,118,3,4,5,5,38,23,6,18,12,2,1,22,12,3,14,3,0,6,27,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3,16,48,10,5,5,38,23,6,18,12,2,1,22,12,3,14,3,0,6,27,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3,6,23,6,18,12,2,1,22,12,3,15,3,4,11,3,9,8,3,7,3,6,7,3]},{\"name\":\"SingleLineComment\",\"bytecode\":[5,23,7,18,13,2,1,22,13,3,15,76,3,4,5,5,38,27,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3,16,35,10,5,5,38,27,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3,6,11,2,9,6,7,3]},{\"name\":\"Identifier\",\"bytecode\":[5,5,38,27,15,39,1,14,3,3,6,6,1,6,7,3,15,16,3,27,10,15,7,4,24,2,26,1,3,1,0,8,2,7,3,6,7,3]},{\"name\":\"IdentifierName\",\"bytecode\":[23,8,28,5,27,11,15,17,3,4,27,12,16,3,10,27,12,6,24,2,26,2,3,2,1,0,6,7,3,29]},{\"name\":\"IdentifierStart\",\"bytecode\":[27,13,14,59,0,6,23,9,18,14,2,1,22,14,3,14,46,0,6,23,10,18,15,2,1,22,15,3,14,33,0,6,5,23,11,18,16,2,1,22,16,3,15,16,3,27,41,15,7,4,24,2,26,3,3,1,0,8,2,7,3,6,7,3]},{\"name\":\"IdentifierPart\",\"bytecode\":[27,11,14,41,0,6,27,14,14,35,0,6,27,58,14,29,0,6,27,60,14,23,0,6,23,12,18,17,2,1,22,17,3,14,10,0,6,23,13,18,18,2,1,22,18,3]},{\"name\":\"UnicodeLetter\",\"bytecode\":[27,55,14,27,0,6,27,51,14,21,0,6,27,54,14,15,0,6,27,52,14,9,0,6,27,53,14,3,0,6,27,59]},{\"name\":\"UnicodeCombiningMark\",\"bytecode\":[27,57,14,3,0,6,27,56]},{\"name\":\"ReservedWord\",\"bytecode\":[27,16,14,15,0,6,27,17,14,9,0,6,27,19,14,3,0,6,27,20]},{\"name\":\"Keyword\",\"bytecode\":[27,62,14,147,0,6,27,63,14,141,0,6,27,64,14,135,0,6,27,67,14,129,0,6,27,68,14,123,0,6,27,69,14,117,0,6,27,70,14,111,0,6,27,71,14,105,0,6,27,72,14,99,0,6,27,77,14,93,0,6,27,78,14,87,0,6,27,79,14,81,0,6,27,81,14,75,0,6,27,83,14,69,0,6,27,84,14,63,0,6,27,85,14,57,0,6,27,87,14,51,0,6,27,90,14,45,0,6,27,91,14,39,0,6,27,92,14,33,0,6,27,94,14,27,0,6,27,95,14,21,0,6,27,96,14,15,0,6,27,97,14,9,0,6,27,98,14,3,0,6,27,99]},{\"name\":\"FutureReservedWord\",\"bytecode\":[27,65,14,33,0,6,27,66,14,27,0,6,27,73,14,21,0,6,27,74,14,15,0,6,27,75,14,9,0,6,27,82,14,3,0,6,27,89]},{\"name\":\"Literal\",\"bytecode\":[27,19,14,21,0,6,27,20,14,15,0,6,27,21,14,9,0,6,27,31,14,3,0,6,27,42]},{\"name\":\"NullLiteral\",\"bytecode\":[5,27,86,15,6,0,24,1,26,4,1,0,9]},{\"name\":\"BooleanLiteral\",\"bytecode\":[5,27,93,15,6,0,24,1,26,5,1,0,9,14,14,0,6,5,27,76,15,6,0,24,1,26,6,1,0,9]},{\"name\":\"NumericLiteral\",\"bytecode\":[23,14,28,5,27,29,15,35,3,5,38,27,11,14,3,0,6,27,24,39,1,14,3,3,6,6,1,6,7,3,15,7,4,24,2,26,7,3,1,1,8,2,7,3,6,7,3,14,45,0,6,5,27,22,15,35,3,5,38,27,11,14,3,0,6,27,24,39,1,14,3,3,6,6,1,6,7,3,15,7,4,24,2,26,7,3,1,1,8,2,7,3,6,7,3,29]},{\"name\":\"DecimalLiteral\",\"bytecode\":[5,27,23,15,36,3,18,19,2,1,22,19,3,15,22,4,4,27,24,16,3,10,27,24,6,27,26,14,2,0,6,2,24,4,26,8,5,0,8,2,7,3,6,7,3,14,76,0,6,5,18,19,2,1,22,19,3,15,35,3,4,27,24,15,6,3,16,3,10,27,24,6,6,6,3,15,13,4,27,26,14,2,0,6,2,24,3,26,8,4,0,8,2,7,3,6,7,3,14,23,0,6,5,27,23,15,13,3,27,26,14,2,0,6,2,24,2,26,8,3,0,6,7,3]},{\"name\":\"DecimalIntegerLiteral\",\"bytecode\":[18,20,2,1,22,20,3,14,22,0,6,5,27,25,15,12,3,4,27,24,16,3,10,27,24,6,11,2,9,6,7,3]},{\"name\":\"DecimalDigit\",\"bytecode\":[20,1,2,1,21,1,3]},{\"name\":\"NonZeroDigit\",\"bytecode\":[20,2,2,1,21,1,3]},{\"name\":\"ExponentPart\",\"bytecode\":[5,27,27,15,12,3,27,28,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"ExponentIndicator\",\"bytecode\":[19,21,2,1,21,1,3]},{\"name\":\"SignedInteger\",\"bytecode\":[5,20,3,2,1,21,1,3,14,2,0,6,2,4,27,24,15,6,3,16,3,10,27,24,6,6,6,3,15,3,4,11,2,9,8,2,7,3]},{\"name\":\"HexIntegerLiteral\",\"bytecode\":[5,19,22,2,1,21,2,3,15,36,3,5,4,27,30,15,6,3,16,3,10,27,30,6,6,6,3,15,2,1,6,12,9,15,7,4,24,2,26,9,3,1,0,8,2,7,3,6,7,3]},{\"name\":\"HexDigit\",\"bytecode\":[23,15,20,4,2,1,21,1,3]},{\"name\":\"StringLiteral\",\"bytecode\":[23,16,28,5,18,23,2,1,22,23,3,15,30,3,4,27,32,16,3,10,27,32,6,18,23,2,1,22,23,3,15,7,4,24,3,26,10,4,1,1,8,3,7,3,6,7,3,14,45,0,6,5,18,24,2,1,22,24,3,15,30,3,4,27,33,16,3,10,27,33,6,18,24,2,1,22,24,3,15,7,4,24,3,26,10,4,1,1,8,3,7,3,6,7,3,29]},{\"name\":\"DoubleStringCharacter\",\"bytecode\":[5,5,38,18,23,2,1,22,23,3,14,14,0,6,18,16,2,1,22,16,3,14,3,0,6,27,3,39,1,14,3,3,6,6,1,6,7,3,15,15,3,27,1,15,6,4,24,2,26,11,3,0,8,2,7,3,6,7,3,14,37,0,6,5,18,16,2,1,22,16,3,15,16,3,27,35,15,7,4,24,2,26,3,3,1,0,8,2,7,3,6,7,3,14,3,0,6,27,34]},{\"name\":\"SingleStringCharacter\",\"bytecode\":[5,5,38,18,24,2,1,22,24,3,14,14,0,6,18,16,2,1,22,16,3,14,3,0,6,27,3,39,1,14,3,3,6,6,1,6,7,3,15,15,3,27,1,15,6,4,24,2,26,11,3,0,8,2,7,3,6,7,3,14,37,0,6,5,18,16,2,1,22,16,3,15,16,3,27,35,15,7,4,24,2,26,3,3,1,0,8,2,7,3,6,7,3,14,3,0,6,27,34]},{\"name\":\"LineContinuation\",\"bytecode\":[5,18,16,2,1,22,16,3,15,15,3,27,4,15,6,4,24,2,26,12,3,0,8,2,7,3,6,7,3]},{\"name\":\"EscapeSequence\",\"bytecode\":[27,36,14,55,0,6,5,18,20,2,1,22,20,3,15,28,3,5,38,27,24,39,1,14,3,3,6,6,1,6,7,3,15,6,4,24,2,26,13,3,0,8,2,7,3,6,7,3,14,9,0,6,27,40,14,3,0,6,27,41]},{\"name\":\"CharacterEscapeSequence\",\"bytecode\":[27,37,14,3,0,6,27,38]},{\"name\":\"SingleEscapeCharacter\",\"bytecode\":[18,24,2,1,22,24,3,14,151,0,6,18,23,2,1,22,23,3,14,140,0,6,18,16,2,1,22,16,3,14,129,0,6,5,18,25,2,1,22,25,3,15,6,0,24,1,26,14,1,0,9,14,107,0,6,5,18,26,2,1,22,26,3,15,6,0,24,1,26,15,1,0,9,14,85,0,6,5,18,27,2,1,22,27,3,15,6,0,24,1,26,16,1,0,9,14,63,0,6,5,18,28,2,1,22,28,3,15,6,0,24,1,26,17,1,0,9,14,41,0,6,5,18,29,2,1,22,29,3,15,6,0,24,1,26,18,1,0,9,14,19,0,6,5,18,30,2,1,22,30,3,15,6,0,24,1,26,19,1,0,9]},{\"name\":\"NonEscapeCharacter\",\"bytecode\":[5,5,38,27,39,14,3,0,6,27,3,39,1,14,3,3,6,6,1,6,7,3,15,15,3,27,1,15,6,4,24,2,26,11,3,0,8,2,7,3,6,7,3]},{\"name\":\"EscapeCharacter\",\"bytecode\":[27,37,14,25,0,6,27,24,14,19,0,6,18,31,2,1,22,31,3,14,8,0,6,18,32,2,1,22,32,3]},{\"name\":\"HexEscapeSequence\",\"bytecode\":[5,18,31,2,1,22,31,3,15,42,3,5,5,27,30,15,12,3,27,30,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,15,7,4,24,2,26,20,3,1,0,8,2,7,3,6,7,3]},{\"name\":\"UnicodeEscapeSequence\",\"bytecode\":[5,23,17,18,32,2,1,22,32,3,15,60,3,5,5,27,30,15,30,3,27,30,15,21,4,27,30,15,12,4,27,30,15,3,4,11,4,9,8,4,7,3,8,3,7,3,8,2,7,3,6,7,3,15,2,1,6,12,9,15,7,4,24,2,26,20,3,1,0,8,2,7,3,6,7,3]},{\"name\":\"RegularExpressionLiteral\",\"bytecode\":[23,18,28,5,18,33,2,1,22,33,3,15,43,3,5,27,43,15,2,1,6,12,9,15,27,4,18,33,2,1,22,33,3,15,13,4,5,27,50,6,12,24,4,26,21,5,2,2,0,8,3,7,3,8,2,7,3,6,7,3,29]},{\"name\":\"RegularExpressionBody\",\"bytecode\":[5,27,44,15,12,3,4,27,45,16,3,10,27,45,6,11,2,9,6,7,3]},{\"name\":\"RegularExpressionFirstChar\",\"bytecode\":[5,5,38,20,5,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,47,15,3,4,11,2,9,8,2,7,3,6,7,3,14,9,0,6,27,46,14,3,0,6,27,48]},{\"name\":\"RegularExpressionChar\",\"bytecode\":[5,5,38,20,6,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,47,15,3,4,11,2,9,8,2,7,3,6,7,3,14,9,0,6,27,46,14,3,0,6,27,48]},{\"name\":\"RegularExpressionBackslashSequence\",\"bytecode\":[5,18,16,2,1,22,16,3,15,12,3,27,47,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"RegularExpressionNonTerminator\",\"bytecode\":[5,5,38,27,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,1,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"RegularExpressionClass\",\"bytecode\":[5,18,34,2,1,22,34,3,15,26,3,4,27,49,16,3,10,27,49,6,18,35,2,1,22,35,3,15,3,4,11,3,9,8,3,7,3,6,7,3]},{\"name\":\"RegularExpressionClassChar\",\"bytecode\":[5,5,38,20,7,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,12,3,27,47,15,3,4,11,2,9,8,2,7,3,6,7,3,14,3,0,6,27,46]},{\"name\":\"RegularExpressionFlags\",\"bytecode\":[4,27,12,16,3,10,27,12,6]},{\"name\":\"Ll\",\"bytecode\":[23,19,20,8,2,1,21,1,3]},{\"name\":\"Lm\",\"bytecode\":[23,20,20,9,2,1,21,1,3]},{\"name\":\"Lo\",\"bytecode\":[23,21,20,10,2,1,21,1,3]},{\"name\":\"Lt\",\"bytecode\":[23,22,20,11,2,1,21,1,3]},{\"name\":\"Lu\",\"bytecode\":[23,23,20,12,2,1,21,1,3]},{\"name\":\"Mc\",\"bytecode\":[23,24,20,13,2,1,21,1,3]},{\"name\":\"Mn\",\"bytecode\":[23,25,20,14,2,1,21,1,3]},{\"name\":\"Nd\",\"bytecode\":[23,26,20,15,2,1,21,1,3]},{\"name\":\"Nl\",\"bytecode\":[23,27,20,16,2,1,21,1,3]},{\"name\":\"Pc\",\"bytecode\":[23,28,20,17,2,1,21,1,3]},{\"name\":\"Zs\",\"bytecode\":[20,18,2,1,21,1,3]},{\"name\":\"BreakToken\",\"bytecode\":[5,23,29,18,36,2,1,22,36,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"CaseToken\",\"bytecode\":[5,23,30,18,37,2,1,22,37,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"CatchToken\",\"bytecode\":[5,23,31,18,38,2,1,22,38,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"ClassToken\",\"bytecode\":[5,23,32,18,39,2,1,22,39,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"ConstToken\",\"bytecode\":[5,23,33,18,40,2,1,22,40,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"ContinueToken\",\"bytecode\":[5,23,34,18,41,2,1,22,41,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"DebuggerToken\",\"bytecode\":[5,23,35,18,42,2,1,22,42,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"DefaultToken\",\"bytecode\":[5,23,36,18,43,2,1,22,43,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"DeleteToken\",\"bytecode\":[5,23,37,18,44,2,1,22,44,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"DoToken\",\"bytecode\":[5,23,38,18,45,2,1,22,45,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"ElseToken\",\"bytecode\":[5,23,39,18,46,2,1,22,46,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"EnumToken\",\"bytecode\":[5,23,40,18,47,2,1,22,47,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"ExportToken\",\"bytecode\":[5,23,41,18,48,2,1,22,48,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"ExtendsToken\",\"bytecode\":[5,23,42,18,49,2,1,22,49,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"FalseToken\",\"bytecode\":[5,23,43,18,50,2,1,22,50,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"FinallyToken\",\"bytecode\":[5,23,44,18,51,2,1,22,51,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"ForToken\",\"bytecode\":[5,23,45,18,52,2,1,22,52,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"FunctionToken\",\"bytecode\":[5,23,46,18,53,2,1,22,53,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"GetToken\",\"bytecode\":[5,23,47,18,54,2,1,22,54,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"IfToken\",\"bytecode\":[5,23,48,18,55,2,1,22,55,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"ImportToken\",\"bytecode\":[5,23,49,18,56,2,1,22,56,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"InstanceofToken\",\"bytecode\":[5,23,50,18,57,2,1,22,57,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"InToken\",\"bytecode\":[5,23,51,18,58,2,1,22,58,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"NewToken\",\"bytecode\":[5,23,52,18,59,2,1,22,59,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"NullToken\",\"bytecode\":[5,23,53,18,60,2,1,22,60,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"ReturnToken\",\"bytecode\":[5,23,54,18,61,2,1,22,61,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"SetToken\",\"bytecode\":[5,23,55,18,62,2,1,22,62,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"SuperToken\",\"bytecode\":[5,23,56,18,63,2,1,22,63,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"SwitchToken\",\"bytecode\":[5,23,57,18,64,2,1,22,64,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"ThisToken\",\"bytecode\":[5,23,58,18,65,2,1,22,65,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"ThrowToken\",\"bytecode\":[5,23,59,18,66,2,1,22,66,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"TrueToken\",\"bytecode\":[5,23,60,18,67,2,1,22,67,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"TryToken\",\"bytecode\":[5,23,61,18,68,2,1,22,68,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"TypeofToken\",\"bytecode\":[5,23,62,18,69,2,1,22,69,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"VarToken\",\"bytecode\":[5,23,63,18,70,2,1,22,70,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"VoidToken\",\"bytecode\":[5,23,64,18,71,2,1,22,71,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"WhileToken\",\"bytecode\":[5,23,65,18,72,2,1,22,72,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"WithToken\",\"bytecode\":[5,23,66,18,73,2,1,22,73,3,15,25,3,5,38,27,12,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3]},{\"name\":\"__\",\"bytecode\":[4,27,2,14,9,0,6,27,4,14,3,0,6,27,5,16,15,10,27,2,14,9,0,6,27,4,14,3,0,6,27,5,6]},{\"name\":\"_\",\"bytecode\":[4,27,2,14,3,0,6,27,7,16,9,10,27,2,14,3,0,6,27,7,6]},{\"name\":\"EOS\",\"bytecode\":[5,27,100,23,67,18,74,2,1,22,74,3,15,3,4,11,2,9,8,2,7,3,14,81,0,6,5,27,101,27,8,14,2,0,6,2,27,4,15,3,4,11,3,9,8,3,7,3,14,55,0,6,5,27,101,5,38,23,68,18,75,2,1,22,75,3,39,0,15,3,3,6,7,1,6,6,3,15,3,4,11,2,9,8,2,7,3,14,16,0,6,5,27,100,27,103,15,3,4,11,2,9,8,2,7,3]},{\"name\":\"EOF\",\"bytecode\":[5,38,23,0,17,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3]},{\"name\":\"PrimaryExpression\",\"bytecode\":[5,27,91,15,6,0,24,1,26,22,1,0,9,14,77,0,6,27,9,14,71,0,6,27,18,14,65,0,6,27,105,14,59,0,6,27,108,14,53,0,6,5,23,69,18,76,2,1,22,76,3,15,36,3,27,100,27,156,15,25,4,27,100,23,70,18,77,2,1,22,77,3,15,7,4,24,5,26,23,6,1,2,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"ArrayLiteral\",\"bytecode\":[5,23,71,18,34,2,1,22,34,3,15,44,3,27,100,5,27,107,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,72,18,35,2,1,22,35,3,15,7,4,24,4,26,24,5,1,1,8,4,7,3,6,7,3,14,147,0,6,5,23,71,18,34,2,1,22,34,3,15,36,3,27,100,27,106,15,25,4,27,100,23,72,18,35,2,1,22,35,3,15,7,4,24,5,26,25,6,1,2,8,5,7,3,8,3,7,3,6,7,3,14,91,0,6,5,23,71,18,34,2,1,22,34,3,15,74,3,27,100,27,106,15,63,4,27,100,23,73,18,78,2,1,22,78,3,15,45,4,27,100,5,27,107,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,72,18,35,2,1,22,35,3,15,8,4,24,8,26,26,9,2,5,1,8,8,7,3,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"ElementList\",\"bytecode\":[5,5,5,27,107,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,27,153,15,8,4,24,2,26,27,3,2,1,0,8,2,7,3,15,129,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,39,4,27,100,5,27,107,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,27,153,15,9,4,24,5,26,28,6,3,7,1,0,8,5,7,3,8,2,7,3,16,59,10,5,27,100,23,73,18,78,2,1,22,78,3,15,39,4,27,100,5,27,107,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,27,153,15,9,4,24,5,26,28,6,3,7,1,0,8,5,7,3,8,2,7,3,6,24,2,26,29,3,2,1,0,6,7,3]},{\"name\":\"Elision\",\"bytecode\":[5,23,73,18,78,2,1,22,78,3,15,56,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,3,4,11,2,9,8,2,7,3,16,23,10,5,27,100,23,73,18,78,2,1,22,78,3,15,3,4,11,2,9,8,2,7,3,6,24,2,26,30,3,1,0,6,7,3]},{\"name\":\"ObjectLiteral\",\"bytecode\":[5,23,74,18,79,2,1,22,79,3,15,24,3,27,100,23,68,18,75,2,1,22,75,3,15,6,4,24,3,26,31,4,0,8,3,7,3,6,7,3,14,127,0,6,5,23,74,18,79,2,1,22,79,3,15,36,3,27,100,27,109,15,25,4,27,100,23,68,18,75,2,1,22,75,3,15,7,4,24,5,26,32,6,1,2,8,5,7,3,8,3,7,3,6,7,3,14,71,0,6,5,23,74,18,79,2,1,22,79,3,15,54,3,27,100,27,109,15,43,4,27,100,23,73,18,78,2,1,22,78,3,15,25,4,27,100,23,68,18,75,2,1,22,75,3,15,7,4,24,7,26,32,8,1,4,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"PropertyNameAndValueList\",\"bytecode\":[5,27,110,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,110,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,110,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,33,3,2,1,0,6,7,3]},{\"name\":\"PropertyAssignment\",\"bytecode\":[5,27,111,15,37,3,27,100,23,75,18,80,2,1,22,80,3,15,19,4,27,100,27,153,15,8,4,24,5,26,34,6,2,4,0,8,5,7,3,8,3,7,3,6,7,3,14,225,0,6,5,27,80,15,95,3,27,100,27,111,15,84,4,27,100,23,69,18,76,2,1,22,76,3,15,66,4,27,100,23,70,18,77,2,1,22,77,3,15,48,4,27,100,23,74,18,79,2,1,22,79,3,15,30,4,27,100,27,190,27,100,23,68,18,75,2,1,22,75,3,15,8,4,24,13,26,35,14,2,10,2,8,13,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,117,0,6,5,27,88,15,107,3,27,100,27,111,15,96,4,27,100,23,69,18,76,2,1,22,76,3,15,78,4,27,100,27,112,15,67,4,27,100,23,70,18,77,2,1,22,77,3,15,49,4,27,100,23,74,18,79,2,1,22,79,3,15,31,4,27,100,27,190,27,100,23,68,18,75,2,1,22,75,3,15,9,4,24,15,26,36,16,3,12,8,2,8,15,7,3,8,11,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"PropertyName\",\"bytecode\":[27,10,14,9,0,6,27,31,14,3,0,6,27,21]},{\"name\":\"PropertySetParameterList\",\"bytecode\":[5,27,9,15,7,0,24,1,26,37,1,1,0,9]},{\"name\":\"MemberExpression\",\"bytecode\":[5,27,104,14,46,0,6,27,188,14,40,0,6,5,27,85,15,30,3,27,100,27,113,15,19,4,27,100,27,116,15,8,4,24,5,26,38,6,2,2,0,8,5,7,3,8,3,7,3,6,7,3,15,209,3,4,5,27,100,23,71,18,34,2,1,22,34,3,15,37,4,27,100,27,156,15,26,4,27,100,23,72,18,35,2,1,22,35,3,15,8,4,24,6,26,39,7,2,8,2,8,6,7,3,8,4,7,3,8,2,7,3,14,39,0,6,5,27,100,23,76,18,19,2,1,22,19,3,15,19,4,27,100,27,10,15,8,4,24,4,26,40,5,2,6,0,8,4,7,3,8,2,7,3,16,99,10,5,27,100,23,71,18,34,2,1,22,34,3,15,37,4,27,100,27,156,15,26,4,27,100,23,72,18,35,2,1,22,35,3,15,8,4,24,6,26,39,7,2,8,2,8,6,7,3,8,4,7,3,8,2,7,3,14,39,0,6,5,27,100,23,76,18,19,2,1,22,19,3,15,19,4,27,100,27,10,15,8,4,24,4,26,40,5,2,6,0,8,4,7,3,8,2,7,3,6,24,2,26,41,3,2,1,0,6,7,3]},{\"name\":\"NewExpression\",\"bytecode\":[27,113,14,28,0,6,5,27,85,15,18,3,27,100,27,114,15,7,4,24,3,26,42,4,1,0,8,3,7,3,6,7,3]},{\"name\":\"CallExpression\",\"bytecode\":[5,5,27,113,15,19,3,27,100,27,116,15,8,4,24,3,26,43,4,2,2,0,8,3,7,3,6,7,3,15,257,3,4,5,27,100,27,116,15,8,4,24,2,26,44,3,2,4,0,8,2,7,3,14,99,0,6,5,27,100,23,71,18,34,2,1,22,34,3,15,37,4,27,100,27,156,15,26,4,27,100,23,72,18,35,2,1,22,35,3,15,8,4,24,6,26,45,7,2,8,2,8,6,7,3,8,4,7,3,8,2,7,3,14,39,0,6,5,27,100,23,76,18,19,2,1,22,19,3,15,19,4,27,100,27,10,15,8,4,24,4,26,46,5,2,6,0,8,4,7,3,8,2,7,3,16,123,10,5,27,100,27,116,15,8,4,24,2,26,44,3,2,4,0,8,2,7,3,14,99,0,6,5,27,100,23,71,18,34,2,1,22,34,3,15,37,4,27,100,27,156,15,26,4,27,100,23,72,18,35,2,1,22,35,3,15,8,4,24,6,26,45,7,2,8,2,8,6,7,3,8,4,7,3,8,2,7,3,14,39,0,6,5,27,100,23,76,18,19,2,1,22,19,3,15,19,4,27,100,27,10,15,8,4,24,4,26,46,5,2,6,0,8,4,7,3,8,2,7,3,6,24,2,26,47,3,2,1,0,6,7,3]},{\"name\":\"Arguments\",\"bytecode\":[5,23,69,18,76,2,1,22,76,3,15,44,3,27,100,5,27,117,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,70,18,77,2,1,22,77,3,15,7,4,24,4,26,48,5,1,1,8,4,7,3,6,7,3]},{\"name\":\"ArgumentList\",\"bytecode\":[5,27,153,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,153,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,153,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,33,3,2,1,0,6,7,3]},{\"name\":\"LeftHandSideExpression\",\"bytecode\":[27,115,14,3,0,6,27,114]},{\"name\":\"PostfixExpression\",\"bytecode\":[5,27,118,15,19,3,27,101,27,120,15,8,4,24,3,26,49,4,2,2,0,8,3,7,3,6,7,3,14,3,0,6,27,118]},{\"name\":\"PostfixOperator\",\"bytecode\":[23,77,18,81,2,1,22,81,3,14,10,0,6,23,78,18,82,2,1,22,82,3]},{\"name\":\"UnaryExpression\",\"bytecode\":[27,119,14,29,0,6,5,27,122,15,19,3,27,100,27,121,15,8,4,24,3,26,50,4,2,2,0,8,3,7,3,6,7,3]},{\"name\":\"UnaryOperator\",\"bytecode\":[5,27,70,15,2,1,6,12,9,14,193,0,6,5,27,97,15,2,1,6,12,9,14,180,0,6,5,27,95,15,2,1,6,12,9,14,167,0,6,23,77,18,81,2,1,22,81,3,14,154,0,6,23,78,18,82,2,1,22,82,3,14,141,0,6,5,5,23,79,18,83,2,1,22,83,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,82,0,6,5,5,23,81,18,85,2,1,22,85,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,23,0,6,23,82,18,86,2,1,22,86,3,14,10,0,6,23,83,18,87,2,1,22,87,3]},{\"name\":\"MultiplicativeExpression\",\"bytecode\":[5,27,121,15,65,3,4,5,27,100,27,124,15,14,4,27,100,27,121,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,124,15,14,4,27,100,27,121,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"MultiplicativeOperator\",\"bytecode\":[5,5,23,84,18,88,2,1,22,88,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,115,0,6,5,5,23,85,18,33,2,1,22,33,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,56,0,6,5,5,23,86,18,89,2,1,22,89,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9]},{\"name\":\"AdditiveExpression\",\"bytecode\":[5,27,123,15,65,3,4,5,27,100,27,126,15,14,4,27,100,27,123,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,126,15,14,4,27,100,27,123,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"AdditiveOperator\",\"bytecode\":[5,5,23,79,18,83,2,1,22,83,3,15,32,3,5,38,23,87,20,19,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,56,0,6,5,5,23,81,18,85,2,1,22,85,3,15,32,3,5,38,23,88,20,20,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9]},{\"name\":\"ShiftExpression\",\"bytecode\":[5,27,125,15,65,3,4,5,27,100,27,128,15,14,4,27,100,27,125,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,128,15,14,4,27,100,27,125,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"ShiftOperator\",\"bytecode\":[5,5,23,89,18,90,2,1,22,90,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,115,0,6,5,5,23,90,18,91,2,1,22,91,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,56,0,6,5,5,23,91,18,92,2,1,22,92,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9]},{\"name\":\"RelationalExpression\",\"bytecode\":[5,27,127,15,65,3,4,5,27,100,27,130,15,14,4,27,100,27,127,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,130,15,14,4,27,100,27,127,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"RelationalOperator\",\"bytecode\":[23,92,18,93,2,1,22,93,3,14,154,0,6,23,93,18,94,2,1,22,94,3,14,141,0,6,5,5,23,94,18,95,2,1,22,95,3,15,32,3,5,38,23,94,18,95,2,1,22,95,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,82,0,6,5,5,23,95,18,96,2,1,22,96,3,15,32,3,5,38,23,95,18,96,2,1,22,96,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,23,0,6,5,27,83,15,2,1,6,12,9,14,10,0,6,5,27,84,15,2,1,6,12,9]},{\"name\":\"RelationalExpressionNoIn\",\"bytecode\":[5,27,127,15,65,3,4,5,27,100,27,132,15,14,4,27,100,27,127,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,132,15,14,4,27,100,27,127,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"RelationalOperatorNoIn\",\"bytecode\":[23,92,18,93,2,1,22,93,3,14,141,0,6,23,93,18,94,2,1,22,94,3,14,128,0,6,5,5,23,94,18,95,2,1,22,95,3,15,32,3,5,38,23,94,18,95,2,1,22,95,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,69,0,6,5,5,23,95,18,96,2,1,22,96,3,15,32,3,5,38,23,95,18,96,2,1,22,96,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9,14,10,0,6,5,27,83,15,2,1,6,12,9]},{\"name\":\"EqualityExpression\",\"bytecode\":[5,27,129,15,65,3,4,5,27,100,27,135,15,14,4,27,100,27,129,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,135,15,14,4,27,100,27,129,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"EqualityExpressionNoIn\",\"bytecode\":[5,27,131,15,65,3,4,5,27,100,27,135,15,14,4,27,100,27,131,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,135,15,14,4,27,100,27,131,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"EqualityOperator\",\"bytecode\":[23,96,18,97,2,1,22,97,3,14,36,0,6,23,97,18,98,2,1,22,98,3,14,23,0,6,23,98,18,99,2,1,22,99,3,14,10,0,6,23,99,18,100,2,1,22,100,3]},{\"name\":\"BitwiseANDExpression\",\"bytecode\":[5,27,133,15,65,3,4,5,27,100,27,138,15,14,4,27,100,27,133,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,138,15,14,4,27,100,27,133,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"BitwiseANDExpressionNoIn\",\"bytecode\":[5,27,134,15,65,3,4,5,27,100,27,138,15,14,4,27,100,27,134,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,138,15,14,4,27,100,27,134,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"BitwiseANDOperator\",\"bytecode\":[5,5,23,100,18,101,2,1,22,101,3,15,32,3,5,38,23,101,20,21,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9]},{\"name\":\"BitwiseXORExpression\",\"bytecode\":[5,27,136,15,65,3,4,5,27,100,27,141,15,14,4,27,100,27,136,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,141,15,14,4,27,100,27,136,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"BitwiseXORExpressionNoIn\",\"bytecode\":[5,27,137,15,65,3,4,5,27,100,27,141,15,14,4,27,100,27,137,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,141,15,14,4,27,100,27,137,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"BitwiseXOROperator\",\"bytecode\":[5,5,23,102,18,102,2,1,22,102,3,15,32,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9]},{\"name\":\"BitwiseORExpression\",\"bytecode\":[5,27,139,15,65,3,4,5,27,100,27,144,15,14,4,27,100,27,139,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,144,15,14,4,27,100,27,139,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"BitwiseORExpressionNoIn\",\"bytecode\":[5,27,140,15,65,3,4,5,27,100,27,144,15,14,4,27,100,27,140,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,144,15,14,4,27,100,27,140,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,51,3,2,1,0,6,7,3]},{\"name\":\"BitwiseOROperator\",\"bytecode\":[5,5,23,103,18,103,2,1,22,103,3,15,32,3,5,38,23,104,20,22,2,1,21,1,3,39,1,14,3,3,6,6,1,6,7,3,15,3,4,11,2,9,8,2,7,3,6,7,3,15,2,1,6,12,9]},{\"name\":\"LogicalANDExpression\",\"bytecode\":[5,27,142,15,65,3,4,5,27,100,27,147,15,14,4,27,100,27,142,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,147,15,14,4,27,100,27,142,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,52,3,2,1,0,6,7,3]},{\"name\":\"LogicalANDExpressionNoIn\",\"bytecode\":[5,27,143,15,65,3,4,5,27,100,27,147,15,14,4,27,100,27,143,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,147,15,14,4,27,100,27,143,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,52,3,2,1,0,6,7,3]},{\"name\":\"LogicalANDOperator\",\"bytecode\":[23,105,18,104,2,1,22,104,3]},{\"name\":\"LogicalORExpression\",\"bytecode\":[5,27,145,15,65,3,4,5,27,100,27,150,15,14,4,27,100,27,145,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,150,15,14,4,27,100,27,145,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,52,3,2,1,0,6,7,3]},{\"name\":\"LogicalORExpressionNoIn\",\"bytecode\":[5,27,146,15,65,3,4,5,27,100,27,150,15,14,4,27,100,27,146,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,27,10,5,27,100,27,150,15,14,4,27,100,27,146,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,52,3,2,1,0,6,7,3]},{\"name\":\"LogicalOROperator\",\"bytecode\":[23,106,18,105,2,1,22,105,3]},{\"name\":\"ConditionalExpression\",\"bytecode\":[5,27,148,15,67,3,27,100,23,107,18,106,2,1,22,106,3,15,49,4,27,100,27,153,15,38,4,27,100,23,75,18,80,2,1,22,80,3,15,20,4,27,100,27,153,15,9,4,24,9,26,53,10,3,8,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,3,0,6,27,148]},{\"name\":\"ConditionalExpressionNoIn\",\"bytecode\":[5,27,149,15,67,3,27,100,23,107,18,106,2,1,22,106,3,15,49,4,27,100,27,153,15,38,4,27,100,23,75,18,80,2,1,22,80,3,15,20,4,27,100,27,154,15,9,4,24,9,26,53,10,3,8,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,3,0,6,27,149]},{\"name\":\"AssignmentExpression\",\"bytecode\":[5,27,118,15,66,3,27,100,23,80,18,84,2,1,22,84,3,15,48,4,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,19,4,27,100,27,153,15,8,4,24,6,26,54,7,2,5,0,8,6,7,3,8,4,7,3,8,3,7,3,6,7,3,14,47,0,6,5,27,118,15,31,3,27,100,27,155,15,20,4,27,100,27,153,15,9,4,24,5,26,55,6,3,4,2,0,8,5,7,3,8,3,7,3,6,7,3,14,3,0,6,27,151]},{\"name\":\"AssignmentExpressionNoIn\",\"bytecode\":[5,27,118,15,66,3,27,100,23,80,18,84,2,1,22,84,3,15,48,4,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,19,4,27,100,27,154,15,8,4,24,6,26,54,7,2,5,0,8,6,7,3,8,4,7,3,8,3,7,3,6,7,3,14,47,0,6,5,27,118,15,31,3,27,100,27,155,15,20,4,27,100,27,154,15,9,4,24,5,26,55,6,3,4,2,0,8,5,7,3,8,3,7,3,6,7,3,14,3,0,6,27,152]},{\"name\":\"AssignmentOperator\",\"bytecode\":[23,108,18,107,2,1,22,107,3,14,127,0,6,23,109,18,108,2,1,22,108,3,14,114,0,6,23,110,18,109,2,1,22,109,3,14,101,0,6,23,111,18,110,2,1,22,110,3,14,88,0,6,23,112,18,111,2,1,22,111,3,14,75,0,6,23,113,18,112,2,1,22,112,3,14,62,0,6,23,114,18,113,2,1,22,113,3,14,49,0,6,23,115,18,114,2,1,22,114,3,14,36,0,6,23,116,18,115,2,1,22,115,3,14,23,0,6,23,117,18,116,2,1,22,116,3,14,10,0,6,23,118,18,117,2,1,22,117,3]},{\"name\":\"Expression\",\"bytecode\":[5,27,153,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,153,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,153,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,56,3,2,1,0,6,7,3]},{\"name\":\"ExpressionNoIn\",\"bytecode\":[5,27,154,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,154,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,154,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,56,3,2,1,0,6,7,3]},{\"name\":\"Statement\",\"bytecode\":[27,159,14,81,0,6,27,161,14,75,0,6,27,168,14,69,0,6,27,169,14,63,0,6,27,170,14,57,0,6,27,171,14,51,0,6,27,172,14,45,0,6,27,173,14,39,0,6,27,174,14,33,0,6,27,175,14,27,0,6,27,181,14,21,0,6,27,176,14,15,0,6,27,182,14,9,0,6,27,183,14,3,0,6,27,186]},{\"name\":\"Block\",\"bytecode\":[5,23,74,18,79,2,1,22,79,3,15,44,3,27,100,5,27,160,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,68,18,75,2,1,22,75,3,15,7,4,24,4,26,57,5,1,1,8,4,7,3,6,7,3]},{\"name\":\"StatementList\",\"bytecode\":[5,27,158,15,43,3,4,5,27,100,27,158,15,3,4,11,2,9,8,2,7,3,16,16,10,5,27,100,27,158,15,3,4,11,2,9,8,2,7,3,6,24,2,26,58,3,2,1,0,6,7,3]},{\"name\":\"VariableStatement\",\"bytecode\":[5,27,96,15,27,3,27,100,27,162,15,16,4,27,102,15,7,4,24,4,26,59,5,1,1,8,4,7,3,8,3,7,3,6,7,3]},{\"name\":\"VariableDeclarationList\",\"bytecode\":[5,27,164,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,164,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,164,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,33,3,2,1,0,6,7,3]},{\"name\":\"VariableDeclarationListNoIn\",\"bytecode\":[5,27,165,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,165,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,165,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,33,3,2,1,0,6,7,3]},{\"name\":\"VariableDeclaration\",\"bytecode\":[5,27,9,15,28,3,5,27,100,27,166,15,3,4,11,2,9,8,2,7,3,14,2,0,6,2,24,2,26,60,3,2,1,0,6,7,3]},{\"name\":\"VariableDeclarationNoIn\",\"bytecode\":[5,27,9,15,28,3,5,27,100,27,167,15,3,4,11,2,9,8,2,7,3,14,2,0,6,2,24,2,26,60,3,2,1,0,6,7,3]},{\"name\":\"Initialiser\",\"bytecode\":[5,23,80,18,84,2,1,22,84,3,15,47,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,18,4,27,100,27,153,15,7,4,24,4,26,23,5,1,0,8,4,7,3,8,2,7,3,6,7,3]},{\"name\":\"InitialiserNoIn\",\"bytecode\":[5,23,80,18,84,2,1,22,84,3,15,47,3,5,38,23,80,18,84,2,1,22,84,3,39,1,14,3,3,6,6,1,6,7,3,15,18,4,27,100,27,154,15,7,4,24,4,26,23,5,1,0,8,4,7,3,8,2,7,3,6,7,3]},{\"name\":\"EmptyStatement\",\"bytecode\":[5,23,67,18,74,2,1,22,74,3,15,6,0,24,1,26,61,1,0,9]},{\"name\":\"ExpressionStatement\",\"bytecode\":[5,5,38,23,74,18,79,2,1,22,79,3,14,3,0,6,27,79,39,1,14,3,3,6,6,1,6,7,3,15,25,3,27,156,15,16,4,27,102,15,7,4,24,3,26,62,4,1,1,8,3,7,3,8,2,7,3,6,7,3]},{\"name\":\"IfStatement\",\"bytecode\":[5,27,81,15,89,3,27,100,23,69,18,76,2,1,22,76,3,15,71,4,27,100,27,156,15,60,4,27,100,23,70,18,77,2,1,22,77,3,15,42,4,27,100,27,158,15,31,4,27,100,27,72,15,20,4,27,100,27,158,15,9,4,24,13,26,63,14,3,8,4,0,8,13,7,3,8,11,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,76,0,6,5,27,81,15,66,3,27,100,23,69,18,76,2,1,22,76,3,15,48,4,27,100,27,156,15,37,4,27,100,23,70,18,77,2,1,22,77,3,15,19,4,27,100,27,158,15,8,4,24,9,26,64,10,2,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"IterationStatement\",\"bytecode\":[5,27,71,15,86,3,27,100,27,158,15,75,4,27,100,27,98,15,64,4,27,100,23,69,18,76,2,1,22,76,3,15,46,4,27,100,27,156,15,35,4,27,100,23,70,18,77,2,1,22,77,3,15,17,4,27,102,15,8,4,24,12,26,65,13,2,9,3,8,12,7,3,8,11,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,620,0,6,5,27,98,15,66,3,27,100,23,69,18,76,2,1,22,76,3,15,48,4,27,100,27,156,15,37,4,27,100,23,70,18,77,2,1,22,77,3,15,19,4,27,100,27,158,15,8,4,24,9,26,66,10,2,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,541,0,6,5,27,78,15,150,3,27,100,23,69,18,76,2,1,22,76,3,15,132,4,27,100,5,27,157,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,67,18,74,2,1,22,74,3,15,95,4,27,100,5,27,156,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,67,18,74,2,1,22,74,3,15,58,4,27,100,5,27,156,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,70,18,77,2,1,22,77,3,15,21,4,27,100,27,158,15,10,4,24,14,26,67,15,4,9,6,3,0,8,14,7,3,8,12,7,3,8,9,7,3,8,6,7,3,8,3,7,3,6,7,3,14,378,0,6,5,27,78,15,153,3,27,100,23,69,18,76,2,1,22,76,3,15,135,4,27,100,27,96,15,124,4,27,100,27,163,15,113,4,27,100,23,67,18,74,2,1,22,74,3,15,95,4,27,100,5,27,156,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,67,18,74,2,1,22,74,3,15,58,4,27,100,5,27,156,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,70,18,77,2,1,22,77,3,15,21,4,27,100,27,158,15,10,4,24,17,26,68,18,4,10,6,3,0,8,17,7,3,8,15,7,3,8,12,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,212,0,6,5,27,78,15,89,3,27,100,23,69,18,76,2,1,22,76,3,15,71,4,27,100,27,118,15,60,4,27,100,27,84,15,49,4,27,100,27,156,15,38,4,27,100,23,70,18,77,2,1,22,77,3,15,20,4,27,100,27,158,15,9,4,24,13,26,69,14,3,8,4,0,8,13,7,3,8,11,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,110,0,6,5,27,78,15,100,3,27,100,23,69,18,76,2,1,22,76,3,15,82,4,27,100,27,96,15,71,4,27,100,27,163,15,60,4,27,100,27,84,15,49,4,27,100,27,156,15,38,4,27,100,23,70,18,77,2,1,22,77,3,15,20,4,27,100,27,158,15,9,4,24,15,26,70,16,3,8,4,0,8,15,7,3,8,13,7,3,8,11,7,3,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"ContinueStatement\",\"bytecode\":[5,27,67,15,15,3,27,102,15,6,4,24,2,26,71,3,0,8,2,7,3,6,7,3,14,37,0,6,5,27,67,15,27,3,27,101,27,9,15,16,4,27,102,15,7,4,24,4,26,72,5,1,1,8,4,7,3,8,3,7,3,6,7,3]},{\"name\":\"BreakStatement\",\"bytecode\":[5,27,62,15,15,3,27,102,15,6,4,24,2,26,73,3,0,8,2,7,3,6,7,3,14,37,0,6,5,27,62,15,27,3,27,101,27,9,15,16,4,27,102,15,7,4,24,4,26,74,5,1,1,8,4,7,3,8,3,7,3,6,7,3]},{\"name\":\"ReturnStatement\",\"bytecode\":[5,27,87,15,15,3,27,102,15,6,4,24,2,26,75,3,0,8,2,7,3,6,7,3,14,37,0,6,5,27,87,15,27,3,27,101,27,156,15,16,4,27,102,15,7,4,24,4,26,76,5,1,1,8,4,7,3,8,3,7,3,6,7,3]},{\"name\":\"WithStatement\",\"bytecode\":[5,27,99,15,66,3,27,100,23,69,18,76,2,1,22,76,3,15,48,4,27,100,27,156,15,37,4,27,100,23,70,18,77,2,1,22,77,3,15,19,4,27,100,27,158,15,8,4,24,9,26,77,10,2,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"SwitchStatement\",\"bytecode\":[5,27,90,15,66,3,27,100,23,69,18,76,2,1,22,76,3,15,48,4,27,100,27,156,15,37,4,27,100,23,70,18,77,2,1,22,77,3,15,19,4,27,100,27,177,15,8,4,24,9,26,78,10,2,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"CaseBlock\",\"bytecode\":[5,23,74,18,79,2,1,22,79,3,15,44,3,27,100,5,27,178,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,68,18,75,2,1,22,75,3,15,7,4,24,4,26,79,5,1,1,8,4,7,3,6,7,3,14,93,0,6,5,23,74,18,79,2,1,22,79,3,15,76,3,27,100,5,27,178,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,27,180,15,46,4,27,100,5,27,178,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,68,18,75,2,1,22,75,3,15,9,4,24,7,26,80,8,3,4,3,1,8,7,7,3,8,4,7,3,6,7,3]},{\"name\":\"CaseClauses\",\"bytecode\":[5,27,179,15,43,3,4,5,27,100,27,179,15,3,4,11,2,9,8,2,7,3,16,16,10,5,27,100,27,179,15,3,4,11,2,9,8,2,7,3,6,24,2,26,58,3,2,1,0,6,7,3]},{\"name\":\"CaseClause\",\"bytecode\":[5,27,63,15,57,3,27,100,27,156,15,46,4,27,100,23,75,18,80,2,1,22,80,3,15,28,4,5,27,100,27,160,15,3,4,11,2,9,8,2,7,3,14,2,0,6,2,24,6,26,81,7,2,3,0,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"DefaultClause\",\"bytecode\":[5,27,69,15,45,3,27,100,23,75,18,80,2,1,22,80,3,15,27,4,5,27,100,27,160,15,3,4,11,2,9,8,2,7,3,14,2,0,6,2,24,4,26,82,5,1,0,8,3,7,3,6,7,3]},{\"name\":\"LabelledStatement\",\"bytecode\":[5,27,9,15,37,3,27,100,23,75,18,80,2,1,22,80,3,15,19,4,27,100,27,158,15,8,4,24,5,26,83,6,2,4,0,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"ThrowStatement\",\"bytecode\":[5,27,92,15,27,3,27,101,27,156,15,16,4,27,102,15,7,4,24,4,26,84,5,1,1,8,4,7,3,8,3,7,3,6,7,3]},{\"name\":\"TryStatement\",\"bytecode\":[5,27,94,15,42,3,27,100,27,159,15,31,4,27,100,27,184,15,20,4,27,100,27,185,15,9,4,24,7,26,85,8,3,4,2,0,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3,14,83,0,6,5,27,94,15,30,3,27,100,27,159,15,19,4,27,100,27,184,15,8,4,24,5,26,86,6,2,2,0,8,5,7,3,8,3,7,3,6,7,3,14,40,0,6,5,27,94,15,30,3,27,100,27,159,15,19,4,27,100,27,185,15,8,4,24,5,26,87,6,2,2,0,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"Catch\",\"bytecode\":[5,27,64,15,66,3,27,100,23,69,18,76,2,1,22,76,3,15,48,4,27,100,27,9,15,37,4,27,100,23,70,18,77,2,1,22,77,3,15,19,4,27,100,27,159,15,8,4,24,9,26,88,10,2,4,0,8,9,7,3,8,7,7,3,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"Finally\",\"bytecode\":[5,27,77,15,18,3,27,100,27,159,15,7,4,24,3,26,89,4,1,0,8,3,7,3,6,7,3]},{\"name\":\"DebuggerStatement\",\"bytecode\":[5,27,68,15,15,3,27,102,15,6,4,24,2,26,90,3,0,8,2,7,3,6,7,3]},{\"name\":\"FunctionDeclaration\",\"bytecode\":[5,27,79,15,115,3,27,100,27,9,15,104,4,27,100,23,69,18,76,2,1,22,76,3,15,86,4,27,100,5,27,189,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,70,18,77,2,1,22,77,3,15,49,4,27,100,23,74,18,79,2,1,22,79,3,15,31,4,27,100,27,190,27,100,23,68,18,75,2,1,22,75,3,15,9,4,24,14,26,91,15,3,11,7,2,8,14,7,3,8,10,7,3,8,8,7,3,8,5,7,3,8,3,7,3,6,7,3]},{\"name\":\"FunctionExpression\",\"bytecode\":[5,27,79,15,123,3,27,100,5,27,9,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,69,18,76,2,1,22,76,3,15,86,4,27,100,5,27,189,15,5,3,27,100,11,2,9,6,7,3,14,2,0,6,2,23,70,18,77,2,1,22,77,3,15,49,4,27,100,23,74,18,79,2,1,22,79,3,15,31,4,27,100,27,190,27,100,23,68,18,75,2,1,22,75,3,15,9,4,24,13,26,92,14,3,10,7,2,8,13,7,3,8,9,7,3,8,7,7,3,8,4,7,3,6,7,3]},{\"name\":\"FormalParameterList\",\"bytecode\":[5,27,9,15,79,3,4,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,9,15,3,4,11,4,9,8,4,7,3,8,2,7,3,16,34,10,5,27,100,23,73,18,78,2,1,22,78,3,15,14,4,27,100,27,9,15,3,4,11,4,9,8,4,7,3,8,2,7,3,6,24,2,26,33,3,2,1,0,6,7,3]},{\"name\":\"FunctionBody\",\"bytecode\":[5,27,192,14,2,0,6,2,24,1,26,93,1,1,0,9]},{\"name\":\"Program\",\"bytecode\":[5,27,192,14,2,0,6,2,24,1,26,94,1,1,0,9]},{\"name\":\"SourceElements\",\"bytecode\":[5,27,193,15,43,3,4,5,27,100,27,193,15,3,4,11,2,9,8,2,7,3,16,16,10,5,27,100,27,193,15,3,4,11,2,9,8,2,7,3,6,24,2,26,95,3,2,1,0,6,7,3]},{\"name\":\"SourceElement\",\"bytecode\":[27,158,14,3,0,6,27,187]}],\"literals\":[\"\\t\",\"\\u000b\",\"\\f\",\" \",\"\u{a0}\",\"\u{feff}\",\"\\n\",\"\\r\\n\",\"\\r\",\"\u{2028}\",\"\u{2029}\",\"/*\",\"*/\",\"//\",\"$\",\"_\",\"\\\\\",\"\u{200c}\",\"\u{200d}\",\".\",\"0\",\"e\",\"0x\",\"\\\"\",\"'\",\"b\",\"f\",\"n\",\"r\",\"t\",\"v\",\"x\",\"u\",\"/\",\"[\",\"]\",\"break\",\"case\",\"catch\",\"class\",\"const\",\"continue\",\"debugger\",\"default\",\"delete\",\"do\",\"else\",\"enum\",\"export\",\"extends\",\"false\",\"finally\",\"for\",\"function\",\"get\",\"if\",\"import\",\"instanceof\",\"in\",\"new\",\"null\",\"return\",\"set\",\"super\",\"switch\",\"this\",\"throw\",\"true\",\"try\",\"typeof\",\"var\",\"void\",\"while\",\"with\",\";\",\"}\",\"(\",\")\",\",\",\"{\",\":\",\"++\",\"--\",\"+\",\"=\",\"-\",\"~\",\"!\",\"*\",\"%\",\"<<\",\">>>\",\">>\",\"<=\",\">=\",\"<\",\">\",\"===\",\"!==\",\"==\",\"!=\",\"&\",\"^\",\"|\",\"&&\",\"||\",\"?\",\"*=\",\"/=\",\"%=\",\"+=\",\"-=\",\"<<=\",\">>=\",\">>>=\",\"&=\",\"^=\",\"|=\"],\"classes\":[{\"value\":[\"\\n\",\"\\r\",\"\u{2028}\",\"\u{2029}\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"0\",\"9\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"1\",\"9\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"+\",\"-\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"0\",\"9\"],[\"a\",\"f\"]],\"inverted\":false,\"ignoreCase\":true},{\"value\":[\"*\",\"\\\\\",\"/\",\"[\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"\\\\\",\"/\",\"[\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"]\",\"\\\\\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"a\",\"z\"],\"\u{b5}\",[\"\u{df}\",\"\u{f6}\"],[\"\u{f8}\",\"\u{ff}\"],\"\u{101}\",\"\u{103}\",\"\u{105}\",\"\u{107}\",\"\u{109}\",\"\u{10b}\",\"\u{10d}\",\"\u{10f}\",\"\u{111}\",\"\u{113}\",\"\u{115}\",\"\u{117}\",\"\u{119}\",\"\u{11b}\",\"\u{11d}\",\"\u{11f}\",\"\u{121}\",\"\u{123}\",\"\u{125}\",\"\u{127}\",\"\u{129}\",\"\u{12b}\",\"\u{12d}\",\"\u{12f}\",\"\u{131}\",\"\u{133}\",\"\u{135}\",[\"\u{137}\",\"\u{138}\"],\"\u{13a}\",\"\u{13c}\",\"\u{13e}\",\"\u{140}\",\"\u{142}\",\"\u{144}\",\"\u{146}\",[\"\u{148}\",\"\u{149}\"],\"\u{14b}\",\"\u{14d}\",\"\u{14f}\",\"\u{151}\",\"\u{153}\",\"\u{155}\",\"\u{157}\",\"\u{159}\",\"\u{15b}\",\"\u{15d}\",\"\u{15f}\",\"\u{161}\",\"\u{163}\",\"\u{165}\",\"\u{167}\",\"\u{169}\",\"\u{16b}\",\"\u{16d}\",\"\u{16f}\",\"\u{171}\",\"\u{173}\",\"\u{175}\",\"\u{177}\",\"\u{17a}\",\"\u{17c}\",[\"\u{17e}\",\"\u{180}\"],\"\u{183}\",\"\u{185}\",\"\u{188}\",[\"\u{18c}\",\"\u{18d}\"],\"\u{192}\",\"\u{195}\",[\"\u{199}\",\"\u{19b}\"],\"\u{19e}\",\"\u{1a1}\",\"\u{1a3}\",\"\u{1a5}\",\"\u{1a8}\",[\"\u{1aa}\",\"\u{1ab}\"],\"\u{1ad}\",\"\u{1b0}\",\"\u{1b4}\",\"\u{1b6}\",[\"\u{1b9}\",\"\u{1ba}\"],[\"\u{1bd}\",\"\u{1bf}\"],\"\u{1c6}\",\"\u{1c9}\",\"\u{1cc}\",\"\u{1ce}\",\"\u{1d0}\",\"\u{1d2}\",\"\u{1d4}\",\"\u{1d6}\",\"\u{1d8}\",\"\u{1da}\",[\"\u{1dc}\",\"\u{1dd}\"],\"\u{1df}\",\"\u{1e1}\",\"\u{1e3}\",\"\u{1e5}\",\"\u{1e7}\",\"\u{1e9}\",\"\u{1eb}\",\"\u{1ed}\",[\"\u{1ef}\",\"\u{1f0}\"],\"\u{1f3}\",\"\u{1f5}\",\"\u{1f9}\",\"\u{1fb}\",\"\u{1fd}\",\"\u{1ff}\",\"\u{201}\",\"\u{203}\",\"\u{205}\",\"\u{207}\",\"\u{209}\",\"\u{20b}\",\"\u{20d}\",\"\u{20f}\",\"\u{211}\",\"\u{213}\",\"\u{215}\",\"\u{217}\",\"\u{219}\",\"\u{21b}\",\"\u{21d}\",\"\u{21f}\",\"\u{221}\",\"\u{223}\",\"\u{225}\",\"\u{227}\",\"\u{229}\",\"\u{22b}\",\"\u{22d}\",\"\u{22f}\",\"\u{231}\",[\"\u{233}\",\"\u{239}\"],\"\u{23c}\",[\"\u{23f}\",\"\u{240}\"],\"\u{242}\",\"\u{247}\",\"\u{249}\",\"\u{24b}\",\"\u{24d}\",[\"\u{24f}\",\"\u{293}\"],[\"\u{295}\",\"\u{2af}\"],\"\u{371}\",\"\u{373}\",\"\u{377}\",[\"\u{37b}\",\"\u{37d}\"],\"\u{390}\",[\"\u{3ac}\",\"\u{3ce}\"],[\"\u{3d0}\",\"\u{3d1}\"],[\"\u{3d5}\",\"\u{3d7}\"],\"\u{3d9}\",\"\u{3db}\",\"\u{3dd}\",\"\u{3df}\",\"\u{3e1}\",\"\u{3e3}\",\"\u{3e5}\",\"\u{3e7}\",\"\u{3e9}\",\"\u{3eb}\",\"\u{3ed}\",[\"\u{3ef}\",\"\u{3f3}\"],\"\u{3f5}\",\"\u{3f8}\",[\"\u{3fb}\",\"\u{3fc}\"],[\"\u{430}\",\"\u{45f}\"],\"\u{461}\",\"\u{463}\",\"\u{465}\",\"\u{467}\",\"\u{469}\",\"\u{46b}\",\"\u{46d}\",\"\u{46f}\",\"\u{471}\",\"\u{473}\",\"\u{475}\",\"\u{477}\",\"\u{479}\",\"\u{47b}\",\"\u{47d}\",\"\u{47f}\",\"\u{481}\",\"\u{48b}\",\"\u{48d}\",\"\u{48f}\",\"\u{491}\",\"\u{493}\",\"\u{495}\",\"\u{497}\",\"\u{499}\",\"\u{49b}\",\"\u{49d}\",\"\u{49f}\",\"\u{4a1}\",\"\u{4a3}\",\"\u{4a5}\",\"\u{4a7}\",\"\u{4a9}\",\"\u{4ab}\",\"\u{4ad}\",\"\u{4af}\",\"\u{4b1}\",\"\u{4b3}\",\"\u{4b5}\",\"\u{4b7}\",\"\u{4b9}\",\"\u{4bb}\",\"\u{4bd}\",\"\u{4bf}\",\"\u{4c2}\",\"\u{4c4}\",\"\u{4c6}\",\"\u{4c8}\",\"\u{4ca}\",\"\u{4cc}\",[\"\u{4ce}\",\"\u{4cf}\"],\"\u{4d1}\",\"\u{4d3}\",\"\u{4d5}\",\"\u{4d7}\",\"\u{4d9}\",\"\u{4db}\",\"\u{4dd}\",\"\u{4df}\",\"\u{4e1}\",\"\u{4e3}\",\"\u{4e5}\",\"\u{4e7}\",\"\u{4e9}\",\"\u{4eb}\",\"\u{4ed}\",\"\u{4ef}\",\"\u{4f1}\",\"\u{4f3}\",\"\u{4f5}\",\"\u{4f7}\",\"\u{4f9}\",\"\u{4fb}\",\"\u{4fd}\",\"\u{4ff}\",\"\u{501}\",\"\u{503}\",\"\u{505}\",\"\u{507}\",\"\u{509}\",\"\u{50b}\",\"\u{50d}\",\"\u{50f}\",\"\u{511}\",\"\u{513}\",\"\u{515}\",\"\u{517}\",\"\u{519}\",\"\u{51b}\",\"\u{51d}\",\"\u{51f}\",\"\u{521}\",\"\u{523}\",\"\u{525}\",\"\u{527}\",\"\u{529}\",\"\u{52b}\",\"\u{52d}\",\"\u{52f}\",[\"\u{560}\",\"\u{588}\"],[\"\u{10d0}\",\"\u{10fa}\"],[\"\u{10fd}\",\"\u{10ff}\"],[\"\u{13f8}\",\"\u{13fd}\"],[\"\u{1c80}\",\"\u{1c88}\"],[\"\u{1d00}\",\"\u{1d2b}\"],[\"\u{1d6b}\",\"\u{1d77}\"],[\"\u{1d79}\",\"\u{1d9a}\"],\"\u{1e01}\",\"\u{1e03}\",\"\u{1e05}\",\"\u{1e07}\",\"\u{1e09}\",\"\u{1e0b}\",\"\u{1e0d}\",\"\u{1e0f}\",\"\u{1e11}\",\"\u{1e13}\",\"\u{1e15}\",\"\u{1e17}\",\"\u{1e19}\",\"\u{1e1b}\",\"\u{1e1d}\",\"\u{1e1f}\",\"\u{1e21}\",\"\u{1e23}\",\"\u{1e25}\",\"\u{1e27}\",\"\u{1e29}\",\"\u{1e2b}\",\"\u{1e2d}\",\"\u{1e2f}\",\"\u{1e31}\",\"\u{1e33}\",\"\u{1e35}\",\"\u{1e37}\",\"\u{1e39}\",\"\u{1e3b}\",\"\u{1e3d}\",\"\u{1e3f}\",\"\u{1e41}\",\"\u{1e43}\",\"\u{1e45}\",\"\u{1e47}\",\"\u{1e49}\",\"\u{1e4b}\",\"\u{1e4d}\",\"\u{1e4f}\",\"\u{1e51}\",\"\u{1e53}\",\"\u{1e55}\",\"\u{1e57}\",\"\u{1e59}\",\"\u{1e5b}\",\"\u{1e5d}\",\"\u{1e5f}\",\"\u{1e61}\",\"\u{1e63}\",\"\u{1e65}\",\"\u{1e67}\",\"\u{1e69}\",\"\u{1e6b}\",\"\u{1e6d}\",\"\u{1e6f}\",\"\u{1e71}\",\"\u{1e73}\",\"\u{1e75}\",\"\u{1e77}\",\"\u{1e79}\",\"\u{1e7b}\",\"\u{1e7d}\",\"\u{1e7f}\",\"\u{1e81}\",\"\u{1e83}\",\"\u{1e85}\",\"\u{1e87}\",\"\u{1e89}\",\"\u{1e8b}\",\"\u{1e8d}\",\"\u{1e8f}\",\"\u{1e91}\",\"\u{1e93}\",[\"\u{1e95}\",\"\u{1e9d}\"],\"\u{1e9f}\",\"\u{1ea1}\",\"\u{1ea3}\",\"\u{1ea5}\",\"\u{1ea7}\",\"\u{1ea9}\",\"\u{1eab}\",\"\u{1ead}\",\"\u{1eaf}\",\"\u{1eb1}\",\"\u{1eb3}\",\"\u{1eb5}\",\"\u{1eb7}\",\"\u{1eb9}\",\"\u{1ebb}\",\"\u{1ebd}\",\"\u{1ebf}\",\"\u{1ec1}\",\"\u{1ec3}\",\"\u{1ec5}\",\"\u{1ec7}\",\"\u{1ec9}\",\"\u{1ecb}\",\"\u{1ecd}\",\"\u{1ecf}\",\"\u{1ed1}\",\"\u{1ed3}\",\"\u{1ed5}\",\"\u{1ed7}\",\"\u{1ed9}\",\"\u{1edb}\",\"\u{1edd}\",\"\u{1edf}\",\"\u{1ee1}\",\"\u{1ee3}\",\"\u{1ee5}\",\"\u{1ee7}\",\"\u{1ee9}\",\"\u{1eeb}\",\"\u{1eed}\",\"\u{1eef}\",\"\u{1ef1}\",\"\u{1ef3}\",\"\u{1ef5}\",\"\u{1ef7}\",\"\u{1ef9}\",\"\u{1efb}\",\"\u{1efd}\",[\"\u{1eff}\",\"\u{1f07}\"],[\"\u{1f10}\",\"\u{1f15}\"],[\"\u{1f20}\",\"\u{1f27}\"],[\"\u{1f30}\",\"\u{1f37}\"],[\"\u{1f40}\",\"\u{1f45}\"],[\"\u{1f50}\",\"\u{1f57}\"],[\"\u{1f60}\",\"\u{1f67}\"],[\"\u{1f70}\",\"\u{1f7d}\"],[\"\u{1f80}\",\"\u{1f87}\"],[\"\u{1f90}\",\"\u{1f97}\"],[\"\u{1fa0}\",\"\u{1fa7}\"],[\"\u{1fb0}\",\"\u{1fb4}\"],[\"\u{1fb6}\",\"\u{1fb7}\"],\"\u{1fbe}\",[\"\u{1fc2}\",\"\u{1fc4}\"],[\"\u{1fc6}\",\"\u{1fc7}\"],[\"\u{1fd0}\",\"\u{1fd3}\"],[\"\u{1fd6}\",\"\u{1fd7}\"],[\"\u{1fe0}\",\"\u{1fe7}\"],[\"\u{1ff2}\",\"\u{1ff4}\"],[\"\u{1ff6}\",\"\u{1ff7}\"],\"\u{210a}\",[\"\u{210e}\",\"\u{210f}\"],\"\u{2113}\",\"\u{212f}\",\"\u{2134}\",\"\u{2139}\",[\"\u{213c}\",\"\u{213d}\"],[\"\u{2146}\",\"\u{2149}\"],\"\u{214e}\",\"\u{2184}\",[\"\u{2c30}\",\"\u{2c5e}\"],\"\u{2c61}\",[\"\u{2c65}\",\"\u{2c66}\"],\"\u{2c68}\",\"\u{2c6a}\",\"\u{2c6c}\",\"\u{2c71}\",[\"\u{2c73}\",\"\u{2c74}\"],[\"\u{2c76}\",\"\u{2c7b}\"],\"\u{2c81}\",\"\u{2c83}\",\"\u{2c85}\",\"\u{2c87}\",\"\u{2c89}\",\"\u{2c8b}\",\"\u{2c8d}\",\"\u{2c8f}\",\"\u{2c91}\",\"\u{2c93}\",\"\u{2c95}\",\"\u{2c97}\",\"\u{2c99}\",\"\u{2c9b}\",\"\u{2c9d}\",\"\u{2c9f}\",\"\u{2ca1}\",\"\u{2ca3}\",\"\u{2ca5}\",\"\u{2ca7}\",\"\u{2ca9}\",\"\u{2cab}\",\"\u{2cad}\",\"\u{2caf}\",\"\u{2cb1}\",\"\u{2cb3}\",\"\u{2cb5}\",\"\u{2cb7}\",\"\u{2cb9}\",\"\u{2cbb}\",\"\u{2cbd}\",\"\u{2cbf}\",\"\u{2cc1}\",\"\u{2cc3}\",\"\u{2cc5}\",\"\u{2cc7}\",\"\u{2cc9}\",\"\u{2ccb}\",\"\u{2ccd}\",\"\u{2ccf}\",\"\u{2cd1}\",\"\u{2cd3}\",\"\u{2cd5}\",\"\u{2cd7}\",\"\u{2cd9}\",\"\u{2cdb}\",\"\u{2cdd}\",\"\u{2cdf}\",\"\u{2ce1}\",[\"\u{2ce3}\",\"\u{2ce4}\"],\"\u{2cec}\",\"\u{2cee}\",\"\u{2cf3}\",[\"\u{2d00}\",\"\u{2d25}\"],\"\u{2d27}\",\"\u{2d2d}\",\"\u{a641}\",\"\u{a643}\",\"\u{a645}\",\"\u{a647}\",\"\u{a649}\",\"\u{a64b}\",\"\u{a64d}\",\"\u{a64f}\",\"\u{a651}\",\"\u{a653}\",\"\u{a655}\",\"\u{a657}\",\"\u{a659}\",\"\u{a65b}\",\"\u{a65d}\",\"\u{a65f}\",\"\u{a661}\",\"\u{a663}\",\"\u{a665}\",\"\u{a667}\",\"\u{a669}\",\"\u{a66b}\",\"\u{a66d}\",\"\u{a681}\",\"\u{a683}\",\"\u{a685}\",\"\u{a687}\",\"\u{a689}\",\"\u{a68b}\",\"\u{a68d}\",\"\u{a68f}\",\"\u{a691}\",\"\u{a693}\",\"\u{a695}\",\"\u{a697}\",\"\u{a699}\",\"\u{a69b}\",\"\u{a723}\",\"\u{a725}\",\"\u{a727}\",\"\u{a729}\",\"\u{a72b}\",\"\u{a72d}\",[\"\u{a72f}\",\"\u{a731}\"],\"\u{a733}\",\"\u{a735}\",\"\u{a737}\",\"\u{a739}\",\"\u{a73b}\",\"\u{a73d}\",\"\u{a73f}\",\"\u{a741}\",\"\u{a743}\",\"\u{a745}\",\"\u{a747}\",\"\u{a749}\",\"\u{a74b}\",\"\u{a74d}\",\"\u{a74f}\",\"\u{a751}\",\"\u{a753}\",\"\u{a755}\",\"\u{a757}\",\"\u{a759}\",\"\u{a75b}\",\"\u{a75d}\",\"\u{a75f}\",\"\u{a761}\",\"\u{a763}\",\"\u{a765}\",\"\u{a767}\",\"\u{a769}\",\"\u{a76b}\",\"\u{a76d}\",\"\u{a76f}\",[\"\u{a771}\",\"\u{a778}\"],\"\u{a77a}\",\"\u{a77c}\",\"\u{a77f}\",\"\u{a781}\",\"\u{a783}\",\"\u{a785}\",\"\u{a787}\",\"\u{a78c}\",\"\u{a78e}\",\"\u{a791}\",[\"\u{a793}\",\"\u{a795}\"],\"\u{a797}\",\"\u{a799}\",\"\u{a79b}\",\"\u{a79d}\",\"\u{a79f}\",\"\u{a7a1}\",\"\u{a7a3}\",\"\u{a7a5}\",\"\u{a7a7}\",\"\u{a7a9}\",\"\u{a7af}\",\"\u{a7b5}\",\"\u{a7b7}\",\"\u{a7b9}\",\"\u{a7fa}\",[\"\u{ab30}\",\"\u{ab5a}\"],[\"\u{ab60}\",\"\u{ab65}\"],[\"\u{ab70}\",\"\u{abbf}\"],[\"\u{fb00}\",\"\u{fb06}\"],[\"\u{fb13}\",\"\u{fb17}\"],[\"\u{ff41}\",\"\u{ff5a}\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"\u{2b0}\",\"\u{2c1}\"],[\"\u{2c6}\",\"\u{2d1}\"],[\"\u{2e0}\",\"\u{2e4}\"],\"\u{2ec}\",\"\u{2ee}\",\"\u{374}\",\"\u{37a}\",\"\u{559}\",\"\u{640}\",[\"\u{6e5}\",\"\u{6e6}\"],[\"\u{7f4}\",\"\u{7f5}\"],\"\u{7fa}\",\"\u{81a}\",\"\u{824}\",\"\u{828}\",\"\u{971}\",\"\u{e46}\",\"\u{ec6}\",\"\u{10fc}\",\"\u{17d7}\",\"\u{1843}\",\"\u{1aa7}\",[\"\u{1c78}\",\"\u{1c7d}\"],[\"\u{1d2c}\",\"\u{1d6a}\"],\"\u{1d78}\",[\"\u{1d9b}\",\"\u{1dbf}\"],\"\u{2071}\",\"\u{207f}\",[\"\u{2090}\",\"\u{209c}\"],[\"\u{2c7c}\",\"\u{2c7d}\"],\"\u{2d6f}\",\"\u{2e2f}\",\"\u{3005}\",[\"\u{3031}\",\"\u{3035}\"],\"\u{303b}\",[\"\u{309d}\",\"\u{309e}\"],[\"\u{30fc}\",\"\u{30fe}\"],\"\u{a015}\",[\"\u{a4f8}\",\"\u{a4fd}\"],\"\u{a60c}\",\"\u{a67f}\",[\"\u{a69c}\",\"\u{a69d}\"],[\"\u{a717}\",\"\u{a71f}\"],\"\u{a770}\",\"\u{a788}\",[\"\u{a7f8}\",\"\u{a7f9}\"],\"\u{a9cf}\",\"\u{a9e6}\",\"\u{aa70}\",\"\u{aadd}\",[\"\u{aaf3}\",\"\u{aaf4}\"],[\"\u{ab5c}\",\"\u{ab5f}\"],\"\u{ff70}\",[\"\u{ff9e}\",\"\u{ff9f}\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"\u{aa}\",\"\u{ba}\",\"\u{1bb}\",[\"\u{1c0}\",\"\u{1c3}\"],\"\u{294}\",[\"\u{5d0}\",\"\u{5ea}\"],[\"\u{5ef}\",\"\u{5f2}\"],[\"\u{620}\",\"\u{63f}\"],[\"\u{641}\",\"\u{64a}\"],[\"\u{66e}\",\"\u{66f}\"],[\"\u{671}\",\"\u{6d3}\"],\"\u{6d5}\",[\"\u{6ee}\",\"\u{6ef}\"],[\"\u{6fa}\",\"\u{6fc}\"],\"\u{6ff}\",\"\u{710}\",[\"\u{712}\",\"\u{72f}\"],[\"\u{74d}\",\"\u{7a5}\"],\"\u{7b1}\",[\"\u{7ca}\",\"\u{7ea}\"],[\"\u{800}\",\"\u{815}\"],[\"\u{840}\",\"\u{858}\"],[\"\u{860}\",\"\u{86a}\"],[\"\u{8a0}\",\"\u{8b4}\"],[\"\u{8b6}\",\"\u{8bd}\"],[\"\u{904}\",\"\u{939}\"],\"\u{93d}\",\"\u{950}\",[\"\u{958}\",\"\u{961}\"],[\"\u{972}\",\"\u{980}\"],[\"\u{985}\",\"\u{98c}\"],[\"\u{98f}\",\"\u{990}\"],[\"\u{993}\",\"\u{9a8}\"],[\"\u{9aa}\",\"\u{9b0}\"],\"\u{9b2}\",[\"\u{9b6}\",\"\u{9b9}\"],\"\u{9bd}\",\"\u{9ce}\",[\"\u{9dc}\",\"\u{9dd}\"],[\"\u{9df}\",\"\u{9e1}\"],[\"\u{9f0}\",\"\u{9f1}\"],\"\u{9fc}\",[\"\u{a05}\",\"\u{a0a}\"],[\"\u{a0f}\",\"\u{a10}\"],[\"\u{a13}\",\"\u{a28}\"],[\"\u{a2a}\",\"\u{a30}\"],[\"\u{a32}\",\"\u{a33}\"],[\"\u{a35}\",\"\u{a36}\"],[\"\u{a38}\",\"\u{a39}\"],[\"\u{a59}\",\"\u{a5c}\"],\"\u{a5e}\",[\"\u{a72}\",\"\u{a74}\"],[\"\u{a85}\",\"\u{a8d}\"],[\"\u{a8f}\",\"\u{a91}\"],[\"\u{a93}\",\"\u{aa8}\"],[\"\u{aaa}\",\"\u{ab0}\"],[\"\u{ab2}\",\"\u{ab3}\"],[\"\u{ab5}\",\"\u{ab9}\"],\"\u{abd}\",\"\u{ad0}\",[\"\u{ae0}\",\"\u{ae1}\"],\"\u{af9}\",[\"\u{b05}\",\"\u{b0c}\"],[\"\u{b0f}\",\"\u{b10}\"],[\"\u{b13}\",\"\u{b28}\"],[\"\u{b2a}\",\"\u{b30}\"],[\"\u{b32}\",\"\u{b33}\"],[\"\u{b35}\",\"\u{b39}\"],\"\u{b3d}\",[\"\u{b5c}\",\"\u{b5d}\"],[\"\u{b5f}\",\"\u{b61}\"],\"\u{b71}\",\"\u{b83}\",[\"\u{b85}\",\"\u{b8a}\"],[\"\u{b8e}\",\"\u{b90}\"],[\"\u{b92}\",\"\u{b95}\"],[\"\u{b99}\",\"\u{b9a}\"],\"\u{b9c}\",[\"\u{b9e}\",\"\u{b9f}\"],[\"\u{ba3}\",\"\u{ba4}\"],[\"\u{ba8}\",\"\u{baa}\"],[\"\u{bae}\",\"\u{bb9}\"],\"\u{bd0}\",[\"\u{c05}\",\"\u{c0c}\"],[\"\u{c0e}\",\"\u{c10}\"],[\"\u{c12}\",\"\u{c28}\"],[\"\u{c2a}\",\"\u{c39}\"],\"\u{c3d}\",[\"\u{c58}\",\"\u{c5a}\"],[\"\u{c60}\",\"\u{c61}\"],\"\u{c80}\",[\"\u{c85}\",\"\u{c8c}\"],[\"\u{c8e}\",\"\u{c90}\"],[\"\u{c92}\",\"\u{ca8}\"],[\"\u{caa}\",\"\u{cb3}\"],[\"\u{cb5}\",\"\u{cb9}\"],\"\u{cbd}\",\"\u{cde}\",[\"\u{ce0}\",\"\u{ce1}\"],[\"\u{cf1}\",\"\u{cf2}\"],[\"\u{d05}\",\"\u{d0c}\"],[\"\u{d0e}\",\"\u{d10}\"],[\"\u{d12}\",\"\u{d3a}\"],\"\u{d3d}\",\"\u{d4e}\",[\"\u{d54}\",\"\u{d56}\"],[\"\u{d5f}\",\"\u{d61}\"],[\"\u{d7a}\",\"\u{d7f}\"],[\"\u{d85}\",\"\u{d96}\"],[\"\u{d9a}\",\"\u{db1}\"],[\"\u{db3}\",\"\u{dbb}\"],\"\u{dbd}\",[\"\u{dc0}\",\"\u{dc6}\"],[\"\u{e01}\",\"\u{e30}\"],[\"\u{e32}\",\"\u{e33}\"],[\"\u{e40}\",\"\u{e45}\"],[\"\u{e81}\",\"\u{e82}\"],\"\u{e84}\",[\"\u{e87}\",\"\u{e88}\"],\"\u{e8a}\",\"\u{e8d}\",[\"\u{e94}\",\"\u{e97}\"],[\"\u{e99}\",\"\u{e9f}\"],[\"\u{ea1}\",\"\u{ea3}\"],\"\u{ea5}\",\"\u{ea7}\",[\"\u{eaa}\",\"\u{eab}\"],[\"\u{ead}\",\"\u{eb0}\"],[\"\u{eb2}\",\"\u{eb3}\"],\"\u{ebd}\",[\"\u{ec0}\",\"\u{ec4}\"],[\"\u{edc}\",\"\u{edf}\"],\"\u{f00}\",[\"\u{f40}\",\"\u{f47}\"],[\"\u{f49}\",\"\u{f6c}\"],[\"\u{f88}\",\"\u{f8c}\"],[\"\u{1000}\",\"\u{102a}\"],\"\u{103f}\",[\"\u{1050}\",\"\u{1055}\"],[\"\u{105a}\",\"\u{105d}\"],\"\u{1061}\",[\"\u{1065}\",\"\u{1066}\"],[\"\u{106e}\",\"\u{1070}\"],[\"\u{1075}\",\"\u{1081}\"],\"\u{108e}\",[\"\u{1100}\",\"\u{1248}\"],[\"\u{124a}\",\"\u{124d}\"],[\"\u{1250}\",\"\u{1256}\"],\"\u{1258}\",[\"\u{125a}\",\"\u{125d}\"],[\"\u{1260}\",\"\u{1288}\"],[\"\u{128a}\",\"\u{128d}\"],[\"\u{1290}\",\"\u{12b0}\"],[\"\u{12b2}\",\"\u{12b5}\"],[\"\u{12b8}\",\"\u{12be}\"],\"\u{12c0}\",[\"\u{12c2}\",\"\u{12c5}\"],[\"\u{12c8}\",\"\u{12d6}\"],[\"\u{12d8}\",\"\u{1310}\"],[\"\u{1312}\",\"\u{1315}\"],[\"\u{1318}\",\"\u{135a}\"],[\"\u{1380}\",\"\u{138f}\"],[\"\u{1401}\",\"\u{166c}\"],[\"\u{166f}\",\"\u{167f}\"],[\"\u{1681}\",\"\u{169a}\"],[\"\u{16a0}\",\"\u{16ea}\"],[\"\u{16f1}\",\"\u{16f8}\"],[\"\u{1700}\",\"\u{170c}\"],[\"\u{170e}\",\"\u{1711}\"],[\"\u{1720}\",\"\u{1731}\"],[\"\u{1740}\",\"\u{1751}\"],[\"\u{1760}\",\"\u{176c}\"],[\"\u{176e}\",\"\u{1770}\"],[\"\u{1780}\",\"\u{17b3}\"],\"\u{17dc}\",[\"\u{1820}\",\"\u{1842}\"],[\"\u{1844}\",\"\u{1878}\"],[\"\u{1880}\",\"\u{1884}\"],[\"\u{1887}\",\"\u{18a8}\"],\"\u{18aa}\",[\"\u{18b0}\",\"\u{18f5}\"],[\"\u{1900}\",\"\u{191e}\"],[\"\u{1950}\",\"\u{196d}\"],[\"\u{1970}\",\"\u{1974}\"],[\"\u{1980}\",\"\u{19ab}\"],[\"\u{19b0}\",\"\u{19c9}\"],[\"\u{1a00}\",\"\u{1a16}\"],[\"\u{1a20}\",\"\u{1a54}\"],[\"\u{1b05}\",\"\u{1b33}\"],[\"\u{1b45}\",\"\u{1b4b}\"],[\"\u{1b83}\",\"\u{1ba0}\"],[\"\u{1bae}\",\"\u{1baf}\"],[\"\u{1bba}\",\"\u{1be5}\"],[\"\u{1c00}\",\"\u{1c23}\"],[\"\u{1c4d}\",\"\u{1c4f}\"],[\"\u{1c5a}\",\"\u{1c77}\"],[\"\u{1ce9}\",\"\u{1cec}\"],[\"\u{1cee}\",\"\u{1cf1}\"],[\"\u{1cf5}\",\"\u{1cf6}\"],[\"\u{2135}\",\"\u{2138}\"],[\"\u{2d30}\",\"\u{2d67}\"],[\"\u{2d80}\",\"\u{2d96}\"],[\"\u{2da0}\",\"\u{2da6}\"],[\"\u{2da8}\",\"\u{2dae}\"],[\"\u{2db0}\",\"\u{2db6}\"],[\"\u{2db8}\",\"\u{2dbe}\"],[\"\u{2dc0}\",\"\u{2dc6}\"],[\"\u{2dc8}\",\"\u{2dce}\"],[\"\u{2dd0}\",\"\u{2dd6}\"],[\"\u{2dd8}\",\"\u{2dde}\"],\"\u{3006}\",\"\u{303c}\",[\"\u{3041}\",\"\u{3096}\"],\"\u{309f}\",[\"\u{30a1}\",\"\u{30fa}\"],\"\u{30ff}\",[\"\u{3105}\",\"\u{312f}\"],[\"\u{3131}\",\"\u{318e}\"],[\"\u{31a0}\",\"\u{31ba}\"],[\"\u{31f0}\",\"\u{31ff}\"],[\"\u{3400}\",\"\u{4db5}\"],[\"\u{4e00}\",\"\u{9fef}\"],[\"\u{a000}\",\"\u{a014}\"],[\"\u{a016}\",\"\u{a48c}\"],[\"\u{a4d0}\",\"\u{a4f7}\"],[\"\u{a500}\",\"\u{a60b}\"],[\"\u{a610}\",\"\u{a61f}\"],[\"\u{a62a}\",\"\u{a62b}\"],\"\u{a66e}\",[\"\u{a6a0}\",\"\u{a6e5}\"],\"\u{a78f}\",\"\u{a7f7}\",[\"\u{a7fb}\",\"\u{a801}\"],[\"\u{a803}\",\"\u{a805}\"],[\"\u{a807}\",\"\u{a80a}\"],[\"\u{a80c}\",\"\u{a822}\"],[\"\u{a840}\",\"\u{a873}\"],[\"\u{a882}\",\"\u{a8b3}\"],[\"\u{a8f2}\",\"\u{a8f7}\"],\"\u{a8fb}\",[\"\u{a8fd}\",\"\u{a8fe}\"],[\"\u{a90a}\",\"\u{a925}\"],[\"\u{a930}\",\"\u{a946}\"],[\"\u{a960}\",\"\u{a97c}\"],[\"\u{a984}\",\"\u{a9b2}\"],[\"\u{a9e0}\",\"\u{a9e4}\"],[\"\u{a9e7}\",\"\u{a9ef}\"],[\"\u{a9fa}\",\"\u{a9fe}\"],[\"\u{aa00}\",\"\u{aa28}\"],[\"\u{aa40}\",\"\u{aa42}\"],[\"\u{aa44}\",\"\u{aa4b}\"],[\"\u{aa60}\",\"\u{aa6f}\"],[\"\u{aa71}\",\"\u{aa76}\"],\"\u{aa7a}\",[\"\u{aa7e}\",\"\u{aaaf}\"],\"\u{aab1}\",[\"\u{aab5}\",\"\u{aab6}\"],[\"\u{aab9}\",\"\u{aabd}\"],\"\u{aac0}\",\"\u{aac2}\",[\"\u{aadb}\",\"\u{aadc}\"],[\"\u{aae0}\",\"\u{aaea}\"],\"\u{aaf2}\",[\"\u{ab01}\",\"\u{ab06}\"],[\"\u{ab09}\",\"\u{ab0e}\"],[\"\u{ab11}\",\"\u{ab16}\"],[\"\u{ab20}\",\"\u{ab26}\"],[\"\u{ab28}\",\"\u{ab2e}\"],[\"\u{abc0}\",\"\u{abe2}\"],[\"\u{ac00}\",\"\u{d7a3}\"],[\"\u{d7b0}\",\"\u{d7c6}\"],[\"\u{d7cb}\",\"\u{d7fb}\"],[\"\u{f900}\",\"\u{fa6d}\"],[\"\u{fa70}\",\"\u{fad9}\"],\"\u{fb1d}\",[\"\u{fb1f}\",\"\u{fb28}\"],[\"\u{fb2a}\",\"\u{fb36}\"],[\"\u{fb38}\",\"\u{fb3c}\"],\"\u{fb3e}\",[\"\u{fb40}\",\"\u{fb41}\"],[\"\u{fb43}\",\"\u{fb44}\"],[\"\u{fb46}\",\"\u{fbb1}\"],[\"\u{fbd3}\",\"\u{fd3d}\"],[\"\u{fd50}\",\"\u{fd8f}\"],[\"\u{fd92}\",\"\u{fdc7}\"],[\"\u{fdf0}\",\"\u{fdfb}\"],[\"\u{fe70}\",\"\u{fe74}\"],[\"\u{fe76}\",\"\u{fefc}\"],[\"\u{ff66}\",\"\u{ff6f}\"],[\"\u{ff71}\",\"\u{ff9d}\"],[\"\u{ffa0}\",\"\u{ffbe}\"],[\"\u{ffc2}\",\"\u{ffc7}\"],[\"\u{ffca}\",\"\u{ffcf}\"],[\"\u{ffd2}\",\"\u{ffd7}\"],[\"\u{ffda}\",\"\u{ffdc}\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"\u{1c5}\",\"\u{1c8}\",\"\u{1cb}\",\"\u{1f2}\",[\"\u{1f88}\",\"\u{1f8f}\"],[\"\u{1f98}\",\"\u{1f9f}\"],[\"\u{1fa8}\",\"\u{1faf}\"],\"\u{1fbc}\",\"\u{1fcc}\",\"\u{1ffc}\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"A\",\"Z\"],[\"\u{c0}\",\"\u{d6}\"],[\"\u{d8}\",\"\u{de}\"],\"\u{100}\",\"\u{102}\",\"\u{104}\",\"\u{106}\",\"\u{108}\",\"\u{10a}\",\"\u{10c}\",\"\u{10e}\",\"\u{110}\",\"\u{112}\",\"\u{114}\",\"\u{116}\",\"\u{118}\",\"\u{11a}\",\"\u{11c}\",\"\u{11e}\",\"\u{120}\",\"\u{122}\",\"\u{124}\",\"\u{126}\",\"\u{128}\",\"\u{12a}\",\"\u{12c}\",\"\u{12e}\",\"\u{130}\",\"\u{132}\",\"\u{134}\",\"\u{136}\",\"\u{139}\",\"\u{13b}\",\"\u{13d}\",\"\u{13f}\",\"\u{141}\",\"\u{143}\",\"\u{145}\",\"\u{147}\",\"\u{14a}\",\"\u{14c}\",\"\u{14e}\",\"\u{150}\",\"\u{152}\",\"\u{154}\",\"\u{156}\",\"\u{158}\",\"\u{15a}\",\"\u{15c}\",\"\u{15e}\",\"\u{160}\",\"\u{162}\",\"\u{164}\",\"\u{166}\",\"\u{168}\",\"\u{16a}\",\"\u{16c}\",\"\u{16e}\",\"\u{170}\",\"\u{172}\",\"\u{174}\",\"\u{176}\",[\"\u{178}\",\"\u{179}\"],\"\u{17b}\",\"\u{17d}\",[\"\u{181}\",\"\u{182}\"],\"\u{184}\",[\"\u{186}\",\"\u{187}\"],[\"\u{189}\",\"\u{18b}\"],[\"\u{18e}\",\"\u{191}\"],[\"\u{193}\",\"\u{194}\"],[\"\u{196}\",\"\u{198}\"],[\"\u{19c}\",\"\u{19d}\"],[\"\u{19f}\",\"\u{1a0}\"],\"\u{1a2}\",\"\u{1a4}\",[\"\u{1a6}\",\"\u{1a7}\"],\"\u{1a9}\",\"\u{1ac}\",[\"\u{1ae}\",\"\u{1af}\"],[\"\u{1b1}\",\"\u{1b3}\"],\"\u{1b5}\",[\"\u{1b7}\",\"\u{1b8}\"],\"\u{1bc}\",\"\u{1c4}\",\"\u{1c7}\",\"\u{1ca}\",\"\u{1cd}\",\"\u{1cf}\",\"\u{1d1}\",\"\u{1d3}\",\"\u{1d5}\",\"\u{1d7}\",\"\u{1d9}\",\"\u{1db}\",\"\u{1de}\",\"\u{1e0}\",\"\u{1e2}\",\"\u{1e4}\",\"\u{1e6}\",\"\u{1e8}\",\"\u{1ea}\",\"\u{1ec}\",\"\u{1ee}\",\"\u{1f1}\",\"\u{1f4}\",[\"\u{1f6}\",\"\u{1f8}\"],\"\u{1fa}\",\"\u{1fc}\",\"\u{1fe}\",\"\u{200}\",\"\u{202}\",\"\u{204}\",\"\u{206}\",\"\u{208}\",\"\u{20a}\",\"\u{20c}\",\"\u{20e}\",\"\u{210}\",\"\u{212}\",\"\u{214}\",\"\u{216}\",\"\u{218}\",\"\u{21a}\",\"\u{21c}\",\"\u{21e}\",\"\u{220}\",\"\u{222}\",\"\u{224}\",\"\u{226}\",\"\u{228}\",\"\u{22a}\",\"\u{22c}\",\"\u{22e}\",\"\u{230}\",\"\u{232}\",[\"\u{23a}\",\"\u{23b}\"],[\"\u{23d}\",\"\u{23e}\"],\"\u{241}\",[\"\u{243}\",\"\u{246}\"],\"\u{248}\",\"\u{24a}\",\"\u{24c}\",\"\u{24e}\",\"\u{370}\",\"\u{372}\",\"\u{376}\",\"\u{37f}\",\"\u{386}\",[\"\u{388}\",\"\u{38a}\"],\"\u{38c}\",[\"\u{38e}\",\"\u{38f}\"],[\"\u{391}\",\"\u{3a1}\"],[\"\u{3a3}\",\"\u{3ab}\"],\"\u{3cf}\",[\"\u{3d2}\",\"\u{3d4}\"],\"\u{3d8}\",\"\u{3da}\",\"\u{3dc}\",\"\u{3de}\",\"\u{3e0}\",\"\u{3e2}\",\"\u{3e4}\",\"\u{3e6}\",\"\u{3e8}\",\"\u{3ea}\",\"\u{3ec}\",\"\u{3ee}\",\"\u{3f4}\",\"\u{3f7}\",[\"\u{3f9}\",\"\u{3fa}\"],[\"\u{3fd}\",\"\u{42f}\"],\"\u{460}\",\"\u{462}\",\"\u{464}\",\"\u{466}\",\"\u{468}\",\"\u{46a}\",\"\u{46c}\",\"\u{46e}\",\"\u{470}\",\"\u{472}\",\"\u{474}\",\"\u{476}\",\"\u{478}\",\"\u{47a}\",\"\u{47c}\",\"\u{47e}\",\"\u{480}\",\"\u{48a}\",\"\u{48c}\",\"\u{48e}\",\"\u{490}\",\"\u{492}\",\"\u{494}\",\"\u{496}\",\"\u{498}\",\"\u{49a}\",\"\u{49c}\",\"\u{49e}\",\"\u{4a0}\",\"\u{4a2}\",\"\u{4a4}\",\"\u{4a6}\",\"\u{4a8}\",\"\u{4aa}\",\"\u{4ac}\",\"\u{4ae}\",\"\u{4b0}\",\"\u{4b2}\",\"\u{4b4}\",\"\u{4b6}\",\"\u{4b8}\",\"\u{4ba}\",\"\u{4bc}\",\"\u{4be}\",[\"\u{4c0}\",\"\u{4c1}\"],\"\u{4c3}\",\"\u{4c5}\",\"\u{4c7}\",\"\u{4c9}\",\"\u{4cb}\",\"\u{4cd}\",\"\u{4d0}\",\"\u{4d2}\",\"\u{4d4}\",\"\u{4d6}\",\"\u{4d8}\",\"\u{4da}\",\"\u{4dc}\",\"\u{4de}\",\"\u{4e0}\",\"\u{4e2}\",\"\u{4e4}\",\"\u{4e6}\",\"\u{4e8}\",\"\u{4ea}\",\"\u{4ec}\",\"\u{4ee}\",\"\u{4f0}\",\"\u{4f2}\",\"\u{4f4}\",\"\u{4f6}\",\"\u{4f8}\",\"\u{4fa}\",\"\u{4fc}\",\"\u{4fe}\",\"\u{500}\",\"\u{502}\",\"\u{504}\",\"\u{506}\",\"\u{508}\",\"\u{50a}\",\"\u{50c}\",\"\u{50e}\",\"\u{510}\",\"\u{512}\",\"\u{514}\",\"\u{516}\",\"\u{518}\",\"\u{51a}\",\"\u{51c}\",\"\u{51e}\",\"\u{520}\",\"\u{522}\",\"\u{524}\",\"\u{526}\",\"\u{528}\",\"\u{52a}\",\"\u{52c}\",\"\u{52e}\",[\"\u{531}\",\"\u{556}\"],[\"\u{10a0}\",\"\u{10c5}\"],\"\u{10c7}\",\"\u{10cd}\",[\"\u{13a0}\",\"\u{13f5}\"],[\"\u{1c90}\",\"\u{1cba}\"],[\"\u{1cbd}\",\"\u{1cbf}\"],\"\u{1e00}\",\"\u{1e02}\",\"\u{1e04}\",\"\u{1e06}\",\"\u{1e08}\",\"\u{1e0a}\",\"\u{1e0c}\",\"\u{1e0e}\",\"\u{1e10}\",\"\u{1e12}\",\"\u{1e14}\",\"\u{1e16}\",\"\u{1e18}\",\"\u{1e1a}\",\"\u{1e1c}\",\"\u{1e1e}\",\"\u{1e20}\",\"\u{1e22}\",\"\u{1e24}\",\"\u{1e26}\",\"\u{1e28}\",\"\u{1e2a}\",\"\u{1e2c}\",\"\u{1e2e}\",\"\u{1e30}\",\"\u{1e32}\",\"\u{1e34}\",\"\u{1e36}\",\"\u{1e38}\",\"\u{1e3a}\",\"\u{1e3c}\",\"\u{1e3e}\",\"\u{1e40}\",\"\u{1e42}\",\"\u{1e44}\",\"\u{1e46}\",\"\u{1e48}\",\"\u{1e4a}\",\"\u{1e4c}\",\"\u{1e4e}\",\"\u{1e50}\",\"\u{1e52}\",\"\u{1e54}\",\"\u{1e56}\",\"\u{1e58}\",\"\u{1e5a}\",\"\u{1e5c}\",\"\u{1e5e}\",\"\u{1e60}\",\"\u{1e62}\",\"\u{1e64}\",\"\u{1e66}\",\"\u{1e68}\",\"\u{1e6a}\",\"\u{1e6c}\",\"\u{1e6e}\",\"\u{1e70}\",\"\u{1e72}\",\"\u{1e74}\",\"\u{1e76}\",\"\u{1e78}\",\"\u{1e7a}\",\"\u{1e7c}\",\"\u{1e7e}\",\"\u{1e80}\",\"\u{1e82}\",\"\u{1e84}\",\"\u{1e86}\",\"\u{1e88}\",\"\u{1e8a}\",\"\u{1e8c}\",\"\u{1e8e}\",\"\u{1e90}\",\"\u{1e92}\",\"\u{1e94}\",\"\u{1e9e}\",\"\u{1ea0}\",\"\u{1ea2}\",\"\u{1ea4}\",\"\u{1ea6}\",\"\u{1ea8}\",\"\u{1eaa}\",\"\u{1eac}\",\"\u{1eae}\",\"\u{1eb0}\",\"\u{1eb2}\",\"\u{1eb4}\",\"\u{1eb6}\",\"\u{1eb8}\",\"\u{1eba}\",\"\u{1ebc}\",\"\u{1ebe}\",\"\u{1ec0}\",\"\u{1ec2}\",\"\u{1ec4}\",\"\u{1ec6}\",\"\u{1ec8}\",\"\u{1eca}\",\"\u{1ecc}\",\"\u{1ece}\",\"\u{1ed0}\",\"\u{1ed2}\",\"\u{1ed4}\",\"\u{1ed6}\",\"\u{1ed8}\",\"\u{1eda}\",\"\u{1edc}\",\"\u{1ede}\",\"\u{1ee0}\",\"\u{1ee2}\",\"\u{1ee4}\",\"\u{1ee6}\",\"\u{1ee8}\",\"\u{1eea}\",\"\u{1eec}\",\"\u{1eee}\",\"\u{1ef0}\",\"\u{1ef2}\",\"\u{1ef4}\",\"\u{1ef6}\",\"\u{1ef8}\",\"\u{1efa}\",\"\u{1efc}\",\"\u{1efe}\",[\"\u{1f08}\",\"\u{1f0f}\"],[\"\u{1f18}\",\"\u{1f1d}\"],[\"\u{1f28}\",\"\u{1f2f}\"],[\"\u{1f38}\",\"\u{1f3f}\"],[\"\u{1f48}\",\"\u{1f4d}\"],\"\u{1f59}\",\"\u{1f5b}\",\"\u{1f5d}\",\"\u{1f5f}\",[\"\u{1f68}\",\"\u{1f6f}\"],[\"\u{1fb8}\",\"\u{1fbb}\"],[\"\u{1fc8}\",\"\u{1fcb}\"],[\"\u{1fd8}\",\"\u{1fdb}\"],[\"\u{1fe8}\",\"\u{1fec}\"],[\"\u{1ff8}\",\"\u{1ffb}\"],\"\u{2102}\",\"\u{2107}\",[\"\u{210b}\",\"\u{210d}\"],[\"\u{2110}\",\"\u{2112}\"],\"\u{2115}\",[\"\u{2119}\",\"\u{211d}\"],\"\u{2124}\",\"\u{2126}\",\"\u{2128}\",[\"\u{212a}\",\"\u{212d}\"],[\"\u{2130}\",\"\u{2133}\"],[\"\u{213e}\",\"\u{213f}\"],\"\u{2145}\",\"\u{2183}\",[\"\u{2c00}\",\"\u{2c2e}\"],\"\u{2c60}\",[\"\u{2c62}\",\"\u{2c64}\"],\"\u{2c67}\",\"\u{2c69}\",\"\u{2c6b}\",[\"\u{2c6d}\",\"\u{2c70}\"],\"\u{2c72}\",\"\u{2c75}\",[\"\u{2c7e}\",\"\u{2c80}\"],\"\u{2c82}\",\"\u{2c84}\",\"\u{2c86}\",\"\u{2c88}\",\"\u{2c8a}\",\"\u{2c8c}\",\"\u{2c8e}\",\"\u{2c90}\",\"\u{2c92}\",\"\u{2c94}\",\"\u{2c96}\",\"\u{2c98}\",\"\u{2c9a}\",\"\u{2c9c}\",\"\u{2c9e}\",\"\u{2ca0}\",\"\u{2ca2}\",\"\u{2ca4}\",\"\u{2ca6}\",\"\u{2ca8}\",\"\u{2caa}\",\"\u{2cac}\",\"\u{2cae}\",\"\u{2cb0}\",\"\u{2cb2}\",\"\u{2cb4}\",\"\u{2cb6}\",\"\u{2cb8}\",\"\u{2cba}\",\"\u{2cbc}\",\"\u{2cbe}\",\"\u{2cc0}\",\"\u{2cc2}\",\"\u{2cc4}\",\"\u{2cc6}\",\"\u{2cc8}\",\"\u{2cca}\",\"\u{2ccc}\",\"\u{2cce}\",\"\u{2cd0}\",\"\u{2cd2}\",\"\u{2cd4}\",\"\u{2cd6}\",\"\u{2cd8}\",\"\u{2cda}\",\"\u{2cdc}\",\"\u{2cde}\",\"\u{2ce0}\",\"\u{2ce2}\",\"\u{2ceb}\",\"\u{2ced}\",\"\u{2cf2}\",\"\u{a640}\",\"\u{a642}\",\"\u{a644}\",\"\u{a646}\",\"\u{a648}\",\"\u{a64a}\",\"\u{a64c}\",\"\u{a64e}\",\"\u{a650}\",\"\u{a652}\",\"\u{a654}\",\"\u{a656}\",\"\u{a658}\",\"\u{a65a}\",\"\u{a65c}\",\"\u{a65e}\",\"\u{a660}\",\"\u{a662}\",\"\u{a664}\",\"\u{a666}\",\"\u{a668}\",\"\u{a66a}\",\"\u{a66c}\",\"\u{a680}\",\"\u{a682}\",\"\u{a684}\",\"\u{a686}\",\"\u{a688}\",\"\u{a68a}\",\"\u{a68c}\",\"\u{a68e}\",\"\u{a690}\",\"\u{a692}\",\"\u{a694}\",\"\u{a696}\",\"\u{a698}\",\"\u{a69a}\",\"\u{a722}\",\"\u{a724}\",\"\u{a726}\",\"\u{a728}\",\"\u{a72a}\",\"\u{a72c}\",\"\u{a72e}\",\"\u{a732}\",\"\u{a734}\",\"\u{a736}\",\"\u{a738}\",\"\u{a73a}\",\"\u{a73c}\",\"\u{a73e}\",\"\u{a740}\",\"\u{a742}\",\"\u{a744}\",\"\u{a746}\",\"\u{a748}\",\"\u{a74a}\",\"\u{a74c}\",\"\u{a74e}\",\"\u{a750}\",\"\u{a752}\",\"\u{a754}\",\"\u{a756}\",\"\u{a758}\",\"\u{a75a}\",\"\u{a75c}\",\"\u{a75e}\",\"\u{a760}\",\"\u{a762}\",\"\u{a764}\",\"\u{a766}\",\"\u{a768}\",\"\u{a76a}\",\"\u{a76c}\",\"\u{a76e}\",\"\u{a779}\",\"\u{a77b}\",[\"\u{a77d}\",\"\u{a77e}\"],\"\u{a780}\",\"\u{a782}\",\"\u{a784}\",\"\u{a786}\",\"\u{a78b}\",\"\u{a78d}\",\"\u{a790}\",\"\u{a792}\",\"\u{a796}\",\"\u{a798}\",\"\u{a79a}\",\"\u{a79c}\",\"\u{a79e}\",\"\u{a7a0}\",\"\u{a7a2}\",\"\u{a7a4}\",\"\u{a7a6}\",\"\u{a7a8}\",[\"\u{a7aa}\",\"\u{a7ae}\"],[\"\u{a7b0}\",\"\u{a7b4}\"],\"\u{a7b6}\",\"\u{a7b8}\",[\"\u{ff21}\",\"\u{ff3a}\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"\u{903}\",\"\u{93b}\",[\"\u{93e}\",\"\u{940}\"],[\"\u{949}\",\"\u{94c}\"],[\"\u{94e}\",\"\u{94f}\"],[\"\u{982}\",\"\u{983}\"],[\"\u{9be}\",\"\u{9c0}\"],[\"\u{9c7}\",\"\u{9c8}\"],[\"\u{9cb}\",\"\u{9cc}\"],\"\u{9d7}\",\"\u{a03}\",[\"\u{a3e}\",\"\u{a40}\"],\"\u{a83}\",[\"\u{abe}\",\"\u{ac0}\"],\"\u{ac9}\",[\"\u{acb}\",\"\u{acc}\"],[\"\u{b02}\",\"\u{b03}\"],\"\u{b3e}\",\"\u{b40}\",[\"\u{b47}\",\"\u{b48}\"],[\"\u{b4b}\",\"\u{b4c}\"],\"\u{b57}\",[\"\u{bbe}\",\"\u{bbf}\"],[\"\u{bc1}\",\"\u{bc2}\"],[\"\u{bc6}\",\"\u{bc8}\"],[\"\u{bca}\",\"\u{bcc}\"],\"\u{bd7}\",[\"\u{c01}\",\"\u{c03}\"],[\"\u{c41}\",\"\u{c44}\"],[\"\u{c82}\",\"\u{c83}\"],\"\u{cbe}\",[\"\u{cc0}\",\"\u{cc4}\"],[\"\u{cc7}\",\"\u{cc8}\"],[\"\u{cca}\",\"\u{ccb}\"],[\"\u{cd5}\",\"\u{cd6}\"],[\"\u{d02}\",\"\u{d03}\"],[\"\u{d3e}\",\"\u{d40}\"],[\"\u{d46}\",\"\u{d48}\"],[\"\u{d4a}\",\"\u{d4c}\"],\"\u{d57}\",[\"\u{d82}\",\"\u{d83}\"],[\"\u{dcf}\",\"\u{dd1}\"],[\"\u{dd8}\",\"\u{ddf}\"],[\"\u{df2}\",\"\u{df3}\"],[\"\u{f3e}\",\"\u{f3f}\"],\"\u{f7f}\",[\"\u{102b}\",\"\u{102c}\"],\"\u{1031}\",\"\u{1038}\",[\"\u{103b}\",\"\u{103c}\"],[\"\u{1056}\",\"\u{1057}\"],[\"\u{1062}\",\"\u{1064}\"],[\"\u{1067}\",\"\u{106d}\"],[\"\u{1083}\",\"\u{1084}\"],[\"\u{1087}\",\"\u{108c}\"],\"\u{108f}\",[\"\u{109a}\",\"\u{109c}\"],\"\u{17b6}\",[\"\u{17be}\",\"\u{17c5}\"],[\"\u{17c7}\",\"\u{17c8}\"],[\"\u{1923}\",\"\u{1926}\"],[\"\u{1929}\",\"\u{192b}\"],[\"\u{1930}\",\"\u{1931}\"],[\"\u{1933}\",\"\u{1938}\"],[\"\u{1a19}\",\"\u{1a1a}\"],\"\u{1a55}\",\"\u{1a57}\",\"\u{1a61}\",[\"\u{1a63}\",\"\u{1a64}\"],[\"\u{1a6d}\",\"\u{1a72}\"],\"\u{1b04}\",\"\u{1b35}\",\"\u{1b3b}\",[\"\u{1b3d}\",\"\u{1b41}\"],[\"\u{1b43}\",\"\u{1b44}\"],\"\u{1b82}\",\"\u{1ba1}\",[\"\u{1ba6}\",\"\u{1ba7}\"],\"\u{1baa}\",\"\u{1be7}\",[\"\u{1bea}\",\"\u{1bec}\"],\"\u{1bee}\",[\"\u{1bf2}\",\"\u{1bf3}\"],[\"\u{1c24}\",\"\u{1c2b}\"],[\"\u{1c34}\",\"\u{1c35}\"],\"\u{1ce1}\",[\"\u{1cf2}\",\"\u{1cf3}\"],\"\u{1cf7}\",[\"\u{302e}\",\"\u{302f}\"],[\"\u{a823}\",\"\u{a824}\"],\"\u{a827}\",[\"\u{a880}\",\"\u{a881}\"],[\"\u{a8b4}\",\"\u{a8c3}\"],[\"\u{a952}\",\"\u{a953}\"],\"\u{a983}\",[\"\u{a9b4}\",\"\u{a9b5}\"],[\"\u{a9ba}\",\"\u{a9bb}\"],[\"\u{a9bd}\",\"\u{a9c0}\"],[\"\u{aa2f}\",\"\u{aa30}\"],[\"\u{aa33}\",\"\u{aa34}\"],\"\u{aa4d}\",\"\u{aa7b}\",\"\u{aa7d}\",\"\u{aaeb}\",[\"\u{aaee}\",\"\u{aaef}\"],\"\u{aaf5}\",[\"\u{abe3}\",\"\u{abe4}\"],[\"\u{abe6}\",\"\u{abe7}\"],[\"\u{abe9}\",\"\u{abea}\"],\"\u{abec}\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"\u{300}\",\"\u{36f}\"],[\"\u{483}\",\"\u{487}\"],[\"\u{591}\",\"\u{5bd}\"],\"\u{5bf}\",[\"\u{5c1}\",\"\u{5c2}\"],[\"\u{5c4}\",\"\u{5c5}\"],\"\u{5c7}\",[\"\u{610}\",\"\u{61a}\"],[\"\u{64b}\",\"\u{65f}\"],\"\u{670}\",[\"\u{6d6}\",\"\u{6dc}\"],[\"\u{6df}\",\"\u{6e4}\"],[\"\u{6e7}\",\"\u{6e8}\"],[\"\u{6ea}\",\"\u{6ed}\"],\"\u{711}\",[\"\u{730}\",\"\u{74a}\"],[\"\u{7a6}\",\"\u{7b0}\"],[\"\u{7eb}\",\"\u{7f3}\"],\"\u{7fd}\",[\"\u{816}\",\"\u{819}\"],[\"\u{81b}\",\"\u{823}\"],[\"\u{825}\",\"\u{827}\"],[\"\u{829}\",\"\u{82d}\"],[\"\u{859}\",\"\u{85b}\"],[\"\u{8d3}\",\"\u{8e1}\"],[\"\u{8e3}\",\"\u{902}\"],\"\u{93a}\",\"\u{93c}\",[\"\u{941}\",\"\u{948}\"],\"\u{94d}\",[\"\u{951}\",\"\u{957}\"],[\"\u{962}\",\"\u{963}\"],\"\u{981}\",\"\u{9bc}\",[\"\u{9c1}\",\"\u{9c4}\"],\"\u{9cd}\",[\"\u{9e2}\",\"\u{9e3}\"],\"\u{9fe}\",[\"\u{a01}\",\"\u{a02}\"],\"\u{a3c}\",[\"\u{a41}\",\"\u{a42}\"],[\"\u{a47}\",\"\u{a48}\"],[\"\u{a4b}\",\"\u{a4d}\"],\"\u{a51}\",[\"\u{a70}\",\"\u{a71}\"],\"\u{a75}\",[\"\u{a81}\",\"\u{a82}\"],\"\u{abc}\",[\"\u{ac1}\",\"\u{ac5}\"],[\"\u{ac7}\",\"\u{ac8}\"],\"\u{acd}\",[\"\u{ae2}\",\"\u{ae3}\"],[\"\u{afa}\",\"\u{aff}\"],\"\u{b01}\",\"\u{b3c}\",\"\u{b3f}\",[\"\u{b41}\",\"\u{b44}\"],\"\u{b4d}\",\"\u{b56}\",[\"\u{b62}\",\"\u{b63}\"],\"\u{b82}\",\"\u{bc0}\",\"\u{bcd}\",\"\u{c00}\",\"\u{c04}\",[\"\u{c3e}\",\"\u{c40}\"],[\"\u{c46}\",\"\u{c48}\"],[\"\u{c4a}\",\"\u{c4d}\"],[\"\u{c55}\",\"\u{c56}\"],[\"\u{c62}\",\"\u{c63}\"],\"\u{c81}\",\"\u{cbc}\",\"\u{cbf}\",\"\u{cc6}\",[\"\u{ccc}\",\"\u{ccd}\"],[\"\u{ce2}\",\"\u{ce3}\"],[\"\u{d00}\",\"\u{d01}\"],[\"\u{d3b}\",\"\u{d3c}\"],[\"\u{d41}\",\"\u{d44}\"],\"\u{d4d}\",[\"\u{d62}\",\"\u{d63}\"],\"\u{dca}\",[\"\u{dd2}\",\"\u{dd4}\"],\"\u{dd6}\",\"\u{e31}\",[\"\u{e34}\",\"\u{e3a}\"],[\"\u{e47}\",\"\u{e4e}\"],\"\u{eb1}\",[\"\u{eb4}\",\"\u{eb9}\"],[\"\u{ebb}\",\"\u{ebc}\"],[\"\u{ec8}\",\"\u{ecd}\"],[\"\u{f18}\",\"\u{f19}\"],\"\u{f35}\",\"\u{f37}\",\"\u{f39}\",[\"\u{f71}\",\"\u{f7e}\"],[\"\u{f80}\",\"\u{f84}\"],[\"\u{f86}\",\"\u{f87}\"],[\"\u{f8d}\",\"\u{f97}\"],[\"\u{f99}\",\"\u{fbc}\"],\"\u{fc6}\",[\"\u{102d}\",\"\u{1030}\"],[\"\u{1032}\",\"\u{1037}\"],[\"\u{1039}\",\"\u{103a}\"],[\"\u{103d}\",\"\u{103e}\"],[\"\u{1058}\",\"\u{1059}\"],[\"\u{105e}\",\"\u{1060}\"],[\"\u{1071}\",\"\u{1074}\"],\"\u{1082}\",[\"\u{1085}\",\"\u{1086}\"],\"\u{108d}\",\"\u{109d}\",[\"\u{135d}\",\"\u{135f}\"],[\"\u{1712}\",\"\u{1714}\"],[\"\u{1732}\",\"\u{1734}\"],[\"\u{1752}\",\"\u{1753}\"],[\"\u{1772}\",\"\u{1773}\"],[\"\u{17b4}\",\"\u{17b5}\"],[\"\u{17b7}\",\"\u{17bd}\"],\"\u{17c6}\",[\"\u{17c9}\",\"\u{17d3}\"],\"\u{17dd}\",[\"\u{180b}\",\"\u{180d}\"],[\"\u{1885}\",\"\u{1886}\"],\"\u{18a9}\",[\"\u{1920}\",\"\u{1922}\"],[\"\u{1927}\",\"\u{1928}\"],\"\u{1932}\",[\"\u{1939}\",\"\u{193b}\"],[\"\u{1a17}\",\"\u{1a18}\"],\"\u{1a1b}\",\"\u{1a56}\",[\"\u{1a58}\",\"\u{1a5e}\"],\"\u{1a60}\",\"\u{1a62}\",[\"\u{1a65}\",\"\u{1a6c}\"],[\"\u{1a73}\",\"\u{1a7c}\"],\"\u{1a7f}\",[\"\u{1ab0}\",\"\u{1abd}\"],[\"\u{1b00}\",\"\u{1b03}\"],\"\u{1b34}\",[\"\u{1b36}\",\"\u{1b3a}\"],\"\u{1b3c}\",\"\u{1b42}\",[\"\u{1b6b}\",\"\u{1b73}\"],[\"\u{1b80}\",\"\u{1b81}\"],[\"\u{1ba2}\",\"\u{1ba5}\"],[\"\u{1ba8}\",\"\u{1ba9}\"],[\"\u{1bab}\",\"\u{1bad}\"],\"\u{1be6}\",[\"\u{1be8}\",\"\u{1be9}\"],\"\u{1bed}\",[\"\u{1bef}\",\"\u{1bf1}\"],[\"\u{1c2c}\",\"\u{1c33}\"],[\"\u{1c36}\",\"\u{1c37}\"],[\"\u{1cd0}\",\"\u{1cd2}\"],[\"\u{1cd4}\",\"\u{1ce0}\"],[\"\u{1ce2}\",\"\u{1ce8}\"],\"\u{1ced}\",\"\u{1cf4}\",[\"\u{1cf8}\",\"\u{1cf9}\"],[\"\u{1dc0}\",\"\u{1df9}\"],[\"\u{1dfb}\",\"\u{1dff}\"],[\"\u{20d0}\",\"\u{20dc}\"],\"\u{20e1}\",[\"\u{20e5}\",\"\u{20f0}\"],[\"\u{2cef}\",\"\u{2cf1}\"],\"\u{2d7f}\",[\"\u{2de0}\",\"\u{2dff}\"],[\"\u{302a}\",\"\u{302d}\"],[\"\u{3099}\",\"\u{309a}\"],\"\u{a66f}\",[\"\u{a674}\",\"\u{a67d}\"],[\"\u{a69e}\",\"\u{a69f}\"],[\"\u{a6f0}\",\"\u{a6f1}\"],\"\u{a802}\",\"\u{a806}\",\"\u{a80b}\",[\"\u{a825}\",\"\u{a826}\"],[\"\u{a8c4}\",\"\u{a8c5}\"],[\"\u{a8e0}\",\"\u{a8f1}\"],\"\u{a8ff}\",[\"\u{a926}\",\"\u{a92d}\"],[\"\u{a947}\",\"\u{a951}\"],[\"\u{a980}\",\"\u{a982}\"],\"\u{a9b3}\",[\"\u{a9b6}\",\"\u{a9b9}\"],\"\u{a9bc}\",\"\u{a9e5}\",[\"\u{aa29}\",\"\u{aa2e}\"],[\"\u{aa31}\",\"\u{aa32}\"],[\"\u{aa35}\",\"\u{aa36}\"],\"\u{aa43}\",\"\u{aa4c}\",\"\u{aa7c}\",\"\u{aab0}\",[\"\u{aab2}\",\"\u{aab4}\"],[\"\u{aab7}\",\"\u{aab8}\"],[\"\u{aabe}\",\"\u{aabf}\"],\"\u{aac1}\",[\"\u{aaec}\",\"\u{aaed}\"],\"\u{aaf6}\",\"\u{abe5}\",\"\u{abe8}\",\"\u{abed}\",\"\u{fb1e}\",[\"\u{fe00}\",\"\u{fe0f}\"],[\"\u{fe20}\",\"\u{fe2f}\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"0\",\"9\"],[\"\u{660}\",\"\u{669}\"],[\"\u{6f0}\",\"\u{6f9}\"],[\"\u{7c0}\",\"\u{7c9}\"],[\"\u{966}\",\"\u{96f}\"],[\"\u{9e6}\",\"\u{9ef}\"],[\"\u{a66}\",\"\u{a6f}\"],[\"\u{ae6}\",\"\u{aef}\"],[\"\u{b66}\",\"\u{b6f}\"],[\"\u{be6}\",\"\u{bef}\"],[\"\u{c66}\",\"\u{c6f}\"],[\"\u{ce6}\",\"\u{cef}\"],[\"\u{d66}\",\"\u{d6f}\"],[\"\u{de6}\",\"\u{def}\"],[\"\u{e50}\",\"\u{e59}\"],[\"\u{ed0}\",\"\u{ed9}\"],[\"\u{f20}\",\"\u{f29}\"],[\"\u{1040}\",\"\u{1049}\"],[\"\u{1090}\",\"\u{1099}\"],[\"\u{17e0}\",\"\u{17e9}\"],[\"\u{1810}\",\"\u{1819}\"],[\"\u{1946}\",\"\u{194f}\"],[\"\u{19d0}\",\"\u{19d9}\"],[\"\u{1a80}\",\"\u{1a89}\"],[\"\u{1a90}\",\"\u{1a99}\"],[\"\u{1b50}\",\"\u{1b59}\"],[\"\u{1bb0}\",\"\u{1bb9}\"],[\"\u{1c40}\",\"\u{1c49}\"],[\"\u{1c50}\",\"\u{1c59}\"],[\"\u{a620}\",\"\u{a629}\"],[\"\u{a8d0}\",\"\u{a8d9}\"],[\"\u{a900}\",\"\u{a909}\"],[\"\u{a9d0}\",\"\u{a9d9}\"],[\"\u{a9f0}\",\"\u{a9f9}\"],[\"\u{aa50}\",\"\u{aa59}\"],[\"\u{abf0}\",\"\u{abf9}\"],[\"\u{ff10}\",\"\u{ff19}\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[[\"\u{16ee}\",\"\u{16f0}\"],[\"\u{2160}\",\"\u{2182}\"],[\"\u{2185}\",\"\u{2188}\"],\"\u{3007}\",[\"\u{3021}\",\"\u{3029}\"],[\"\u{3038}\",\"\u{303a}\"],[\"\u{a6e6}\",\"\u{a6ef}\"]],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"_\",[\"\u{203f}\",\"\u{2040}\"],\"\u{2054}\",[\"\u{fe33}\",\"\u{fe34}\"],[\"\u{fe4d}\",\"\u{fe4f}\"],\"\u{ff3f}\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\" \",\"\u{a0}\",\"\u{1680}\",[\"\u{2000}\",\"\u{200a}\"],\"\u{202f}\",\"\u{205f}\",\"\u{3000}\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"+\",\"=\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"-\",\"=\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"&\",\"=\"],\"inverted\":false,\"ignoreCase\":false},{\"value\":[\"|\",\"=\"],\"inverted\":false,\"ignoreCase\":false}],\"expectations\":[{\"type\":\"any\"},{\"type\":\"rule\",\"value\":\"whitespace\"},{\"type\":\"class\",\"value\":[\"\\n\",\"\\r\",\"\u{2028}\",\"\u{2029}\"],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"rule\",\"value\":\"end of line\"},{\"type\":\"rule\",\"value\":\"comment\"},{\"type\":\"literal\",\"value\":\"/*\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"*/\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"//\",\"ignoreCase\":false},{\"type\":\"rule\",\"value\":\"identifier\"},{\"type\":\"literal\",\"value\":\"$\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"_\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"\\\\\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"\u{200c}\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"\u{200d}\",\"ignoreCase\":false},{\"type\":\"rule\",\"value\":\"number\"},{\"type\":\"class\",\"value\":[[\"0\",\"9\"],[\"a\",\"f\"]],\"inverted\":false,\"ignoreCase\":true},{\"type\":\"rule\",\"value\":\"string\"},{\"type\":\"literal\",\"value\":\"u\",\"ignoreCase\":false},{\"type\":\"rule\",\"value\":\"regular expression\"},{\"type\":\"class\",\"value\":[[\"a\",\"z\"],\"\u{b5}\",[\"\u{df}\",\"\u{f6}\"],[\"\u{f8}\",\"\u{ff}\"],\"\u{101}\",\"\u{103}\",\"\u{105}\",\"\u{107}\",\"\u{109}\",\"\u{10b}\",\"\u{10d}\",\"\u{10f}\",\"\u{111}\",\"\u{113}\",\"\u{115}\",\"\u{117}\",\"\u{119}\",\"\u{11b}\",\"\u{11d}\",\"\u{11f}\",\"\u{121}\",\"\u{123}\",\"\u{125}\",\"\u{127}\",\"\u{129}\",\"\u{12b}\",\"\u{12d}\",\"\u{12f}\",\"\u{131}\",\"\u{133}\",\"\u{135}\",[\"\u{137}\",\"\u{138}\"],\"\u{13a}\",\"\u{13c}\",\"\u{13e}\",\"\u{140}\",\"\u{142}\",\"\u{144}\",\"\u{146}\",[\"\u{148}\",\"\u{149}\"],\"\u{14b}\",\"\u{14d}\",\"\u{14f}\",\"\u{151}\",\"\u{153}\",\"\u{155}\",\"\u{157}\",\"\u{159}\",\"\u{15b}\",\"\u{15d}\",\"\u{15f}\",\"\u{161}\",\"\u{163}\",\"\u{165}\",\"\u{167}\",\"\u{169}\",\"\u{16b}\",\"\u{16d}\",\"\u{16f}\",\"\u{171}\",\"\u{173}\",\"\u{175}\",\"\u{177}\",\"\u{17a}\",\"\u{17c}\",[\"\u{17e}\",\"\u{180}\"],\"\u{183}\",\"\u{185}\",\"\u{188}\",[\"\u{18c}\",\"\u{18d}\"],\"\u{192}\",\"\u{195}\",[\"\u{199}\",\"\u{19b}\"],\"\u{19e}\",\"\u{1a1}\",\"\u{1a3}\",\"\u{1a5}\",\"\u{1a8}\",[\"\u{1aa}\",\"\u{1ab}\"],\"\u{1ad}\",\"\u{1b0}\",\"\u{1b4}\",\"\u{1b6}\",[\"\u{1b9}\",\"\u{1ba}\"],[\"\u{1bd}\",\"\u{1bf}\"],\"\u{1c6}\",\"\u{1c9}\",\"\u{1cc}\",\"\u{1ce}\",\"\u{1d0}\",\"\u{1d2}\",\"\u{1d4}\",\"\u{1d6}\",\"\u{1d8}\",\"\u{1da}\",[\"\u{1dc}\",\"\u{1dd}\"],\"\u{1df}\",\"\u{1e1}\",\"\u{1e3}\",\"\u{1e5}\",\"\u{1e7}\",\"\u{1e9}\",\"\u{1eb}\",\"\u{1ed}\",[\"\u{1ef}\",\"\u{1f0}\"],\"\u{1f3}\",\"\u{1f5}\",\"\u{1f9}\",\"\u{1fb}\",\"\u{1fd}\",\"\u{1ff}\",\"\u{201}\",\"\u{203}\",\"\u{205}\",\"\u{207}\",\"\u{209}\",\"\u{20b}\",\"\u{20d}\",\"\u{20f}\",\"\u{211}\",\"\u{213}\",\"\u{215}\",\"\u{217}\",\"\u{219}\",\"\u{21b}\",\"\u{21d}\",\"\u{21f}\",\"\u{221}\",\"\u{223}\",\"\u{225}\",\"\u{227}\",\"\u{229}\",\"\u{22b}\",\"\u{22d}\",\"\u{22f}\",\"\u{231}\",[\"\u{233}\",\"\u{239}\"],\"\u{23c}\",[\"\u{23f}\",\"\u{240}\"],\"\u{242}\",\"\u{247}\",\"\u{249}\",\"\u{24b}\",\"\u{24d}\",[\"\u{24f}\",\"\u{293}\"],[\"\u{295}\",\"\u{2af}\"],\"\u{371}\",\"\u{373}\",\"\u{377}\",[\"\u{37b}\",\"\u{37d}\"],\"\u{390}\",[\"\u{3ac}\",\"\u{3ce}\"],[\"\u{3d0}\",\"\u{3d1}\"],[\"\u{3d5}\",\"\u{3d7}\"],\"\u{3d9}\",\"\u{3db}\",\"\u{3dd}\",\"\u{3df}\",\"\u{3e1}\",\"\u{3e3}\",\"\u{3e5}\",\"\u{3e7}\",\"\u{3e9}\",\"\u{3eb}\",\"\u{3ed}\",[\"\u{3ef}\",\"\u{3f3}\"],\"\u{3f5}\",\"\u{3f8}\",[\"\u{3fb}\",\"\u{3fc}\"],[\"\u{430}\",\"\u{45f}\"],\"\u{461}\",\"\u{463}\",\"\u{465}\",\"\u{467}\",\"\u{469}\",\"\u{46b}\",\"\u{46d}\",\"\u{46f}\",\"\u{471}\",\"\u{473}\",\"\u{475}\",\"\u{477}\",\"\u{479}\",\"\u{47b}\",\"\u{47d}\",\"\u{47f}\",\"\u{481}\",\"\u{48b}\",\"\u{48d}\",\"\u{48f}\",\"\u{491}\",\"\u{493}\",\"\u{495}\",\"\u{497}\",\"\u{499}\",\"\u{49b}\",\"\u{49d}\",\"\u{49f}\",\"\u{4a1}\",\"\u{4a3}\",\"\u{4a5}\",\"\u{4a7}\",\"\u{4a9}\",\"\u{4ab}\",\"\u{4ad}\",\"\u{4af}\",\"\u{4b1}\",\"\u{4b3}\",\"\u{4b5}\",\"\u{4b7}\",\"\u{4b9}\",\"\u{4bb}\",\"\u{4bd}\",\"\u{4bf}\",\"\u{4c2}\",\"\u{4c4}\",\"\u{4c6}\",\"\u{4c8}\",\"\u{4ca}\",\"\u{4cc}\",[\"\u{4ce}\",\"\u{4cf}\"],\"\u{4d1}\",\"\u{4d3}\",\"\u{4d5}\",\"\u{4d7}\",\"\u{4d9}\",\"\u{4db}\",\"\u{4dd}\",\"\u{4df}\",\"\u{4e1}\",\"\u{4e3}\",\"\u{4e5}\",\"\u{4e7}\",\"\u{4e9}\",\"\u{4eb}\",\"\u{4ed}\",\"\u{4ef}\",\"\u{4f1}\",\"\u{4f3}\",\"\u{4f5}\",\"\u{4f7}\",\"\u{4f9}\",\"\u{4fb}\",\"\u{4fd}\",\"\u{4ff}\",\"\u{501}\",\"\u{503}\",\"\u{505}\",\"\u{507}\",\"\u{509}\",\"\u{50b}\",\"\u{50d}\",\"\u{50f}\",\"\u{511}\",\"\u{513}\",\"\u{515}\",\"\u{517}\",\"\u{519}\",\"\u{51b}\",\"\u{51d}\",\"\u{51f}\",\"\u{521}\",\"\u{523}\",\"\u{525}\",\"\u{527}\",\"\u{529}\",\"\u{52b}\",\"\u{52d}\",\"\u{52f}\",[\"\u{560}\",\"\u{588}\"],[\"\u{10d0}\",\"\u{10fa}\"],[\"\u{10fd}\",\"\u{10ff}\"],[\"\u{13f8}\",\"\u{13fd}\"],[\"\u{1c80}\",\"\u{1c88}\"],[\"\u{1d00}\",\"\u{1d2b}\"],[\"\u{1d6b}\",\"\u{1d77}\"],[\"\u{1d79}\",\"\u{1d9a}\"],\"\u{1e01}\",\"\u{1e03}\",\"\u{1e05}\",\"\u{1e07}\",\"\u{1e09}\",\"\u{1e0b}\",\"\u{1e0d}\",\"\u{1e0f}\",\"\u{1e11}\",\"\u{1e13}\",\"\u{1e15}\",\"\u{1e17}\",\"\u{1e19}\",\"\u{1e1b}\",\"\u{1e1d}\",\"\u{1e1f}\",\"\u{1e21}\",\"\u{1e23}\",\"\u{1e25}\",\"\u{1e27}\",\"\u{1e29}\",\"\u{1e2b}\",\"\u{1e2d}\",\"\u{1e2f}\",\"\u{1e31}\",\"\u{1e33}\",\"\u{1e35}\",\"\u{1e37}\",\"\u{1e39}\",\"\u{1e3b}\",\"\u{1e3d}\",\"\u{1e3f}\",\"\u{1e41}\",\"\u{1e43}\",\"\u{1e45}\",\"\u{1e47}\",\"\u{1e49}\",\"\u{1e4b}\",\"\u{1e4d}\",\"\u{1e4f}\",\"\u{1e51}\",\"\u{1e53}\",\"\u{1e55}\",\"\u{1e57}\",\"\u{1e59}\",\"\u{1e5b}\",\"\u{1e5d}\",\"\u{1e5f}\",\"\u{1e61}\",\"\u{1e63}\",\"\u{1e65}\",\"\u{1e67}\",\"\u{1e69}\",\"\u{1e6b}\",\"\u{1e6d}\",\"\u{1e6f}\",\"\u{1e71}\",\"\u{1e73}\",\"\u{1e75}\",\"\u{1e77}\",\"\u{1e79}\",\"\u{1e7b}\",\"\u{1e7d}\",\"\u{1e7f}\",\"\u{1e81}\",\"\u{1e83}\",\"\u{1e85}\",\"\u{1e87}\",\"\u{1e89}\",\"\u{1e8b}\",\"\u{1e8d}\",\"\u{1e8f}\",\"\u{1e91}\",\"\u{1e93}\",[\"\u{1e95}\",\"\u{1e9d}\"],\"\u{1e9f}\",\"\u{1ea1}\",\"\u{1ea3}\",\"\u{1ea5}\",\"\u{1ea7}\",\"\u{1ea9}\",\"\u{1eab}\",\"\u{1ead}\",\"\u{1eaf}\",\"\u{1eb1}\",\"\u{1eb3}\",\"\u{1eb5}\",\"\u{1eb7}\",\"\u{1eb9}\",\"\u{1ebb}\",\"\u{1ebd}\",\"\u{1ebf}\",\"\u{1ec1}\",\"\u{1ec3}\",\"\u{1ec5}\",\"\u{1ec7}\",\"\u{1ec9}\",\"\u{1ecb}\",\"\u{1ecd}\",\"\u{1ecf}\",\"\u{1ed1}\",\"\u{1ed3}\",\"\u{1ed5}\",\"\u{1ed7}\",\"\u{1ed9}\",\"\u{1edb}\",\"\u{1edd}\",\"\u{1edf}\",\"\u{1ee1}\",\"\u{1ee3}\",\"\u{1ee5}\",\"\u{1ee7}\",\"\u{1ee9}\",\"\u{1eeb}\",\"\u{1eed}\",\"\u{1eef}\",\"\u{1ef1}\",\"\u{1ef3}\",\"\u{1ef5}\",\"\u{1ef7}\",\"\u{1ef9}\",\"\u{1efb}\",\"\u{1efd}\",[\"\u{1eff}\",\"\u{1f07}\"],[\"\u{1f10}\",\"\u{1f15}\"],[\"\u{1f20}\",\"\u{1f27}\"],[\"\u{1f30}\",\"\u{1f37}\"],[\"\u{1f40}\",\"\u{1f45}\"],[\"\u{1f50}\",\"\u{1f57}\"],[\"\u{1f60}\",\"\u{1f67}\"],[\"\u{1f70}\",\"\u{1f7d}\"],[\"\u{1f80}\",\"\u{1f87}\"],[\"\u{1f90}\",\"\u{1f97}\"],[\"\u{1fa0}\",\"\u{1fa7}\"],[\"\u{1fb0}\",\"\u{1fb4}\"],[\"\u{1fb6}\",\"\u{1fb7}\"],\"\u{1fbe}\",[\"\u{1fc2}\",\"\u{1fc4}\"],[\"\u{1fc6}\",\"\u{1fc7}\"],[\"\u{1fd0}\",\"\u{1fd3}\"],[\"\u{1fd6}\",\"\u{1fd7}\"],[\"\u{1fe0}\",\"\u{1fe7}\"],[\"\u{1ff2}\",\"\u{1ff4}\"],[\"\u{1ff6}\",\"\u{1ff7}\"],\"\u{210a}\",[\"\u{210e}\",\"\u{210f}\"],\"\u{2113}\",\"\u{212f}\",\"\u{2134}\",\"\u{2139}\",[\"\u{213c}\",\"\u{213d}\"],[\"\u{2146}\",\"\u{2149}\"],\"\u{214e}\",\"\u{2184}\",[\"\u{2c30}\",\"\u{2c5e}\"],\"\u{2c61}\",[\"\u{2c65}\",\"\u{2c66}\"],\"\u{2c68}\",\"\u{2c6a}\",\"\u{2c6c}\",\"\u{2c71}\",[\"\u{2c73}\",\"\u{2c74}\"],[\"\u{2c76}\",\"\u{2c7b}\"],\"\u{2c81}\",\"\u{2c83}\",\"\u{2c85}\",\"\u{2c87}\",\"\u{2c89}\",\"\u{2c8b}\",\"\u{2c8d}\",\"\u{2c8f}\",\"\u{2c91}\",\"\u{2c93}\",\"\u{2c95}\",\"\u{2c97}\",\"\u{2c99}\",\"\u{2c9b}\",\"\u{2c9d}\",\"\u{2c9f}\",\"\u{2ca1}\",\"\u{2ca3}\",\"\u{2ca5}\",\"\u{2ca7}\",\"\u{2ca9}\",\"\u{2cab}\",\"\u{2cad}\",\"\u{2caf}\",\"\u{2cb1}\",\"\u{2cb3}\",\"\u{2cb5}\",\"\u{2cb7}\",\"\u{2cb9}\",\"\u{2cbb}\",\"\u{2cbd}\",\"\u{2cbf}\",\"\u{2cc1}\",\"\u{2cc3}\",\"\u{2cc5}\",\"\u{2cc7}\",\"\u{2cc9}\",\"\u{2ccb}\",\"\u{2ccd}\",\"\u{2ccf}\",\"\u{2cd1}\",\"\u{2cd3}\",\"\u{2cd5}\",\"\u{2cd7}\",\"\u{2cd9}\",\"\u{2cdb}\",\"\u{2cdd}\",\"\u{2cdf}\",\"\u{2ce1}\",[\"\u{2ce3}\",\"\u{2ce4}\"],\"\u{2cec}\",\"\u{2cee}\",\"\u{2cf3}\",[\"\u{2d00}\",\"\u{2d25}\"],\"\u{2d27}\",\"\u{2d2d}\",\"\u{a641}\",\"\u{a643}\",\"\u{a645}\",\"\u{a647}\",\"\u{a649}\",\"\u{a64b}\",\"\u{a64d}\",\"\u{a64f}\",\"\u{a651}\",\"\u{a653}\",\"\u{a655}\",\"\u{a657}\",\"\u{a659}\",\"\u{a65b}\",\"\u{a65d}\",\"\u{a65f}\",\"\u{a661}\",\"\u{a663}\",\"\u{a665}\",\"\u{a667}\",\"\u{a669}\",\"\u{a66b}\",\"\u{a66d}\",\"\u{a681}\",\"\u{a683}\",\"\u{a685}\",\"\u{a687}\",\"\u{a689}\",\"\u{a68b}\",\"\u{a68d}\",\"\u{a68f}\",\"\u{a691}\",\"\u{a693}\",\"\u{a695}\",\"\u{a697}\",\"\u{a699}\",\"\u{a69b}\",\"\u{a723}\",\"\u{a725}\",\"\u{a727}\",\"\u{a729}\",\"\u{a72b}\",\"\u{a72d}\",[\"\u{a72f}\",\"\u{a731}\"],\"\u{a733}\",\"\u{a735}\",\"\u{a737}\",\"\u{a739}\",\"\u{a73b}\",\"\u{a73d}\",\"\u{a73f}\",\"\u{a741}\",\"\u{a743}\",\"\u{a745}\",\"\u{a747}\",\"\u{a749}\",\"\u{a74b}\",\"\u{a74d}\",\"\u{a74f}\",\"\u{a751}\",\"\u{a753}\",\"\u{a755}\",\"\u{a757}\",\"\u{a759}\",\"\u{a75b}\",\"\u{a75d}\",\"\u{a75f}\",\"\u{a761}\",\"\u{a763}\",\"\u{a765}\",\"\u{a767}\",\"\u{a769}\",\"\u{a76b}\",\"\u{a76d}\",\"\u{a76f}\",[\"\u{a771}\",\"\u{a778}\"],\"\u{a77a}\",\"\u{a77c}\",\"\u{a77f}\",\"\u{a781}\",\"\u{a783}\",\"\u{a785}\",\"\u{a787}\",\"\u{a78c}\",\"\u{a78e}\",\"\u{a791}\",[\"\u{a793}\",\"\u{a795}\"],\"\u{a797}\",\"\u{a799}\",\"\u{a79b}\",\"\u{a79d}\",\"\u{a79f}\",\"\u{a7a1}\",\"\u{a7a3}\",\"\u{a7a5}\",\"\u{a7a7}\",\"\u{a7a9}\",\"\u{a7af}\",\"\u{a7b5}\",\"\u{a7b7}\",\"\u{a7b9}\",\"\u{a7fa}\",[\"\u{ab30}\",\"\u{ab5a}\"],[\"\u{ab60}\",\"\u{ab65}\"],[\"\u{ab70}\",\"\u{abbf}\"],[\"\u{fb00}\",\"\u{fb06}\"],[\"\u{fb13}\",\"\u{fb17}\"],[\"\u{ff41}\",\"\u{ff5a}\"]],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"class\",\"value\":[[\"\u{2b0}\",\"\u{2c1}\"],[\"\u{2c6}\",\"\u{2d1}\"],[\"\u{2e0}\",\"\u{2e4}\"],\"\u{2ec}\",\"\u{2ee}\",\"\u{374}\",\"\u{37a}\",\"\u{559}\",\"\u{640}\",[\"\u{6e5}\",\"\u{6e6}\"],[\"\u{7f4}\",\"\u{7f5}\"],\"\u{7fa}\",\"\u{81a}\",\"\u{824}\",\"\u{828}\",\"\u{971}\",\"\u{e46}\",\"\u{ec6}\",\"\u{10fc}\",\"\u{17d7}\",\"\u{1843}\",\"\u{1aa7}\",[\"\u{1c78}\",\"\u{1c7d}\"],[\"\u{1d2c}\",\"\u{1d6a}\"],\"\u{1d78}\",[\"\u{1d9b}\",\"\u{1dbf}\"],\"\u{2071}\",\"\u{207f}\",[\"\u{2090}\",\"\u{209c}\"],[\"\u{2c7c}\",\"\u{2c7d}\"],\"\u{2d6f}\",\"\u{2e2f}\",\"\u{3005}\",[\"\u{3031}\",\"\u{3035}\"],\"\u{303b}\",[\"\u{309d}\",\"\u{309e}\"],[\"\u{30fc}\",\"\u{30fe}\"],\"\u{a015}\",[\"\u{a4f8}\",\"\u{a4fd}\"],\"\u{a60c}\",\"\u{a67f}\",[\"\u{a69c}\",\"\u{a69d}\"],[\"\u{a717}\",\"\u{a71f}\"],\"\u{a770}\",\"\u{a788}\",[\"\u{a7f8}\",\"\u{a7f9}\"],\"\u{a9cf}\",\"\u{a9e6}\",\"\u{aa70}\",\"\u{aadd}\",[\"\u{aaf3}\",\"\u{aaf4}\"],[\"\u{ab5c}\",\"\u{ab5f}\"],\"\u{ff70}\",[\"\u{ff9e}\",\"\u{ff9f}\"]],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"class\",\"value\":[\"\u{aa}\",\"\u{ba}\",\"\u{1bb}\",[\"\u{1c0}\",\"\u{1c3}\"],\"\u{294}\",[\"\u{5d0}\",\"\u{5ea}\"],[\"\u{5ef}\",\"\u{5f2}\"],[\"\u{620}\",\"\u{63f}\"],[\"\u{641}\",\"\u{64a}\"],[\"\u{66e}\",\"\u{66f}\"],[\"\u{671}\",\"\u{6d3}\"],\"\u{6d5}\",[\"\u{6ee}\",\"\u{6ef}\"],[\"\u{6fa}\",\"\u{6fc}\"],\"\u{6ff}\",\"\u{710}\",[\"\u{712}\",\"\u{72f}\"],[\"\u{74d}\",\"\u{7a5}\"],\"\u{7b1}\",[\"\u{7ca}\",\"\u{7ea}\"],[\"\u{800}\",\"\u{815}\"],[\"\u{840}\",\"\u{858}\"],[\"\u{860}\",\"\u{86a}\"],[\"\u{8a0}\",\"\u{8b4}\"],[\"\u{8b6}\",\"\u{8bd}\"],[\"\u{904}\",\"\u{939}\"],\"\u{93d}\",\"\u{950}\",[\"\u{958}\",\"\u{961}\"],[\"\u{972}\",\"\u{980}\"],[\"\u{985}\",\"\u{98c}\"],[\"\u{98f}\",\"\u{990}\"],[\"\u{993}\",\"\u{9a8}\"],[\"\u{9aa}\",\"\u{9b0}\"],\"\u{9b2}\",[\"\u{9b6}\",\"\u{9b9}\"],\"\u{9bd}\",\"\u{9ce}\",[\"\u{9dc}\",\"\u{9dd}\"],[\"\u{9df}\",\"\u{9e1}\"],[\"\u{9f0}\",\"\u{9f1}\"],\"\u{9fc}\",[\"\u{a05}\",\"\u{a0a}\"],[\"\u{a0f}\",\"\u{a10}\"],[\"\u{a13}\",\"\u{a28}\"],[\"\u{a2a}\",\"\u{a30}\"],[\"\u{a32}\",\"\u{a33}\"],[\"\u{a35}\",\"\u{a36}\"],[\"\u{a38}\",\"\u{a39}\"],[\"\u{a59}\",\"\u{a5c}\"],\"\u{a5e}\",[\"\u{a72}\",\"\u{a74}\"],[\"\u{a85}\",\"\u{a8d}\"],[\"\u{a8f}\",\"\u{a91}\"],[\"\u{a93}\",\"\u{aa8}\"],[\"\u{aaa}\",\"\u{ab0}\"],[\"\u{ab2}\",\"\u{ab3}\"],[\"\u{ab5}\",\"\u{ab9}\"],\"\u{abd}\",\"\u{ad0}\",[\"\u{ae0}\",\"\u{ae1}\"],\"\u{af9}\",[\"\u{b05}\",\"\u{b0c}\"],[\"\u{b0f}\",\"\u{b10}\"],[\"\u{b13}\",\"\u{b28}\"],[\"\u{b2a}\",\"\u{b30}\"],[\"\u{b32}\",\"\u{b33}\"],[\"\u{b35}\",\"\u{b39}\"],\"\u{b3d}\",[\"\u{b5c}\",\"\u{b5d}\"],[\"\u{b5f}\",\"\u{b61}\"],\"\u{b71}\",\"\u{b83}\",[\"\u{b85}\",\"\u{b8a}\"],[\"\u{b8e}\",\"\u{b90}\"],[\"\u{b92}\",\"\u{b95}\"],[\"\u{b99}\",\"\u{b9a}\"],\"\u{b9c}\",[\"\u{b9e}\",\"\u{b9f}\"],[\"\u{ba3}\",\"\u{ba4}\"],[\"\u{ba8}\",\"\u{baa}\"],[\"\u{bae}\",\"\u{bb9}\"],\"\u{bd0}\",[\"\u{c05}\",\"\u{c0c}\"],[\"\u{c0e}\",\"\u{c10}\"],[\"\u{c12}\",\"\u{c28}\"],[\"\u{c2a}\",\"\u{c39}\"],\"\u{c3d}\",[\"\u{c58}\",\"\u{c5a}\"],[\"\u{c60}\",\"\u{c61}\"],\"\u{c80}\",[\"\u{c85}\",\"\u{c8c}\"],[\"\u{c8e}\",\"\u{c90}\"],[\"\u{c92}\",\"\u{ca8}\"],[\"\u{caa}\",\"\u{cb3}\"],[\"\u{cb5}\",\"\u{cb9}\"],\"\u{cbd}\",\"\u{cde}\",[\"\u{ce0}\",\"\u{ce1}\"],[\"\u{cf1}\",\"\u{cf2}\"],[\"\u{d05}\",\"\u{d0c}\"],[\"\u{d0e}\",\"\u{d10}\"],[\"\u{d12}\",\"\u{d3a}\"],\"\u{d3d}\",\"\u{d4e}\",[\"\u{d54}\",\"\u{d56}\"],[\"\u{d5f}\",\"\u{d61}\"],[\"\u{d7a}\",\"\u{d7f}\"],[\"\u{d85}\",\"\u{d96}\"],[\"\u{d9a}\",\"\u{db1}\"],[\"\u{db3}\",\"\u{dbb}\"],\"\u{dbd}\",[\"\u{dc0}\",\"\u{dc6}\"],[\"\u{e01}\",\"\u{e30}\"],[\"\u{e32}\",\"\u{e33}\"],[\"\u{e40}\",\"\u{e45}\"],[\"\u{e81}\",\"\u{e82}\"],\"\u{e84}\",[\"\u{e87}\",\"\u{e88}\"],\"\u{e8a}\",\"\u{e8d}\",[\"\u{e94}\",\"\u{e97}\"],[\"\u{e99}\",\"\u{e9f}\"],[\"\u{ea1}\",\"\u{ea3}\"],\"\u{ea5}\",\"\u{ea7}\",[\"\u{eaa}\",\"\u{eab}\"],[\"\u{ead}\",\"\u{eb0}\"],[\"\u{eb2}\",\"\u{eb3}\"],\"\u{ebd}\",[\"\u{ec0}\",\"\u{ec4}\"],[\"\u{edc}\",\"\u{edf}\"],\"\u{f00}\",[\"\u{f40}\",\"\u{f47}\"],[\"\u{f49}\",\"\u{f6c}\"],[\"\u{f88}\",\"\u{f8c}\"],[\"\u{1000}\",\"\u{102a}\"],\"\u{103f}\",[\"\u{1050}\",\"\u{1055}\"],[\"\u{105a}\",\"\u{105d}\"],\"\u{1061}\",[\"\u{1065}\",\"\u{1066}\"],[\"\u{106e}\",\"\u{1070}\"],[\"\u{1075}\",\"\u{1081}\"],\"\u{108e}\",[\"\u{1100}\",\"\u{1248}\"],[\"\u{124a}\",\"\u{124d}\"],[\"\u{1250}\",\"\u{1256}\"],\"\u{1258}\",[\"\u{125a}\",\"\u{125d}\"],[\"\u{1260}\",\"\u{1288}\"],[\"\u{128a}\",\"\u{128d}\"],[\"\u{1290}\",\"\u{12b0}\"],[\"\u{12b2}\",\"\u{12b5}\"],[\"\u{12b8}\",\"\u{12be}\"],\"\u{12c0}\",[\"\u{12c2}\",\"\u{12c5}\"],[\"\u{12c8}\",\"\u{12d6}\"],[\"\u{12d8}\",\"\u{1310}\"],[\"\u{1312}\",\"\u{1315}\"],[\"\u{1318}\",\"\u{135a}\"],[\"\u{1380}\",\"\u{138f}\"],[\"\u{1401}\",\"\u{166c}\"],[\"\u{166f}\",\"\u{167f}\"],[\"\u{1681}\",\"\u{169a}\"],[\"\u{16a0}\",\"\u{16ea}\"],[\"\u{16f1}\",\"\u{16f8}\"],[\"\u{1700}\",\"\u{170c}\"],[\"\u{170e}\",\"\u{1711}\"],[\"\u{1720}\",\"\u{1731}\"],[\"\u{1740}\",\"\u{1751}\"],[\"\u{1760}\",\"\u{176c}\"],[\"\u{176e}\",\"\u{1770}\"],[\"\u{1780}\",\"\u{17b3}\"],\"\u{17dc}\",[\"\u{1820}\",\"\u{1842}\"],[\"\u{1844}\",\"\u{1878}\"],[\"\u{1880}\",\"\u{1884}\"],[\"\u{1887}\",\"\u{18a8}\"],\"\u{18aa}\",[\"\u{18b0}\",\"\u{18f5}\"],[\"\u{1900}\",\"\u{191e}\"],[\"\u{1950}\",\"\u{196d}\"],[\"\u{1970}\",\"\u{1974}\"],[\"\u{1980}\",\"\u{19ab}\"],[\"\u{19b0}\",\"\u{19c9}\"],[\"\u{1a00}\",\"\u{1a16}\"],[\"\u{1a20}\",\"\u{1a54}\"],[\"\u{1b05}\",\"\u{1b33}\"],[\"\u{1b45}\",\"\u{1b4b}\"],[\"\u{1b83}\",\"\u{1ba0}\"],[\"\u{1bae}\",\"\u{1baf}\"],[\"\u{1bba}\",\"\u{1be5}\"],[\"\u{1c00}\",\"\u{1c23}\"],[\"\u{1c4d}\",\"\u{1c4f}\"],[\"\u{1c5a}\",\"\u{1c77}\"],[\"\u{1ce9}\",\"\u{1cec}\"],[\"\u{1cee}\",\"\u{1cf1}\"],[\"\u{1cf5}\",\"\u{1cf6}\"],[\"\u{2135}\",\"\u{2138}\"],[\"\u{2d30}\",\"\u{2d67}\"],[\"\u{2d80}\",\"\u{2d96}\"],[\"\u{2da0}\",\"\u{2da6}\"],[\"\u{2da8}\",\"\u{2dae}\"],[\"\u{2db0}\",\"\u{2db6}\"],[\"\u{2db8}\",\"\u{2dbe}\"],[\"\u{2dc0}\",\"\u{2dc6}\"],[\"\u{2dc8}\",\"\u{2dce}\"],[\"\u{2dd0}\",\"\u{2dd6}\"],[\"\u{2dd8}\",\"\u{2dde}\"],\"\u{3006}\",\"\u{303c}\",[\"\u{3041}\",\"\u{3096}\"],\"\u{309f}\",[\"\u{30a1}\",\"\u{30fa}\"],\"\u{30ff}\",[\"\u{3105}\",\"\u{312f}\"],[\"\u{3131}\",\"\u{318e}\"],[\"\u{31a0}\",\"\u{31ba}\"],[\"\u{31f0}\",\"\u{31ff}\"],[\"\u{3400}\",\"\u{4db5}\"],[\"\u{4e00}\",\"\u{9fef}\"],[\"\u{a000}\",\"\u{a014}\"],[\"\u{a016}\",\"\u{a48c}\"],[\"\u{a4d0}\",\"\u{a4f7}\"],[\"\u{a500}\",\"\u{a60b}\"],[\"\u{a610}\",\"\u{a61f}\"],[\"\u{a62a}\",\"\u{a62b}\"],\"\u{a66e}\",[\"\u{a6a0}\",\"\u{a6e5}\"],\"\u{a78f}\",\"\u{a7f7}\",[\"\u{a7fb}\",\"\u{a801}\"],[\"\u{a803}\",\"\u{a805}\"],[\"\u{a807}\",\"\u{a80a}\"],[\"\u{a80c}\",\"\u{a822}\"],[\"\u{a840}\",\"\u{a873}\"],[\"\u{a882}\",\"\u{a8b3}\"],[\"\u{a8f2}\",\"\u{a8f7}\"],\"\u{a8fb}\",[\"\u{a8fd}\",\"\u{a8fe}\"],[\"\u{a90a}\",\"\u{a925}\"],[\"\u{a930}\",\"\u{a946}\"],[\"\u{a960}\",\"\u{a97c}\"],[\"\u{a984}\",\"\u{a9b2}\"],[\"\u{a9e0}\",\"\u{a9e4}\"],[\"\u{a9e7}\",\"\u{a9ef}\"],[\"\u{a9fa}\",\"\u{a9fe}\"],[\"\u{aa00}\",\"\u{aa28}\"],[\"\u{aa40}\",\"\u{aa42}\"],[\"\u{aa44}\",\"\u{aa4b}\"],[\"\u{aa60}\",\"\u{aa6f}\"],[\"\u{aa71}\",\"\u{aa76}\"],\"\u{aa7a}\",[\"\u{aa7e}\",\"\u{aaaf}\"],\"\u{aab1}\",[\"\u{aab5}\",\"\u{aab6}\"],[\"\u{aab9}\",\"\u{aabd}\"],\"\u{aac0}\",\"\u{aac2}\",[\"\u{aadb}\",\"\u{aadc}\"],[\"\u{aae0}\",\"\u{aaea}\"],\"\u{aaf2}\",[\"\u{ab01}\",\"\u{ab06}\"],[\"\u{ab09}\",\"\u{ab0e}\"],[\"\u{ab11}\",\"\u{ab16}\"],[\"\u{ab20}\",\"\u{ab26}\"],[\"\u{ab28}\",\"\u{ab2e}\"],[\"\u{abc0}\",\"\u{abe2}\"],[\"\u{ac00}\",\"\u{d7a3}\"],[\"\u{d7b0}\",\"\u{d7c6}\"],[\"\u{d7cb}\",\"\u{d7fb}\"],[\"\u{f900}\",\"\u{fa6d}\"],[\"\u{fa70}\",\"\u{fad9}\"],\"\u{fb1d}\",[\"\u{fb1f}\",\"\u{fb28}\"],[\"\u{fb2a}\",\"\u{fb36}\"],[\"\u{fb38}\",\"\u{fb3c}\"],\"\u{fb3e}\",[\"\u{fb40}\",\"\u{fb41}\"],[\"\u{fb43}\",\"\u{fb44}\"],[\"\u{fb46}\",\"\u{fbb1}\"],[\"\u{fbd3}\",\"\u{fd3d}\"],[\"\u{fd50}\",\"\u{fd8f}\"],[\"\u{fd92}\",\"\u{fdc7}\"],[\"\u{fdf0}\",\"\u{fdfb}\"],[\"\u{fe70}\",\"\u{fe74}\"],[\"\u{fe76}\",\"\u{fefc}\"],[\"\u{ff66}\",\"\u{ff6f}\"],[\"\u{ff71}\",\"\u{ff9d}\"],[\"\u{ffa0}\",\"\u{ffbe}\"],[\"\u{ffc2}\",\"\u{ffc7}\"],[\"\u{ffca}\",\"\u{ffcf}\"],[\"\u{ffd2}\",\"\u{ffd7}\"],[\"\u{ffda}\",\"\u{ffdc}\"]],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"class\",\"value\":[\"\u{1c5}\",\"\u{1c8}\",\"\u{1cb}\",\"\u{1f2}\",[\"\u{1f88}\",\"\u{1f8f}\"],[\"\u{1f98}\",\"\u{1f9f}\"],[\"\u{1fa8}\",\"\u{1faf}\"],\"\u{1fbc}\",\"\u{1fcc}\",\"\u{1ffc}\"],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"class\",\"value\":[[\"A\",\"Z\"],[\"\u{c0}\",\"\u{d6}\"],[\"\u{d8}\",\"\u{de}\"],\"\u{100}\",\"\u{102}\",\"\u{104}\",\"\u{106}\",\"\u{108}\",\"\u{10a}\",\"\u{10c}\",\"\u{10e}\",\"\u{110}\",\"\u{112}\",\"\u{114}\",\"\u{116}\",\"\u{118}\",\"\u{11a}\",\"\u{11c}\",\"\u{11e}\",\"\u{120}\",\"\u{122}\",\"\u{124}\",\"\u{126}\",\"\u{128}\",\"\u{12a}\",\"\u{12c}\",\"\u{12e}\",\"\u{130}\",\"\u{132}\",\"\u{134}\",\"\u{136}\",\"\u{139}\",\"\u{13b}\",\"\u{13d}\",\"\u{13f}\",\"\u{141}\",\"\u{143}\",\"\u{145}\",\"\u{147}\",\"\u{14a}\",\"\u{14c}\",\"\u{14e}\",\"\u{150}\",\"\u{152}\",\"\u{154}\",\"\u{156}\",\"\u{158}\",\"\u{15a}\",\"\u{15c}\",\"\u{15e}\",\"\u{160}\",\"\u{162}\",\"\u{164}\",\"\u{166}\",\"\u{168}\",\"\u{16a}\",\"\u{16c}\",\"\u{16e}\",\"\u{170}\",\"\u{172}\",\"\u{174}\",\"\u{176}\",[\"\u{178}\",\"\u{179}\"],\"\u{17b}\",\"\u{17d}\",[\"\u{181}\",\"\u{182}\"],\"\u{184}\",[\"\u{186}\",\"\u{187}\"],[\"\u{189}\",\"\u{18b}\"],[\"\u{18e}\",\"\u{191}\"],[\"\u{193}\",\"\u{194}\"],[\"\u{196}\",\"\u{198}\"],[\"\u{19c}\",\"\u{19d}\"],[\"\u{19f}\",\"\u{1a0}\"],\"\u{1a2}\",\"\u{1a4}\",[\"\u{1a6}\",\"\u{1a7}\"],\"\u{1a9}\",\"\u{1ac}\",[\"\u{1ae}\",\"\u{1af}\"],[\"\u{1b1}\",\"\u{1b3}\"],\"\u{1b5}\",[\"\u{1b7}\",\"\u{1b8}\"],\"\u{1bc}\",\"\u{1c4}\",\"\u{1c7}\",\"\u{1ca}\",\"\u{1cd}\",\"\u{1cf}\",\"\u{1d1}\",\"\u{1d3}\",\"\u{1d5}\",\"\u{1d7}\",\"\u{1d9}\",\"\u{1db}\",\"\u{1de}\",\"\u{1e0}\",\"\u{1e2}\",\"\u{1e4}\",\"\u{1e6}\",\"\u{1e8}\",\"\u{1ea}\",\"\u{1ec}\",\"\u{1ee}\",\"\u{1f1}\",\"\u{1f4}\",[\"\u{1f6}\",\"\u{1f8}\"],\"\u{1fa}\",\"\u{1fc}\",\"\u{1fe}\",\"\u{200}\",\"\u{202}\",\"\u{204}\",\"\u{206}\",\"\u{208}\",\"\u{20a}\",\"\u{20c}\",\"\u{20e}\",\"\u{210}\",\"\u{212}\",\"\u{214}\",\"\u{216}\",\"\u{218}\",\"\u{21a}\",\"\u{21c}\",\"\u{21e}\",\"\u{220}\",\"\u{222}\",\"\u{224}\",\"\u{226}\",\"\u{228}\",\"\u{22a}\",\"\u{22c}\",\"\u{22e}\",\"\u{230}\",\"\u{232}\",[\"\u{23a}\",\"\u{23b}\"],[\"\u{23d}\",\"\u{23e}\"],\"\u{241}\",[\"\u{243}\",\"\u{246}\"],\"\u{248}\",\"\u{24a}\",\"\u{24c}\",\"\u{24e}\",\"\u{370}\",\"\u{372}\",\"\u{376}\",\"\u{37f}\",\"\u{386}\",[\"\u{388}\",\"\u{38a}\"],\"\u{38c}\",[\"\u{38e}\",\"\u{38f}\"],[\"\u{391}\",\"\u{3a1}\"],[\"\u{3a3}\",\"\u{3ab}\"],\"\u{3cf}\",[\"\u{3d2}\",\"\u{3d4}\"],\"\u{3d8}\",\"\u{3da}\",\"\u{3dc}\",\"\u{3de}\",\"\u{3e0}\",\"\u{3e2}\",\"\u{3e4}\",\"\u{3e6}\",\"\u{3e8}\",\"\u{3ea}\",\"\u{3ec}\",\"\u{3ee}\",\"\u{3f4}\",\"\u{3f7}\",[\"\u{3f9}\",\"\u{3fa}\"],[\"\u{3fd}\",\"\u{42f}\"],\"\u{460}\",\"\u{462}\",\"\u{464}\",\"\u{466}\",\"\u{468}\",\"\u{46a}\",\"\u{46c}\",\"\u{46e}\",\"\u{470}\",\"\u{472}\",\"\u{474}\",\"\u{476}\",\"\u{478}\",\"\u{47a}\",\"\u{47c}\",\"\u{47e}\",\"\u{480}\",\"\u{48a}\",\"\u{48c}\",\"\u{48e}\",\"\u{490}\",\"\u{492}\",\"\u{494}\",\"\u{496}\",\"\u{498}\",\"\u{49a}\",\"\u{49c}\",\"\u{49e}\",\"\u{4a0}\",\"\u{4a2}\",\"\u{4a4}\",\"\u{4a6}\",\"\u{4a8}\",\"\u{4aa}\",\"\u{4ac}\",\"\u{4ae}\",\"\u{4b0}\",\"\u{4b2}\",\"\u{4b4}\",\"\u{4b6}\",\"\u{4b8}\",\"\u{4ba}\",\"\u{4bc}\",\"\u{4be}\",[\"\u{4c0}\",\"\u{4c1}\"],\"\u{4c3}\",\"\u{4c5}\",\"\u{4c7}\",\"\u{4c9}\",\"\u{4cb}\",\"\u{4cd}\",\"\u{4d0}\",\"\u{4d2}\",\"\u{4d4}\",\"\u{4d6}\",\"\u{4d8}\",\"\u{4da}\",\"\u{4dc}\",\"\u{4de}\",\"\u{4e0}\",\"\u{4e2}\",\"\u{4e4}\",\"\u{4e6}\",\"\u{4e8}\",\"\u{4ea}\",\"\u{4ec}\",\"\u{4ee}\",\"\u{4f0}\",\"\u{4f2}\",\"\u{4f4}\",\"\u{4f6}\",\"\u{4f8}\",\"\u{4fa}\",\"\u{4fc}\",\"\u{4fe}\",\"\u{500}\",\"\u{502}\",\"\u{504}\",\"\u{506}\",\"\u{508}\",\"\u{50a}\",\"\u{50c}\",\"\u{50e}\",\"\u{510}\",\"\u{512}\",\"\u{514}\",\"\u{516}\",\"\u{518}\",\"\u{51a}\",\"\u{51c}\",\"\u{51e}\",\"\u{520}\",\"\u{522}\",\"\u{524}\",\"\u{526}\",\"\u{528}\",\"\u{52a}\",\"\u{52c}\",\"\u{52e}\",[\"\u{531}\",\"\u{556}\"],[\"\u{10a0}\",\"\u{10c5}\"],\"\u{10c7}\",\"\u{10cd}\",[\"\u{13a0}\",\"\u{13f5}\"],[\"\u{1c90}\",\"\u{1cba}\"],[\"\u{1cbd}\",\"\u{1cbf}\"],\"\u{1e00}\",\"\u{1e02}\",\"\u{1e04}\",\"\u{1e06}\",\"\u{1e08}\",\"\u{1e0a}\",\"\u{1e0c}\",\"\u{1e0e}\",\"\u{1e10}\",\"\u{1e12}\",\"\u{1e14}\",\"\u{1e16}\",\"\u{1e18}\",\"\u{1e1a}\",\"\u{1e1c}\",\"\u{1e1e}\",\"\u{1e20}\",\"\u{1e22}\",\"\u{1e24}\",\"\u{1e26}\",\"\u{1e28}\",\"\u{1e2a}\",\"\u{1e2c}\",\"\u{1e2e}\",\"\u{1e30}\",\"\u{1e32}\",\"\u{1e34}\",\"\u{1e36}\",\"\u{1e38}\",\"\u{1e3a}\",\"\u{1e3c}\",\"\u{1e3e}\",\"\u{1e40}\",\"\u{1e42}\",\"\u{1e44}\",\"\u{1e46}\",\"\u{1e48}\",\"\u{1e4a}\",\"\u{1e4c}\",\"\u{1e4e}\",\"\u{1e50}\",\"\u{1e52}\",\"\u{1e54}\",\"\u{1e56}\",\"\u{1e58}\",\"\u{1e5a}\",\"\u{1e5c}\",\"\u{1e5e}\",\"\u{1e60}\",\"\u{1e62}\",\"\u{1e64}\",\"\u{1e66}\",\"\u{1e68}\",\"\u{1e6a}\",\"\u{1e6c}\",\"\u{1e6e}\",\"\u{1e70}\",\"\u{1e72}\",\"\u{1e74}\",\"\u{1e76}\",\"\u{1e78}\",\"\u{1e7a}\",\"\u{1e7c}\",\"\u{1e7e}\",\"\u{1e80}\",\"\u{1e82}\",\"\u{1e84}\",\"\u{1e86}\",\"\u{1e88}\",\"\u{1e8a}\",\"\u{1e8c}\",\"\u{1e8e}\",\"\u{1e90}\",\"\u{1e92}\",\"\u{1e94}\",\"\u{1e9e}\",\"\u{1ea0}\",\"\u{1ea2}\",\"\u{1ea4}\",\"\u{1ea6}\",\"\u{1ea8}\",\"\u{1eaa}\",\"\u{1eac}\",\"\u{1eae}\",\"\u{1eb0}\",\"\u{1eb2}\",\"\u{1eb4}\",\"\u{1eb6}\",\"\u{1eb8}\",\"\u{1eba}\",\"\u{1ebc}\",\"\u{1ebe}\",\"\u{1ec0}\",\"\u{1ec2}\",\"\u{1ec4}\",\"\u{1ec6}\",\"\u{1ec8}\",\"\u{1eca}\",\"\u{1ecc}\",\"\u{1ece}\",\"\u{1ed0}\",\"\u{1ed2}\",\"\u{1ed4}\",\"\u{1ed6}\",\"\u{1ed8}\",\"\u{1eda}\",\"\u{1edc}\",\"\u{1ede}\",\"\u{1ee0}\",\"\u{1ee2}\",\"\u{1ee4}\",\"\u{1ee6}\",\"\u{1ee8}\",\"\u{1eea}\",\"\u{1eec}\",\"\u{1eee}\",\"\u{1ef0}\",\"\u{1ef2}\",\"\u{1ef4}\",\"\u{1ef6}\",\"\u{1ef8}\",\"\u{1efa}\",\"\u{1efc}\",\"\u{1efe}\",[\"\u{1f08}\",\"\u{1f0f}\"],[\"\u{1f18}\",\"\u{1f1d}\"],[\"\u{1f28}\",\"\u{1f2f}\"],[\"\u{1f38}\",\"\u{1f3f}\"],[\"\u{1f48}\",\"\u{1f4d}\"],\"\u{1f59}\",\"\u{1f5b}\",\"\u{1f5d}\",\"\u{1f5f}\",[\"\u{1f68}\",\"\u{1f6f}\"],[\"\u{1fb8}\",\"\u{1fbb}\"],[\"\u{1fc8}\",\"\u{1fcb}\"],[\"\u{1fd8}\",\"\u{1fdb}\"],[\"\u{1fe8}\",\"\u{1fec}\"],[\"\u{1ff8}\",\"\u{1ffb}\"],\"\u{2102}\",\"\u{2107}\",[\"\u{210b}\",\"\u{210d}\"],[\"\u{2110}\",\"\u{2112}\"],\"\u{2115}\",[\"\u{2119}\",\"\u{211d}\"],\"\u{2124}\",\"\u{2126}\",\"\u{2128}\",[\"\u{212a}\",\"\u{212d}\"],[\"\u{2130}\",\"\u{2133}\"],[\"\u{213e}\",\"\u{213f}\"],\"\u{2145}\",\"\u{2183}\",[\"\u{2c00}\",\"\u{2c2e}\"],\"\u{2c60}\",[\"\u{2c62}\",\"\u{2c64}\"],\"\u{2c67}\",\"\u{2c69}\",\"\u{2c6b}\",[\"\u{2c6d}\",\"\u{2c70}\"],\"\u{2c72}\",\"\u{2c75}\",[\"\u{2c7e}\",\"\u{2c80}\"],\"\u{2c82}\",\"\u{2c84}\",\"\u{2c86}\",\"\u{2c88}\",\"\u{2c8a}\",\"\u{2c8c}\",\"\u{2c8e}\",\"\u{2c90}\",\"\u{2c92}\",\"\u{2c94}\",\"\u{2c96}\",\"\u{2c98}\",\"\u{2c9a}\",\"\u{2c9c}\",\"\u{2c9e}\",\"\u{2ca0}\",\"\u{2ca2}\",\"\u{2ca4}\",\"\u{2ca6}\",\"\u{2ca8}\",\"\u{2caa}\",\"\u{2cac}\",\"\u{2cae}\",\"\u{2cb0}\",\"\u{2cb2}\",\"\u{2cb4}\",\"\u{2cb6}\",\"\u{2cb8}\",\"\u{2cba}\",\"\u{2cbc}\",\"\u{2cbe}\",\"\u{2cc0}\",\"\u{2cc2}\",\"\u{2cc4}\",\"\u{2cc6}\",\"\u{2cc8}\",\"\u{2cca}\",\"\u{2ccc}\",\"\u{2cce}\",\"\u{2cd0}\",\"\u{2cd2}\",\"\u{2cd4}\",\"\u{2cd6}\",\"\u{2cd8}\",\"\u{2cda}\",\"\u{2cdc}\",\"\u{2cde}\",\"\u{2ce0}\",\"\u{2ce2}\",\"\u{2ceb}\",\"\u{2ced}\",\"\u{2cf2}\",\"\u{a640}\",\"\u{a642}\",\"\u{a644}\",\"\u{a646}\",\"\u{a648}\",\"\u{a64a}\",\"\u{a64c}\",\"\u{a64e}\",\"\u{a650}\",\"\u{a652}\",\"\u{a654}\",\"\u{a656}\",\"\u{a658}\",\"\u{a65a}\",\"\u{a65c}\",\"\u{a65e}\",\"\u{a660}\",\"\u{a662}\",\"\u{a664}\",\"\u{a666}\",\"\u{a668}\",\"\u{a66a}\",\"\u{a66c}\",\"\u{a680}\",\"\u{a682}\",\"\u{a684}\",\"\u{a686}\",\"\u{a688}\",\"\u{a68a}\",\"\u{a68c}\",\"\u{a68e}\",\"\u{a690}\",\"\u{a692}\",\"\u{a694}\",\"\u{a696}\",\"\u{a698}\",\"\u{a69a}\",\"\u{a722}\",\"\u{a724}\",\"\u{a726}\",\"\u{a728}\",\"\u{a72a}\",\"\u{a72c}\",\"\u{a72e}\",\"\u{a732}\",\"\u{a734}\",\"\u{a736}\",\"\u{a738}\",\"\u{a73a}\",\"\u{a73c}\",\"\u{a73e}\",\"\u{a740}\",\"\u{a742}\",\"\u{a744}\",\"\u{a746}\",\"\u{a748}\",\"\u{a74a}\",\"\u{a74c}\",\"\u{a74e}\",\"\u{a750}\",\"\u{a752}\",\"\u{a754}\",\"\u{a756}\",\"\u{a758}\",\"\u{a75a}\",\"\u{a75c}\",\"\u{a75e}\",\"\u{a760}\",\"\u{a762}\",\"\u{a764}\",\"\u{a766}\",\"\u{a768}\",\"\u{a76a}\",\"\u{a76c}\",\"\u{a76e}\",\"\u{a779}\",\"\u{a77b}\",[\"\u{a77d}\",\"\u{a77e}\"],\"\u{a780}\",\"\u{a782}\",\"\u{a784}\",\"\u{a786}\",\"\u{a78b}\",\"\u{a78d}\",\"\u{a790}\",\"\u{a792}\",\"\u{a796}\",\"\u{a798}\",\"\u{a79a}\",\"\u{a79c}\",\"\u{a79e}\",\"\u{a7a0}\",\"\u{a7a2}\",\"\u{a7a4}\",\"\u{a7a6}\",\"\u{a7a8}\",[\"\u{a7aa}\",\"\u{a7ae}\"],[\"\u{a7b0}\",\"\u{a7b4}\"],\"\u{a7b6}\",\"\u{a7b8}\",[\"\u{ff21}\",\"\u{ff3a}\"]],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"class\",\"value\":[\"\u{903}\",\"\u{93b}\",[\"\u{93e}\",\"\u{940}\"],[\"\u{949}\",\"\u{94c}\"],[\"\u{94e}\",\"\u{94f}\"],[\"\u{982}\",\"\u{983}\"],[\"\u{9be}\",\"\u{9c0}\"],[\"\u{9c7}\",\"\u{9c8}\"],[\"\u{9cb}\",\"\u{9cc}\"],\"\u{9d7}\",\"\u{a03}\",[\"\u{a3e}\",\"\u{a40}\"],\"\u{a83}\",[\"\u{abe}\",\"\u{ac0}\"],\"\u{ac9}\",[\"\u{acb}\",\"\u{acc}\"],[\"\u{b02}\",\"\u{b03}\"],\"\u{b3e}\",\"\u{b40}\",[\"\u{b47}\",\"\u{b48}\"],[\"\u{b4b}\",\"\u{b4c}\"],\"\u{b57}\",[\"\u{bbe}\",\"\u{bbf}\"],[\"\u{bc1}\",\"\u{bc2}\"],[\"\u{bc6}\",\"\u{bc8}\"],[\"\u{bca}\",\"\u{bcc}\"],\"\u{bd7}\",[\"\u{c01}\",\"\u{c03}\"],[\"\u{c41}\",\"\u{c44}\"],[\"\u{c82}\",\"\u{c83}\"],\"\u{cbe}\",[\"\u{cc0}\",\"\u{cc4}\"],[\"\u{cc7}\",\"\u{cc8}\"],[\"\u{cca}\",\"\u{ccb}\"],[\"\u{cd5}\",\"\u{cd6}\"],[\"\u{d02}\",\"\u{d03}\"],[\"\u{d3e}\",\"\u{d40}\"],[\"\u{d46}\",\"\u{d48}\"],[\"\u{d4a}\",\"\u{d4c}\"],\"\u{d57}\",[\"\u{d82}\",\"\u{d83}\"],[\"\u{dcf}\",\"\u{dd1}\"],[\"\u{dd8}\",\"\u{ddf}\"],[\"\u{df2}\",\"\u{df3}\"],[\"\u{f3e}\",\"\u{f3f}\"],\"\u{f7f}\",[\"\u{102b}\",\"\u{102c}\"],\"\u{1031}\",\"\u{1038}\",[\"\u{103b}\",\"\u{103c}\"],[\"\u{1056}\",\"\u{1057}\"],[\"\u{1062}\",\"\u{1064}\"],[\"\u{1067}\",\"\u{106d}\"],[\"\u{1083}\",\"\u{1084}\"],[\"\u{1087}\",\"\u{108c}\"],\"\u{108f}\",[\"\u{109a}\",\"\u{109c}\"],\"\u{17b6}\",[\"\u{17be}\",\"\u{17c5}\"],[\"\u{17c7}\",\"\u{17c8}\"],[\"\u{1923}\",\"\u{1926}\"],[\"\u{1929}\",\"\u{192b}\"],[\"\u{1930}\",\"\u{1931}\"],[\"\u{1933}\",\"\u{1938}\"],[\"\u{1a19}\",\"\u{1a1a}\"],\"\u{1a55}\",\"\u{1a57}\",\"\u{1a61}\",[\"\u{1a63}\",\"\u{1a64}\"],[\"\u{1a6d}\",\"\u{1a72}\"],\"\u{1b04}\",\"\u{1b35}\",\"\u{1b3b}\",[\"\u{1b3d}\",\"\u{1b41}\"],[\"\u{1b43}\",\"\u{1b44}\"],\"\u{1b82}\",\"\u{1ba1}\",[\"\u{1ba6}\",\"\u{1ba7}\"],\"\u{1baa}\",\"\u{1be7}\",[\"\u{1bea}\",\"\u{1bec}\"],\"\u{1bee}\",[\"\u{1bf2}\",\"\u{1bf3}\"],[\"\u{1c24}\",\"\u{1c2b}\"],[\"\u{1c34}\",\"\u{1c35}\"],\"\u{1ce1}\",[\"\u{1cf2}\",\"\u{1cf3}\"],\"\u{1cf7}\",[\"\u{302e}\",\"\u{302f}\"],[\"\u{a823}\",\"\u{a824}\"],\"\u{a827}\",[\"\u{a880}\",\"\u{a881}\"],[\"\u{a8b4}\",\"\u{a8c3}\"],[\"\u{a952}\",\"\u{a953}\"],\"\u{a983}\",[\"\u{a9b4}\",\"\u{a9b5}\"],[\"\u{a9ba}\",\"\u{a9bb}\"],[\"\u{a9bd}\",\"\u{a9c0}\"],[\"\u{aa2f}\",\"\u{aa30}\"],[\"\u{aa33}\",\"\u{aa34}\"],\"\u{aa4d}\",\"\u{aa7b}\",\"\u{aa7d}\",\"\u{aaeb}\",[\"\u{aaee}\",\"\u{aaef}\"],\"\u{aaf5}\",[\"\u{abe3}\",\"\u{abe4}\"],[\"\u{abe6}\",\"\u{abe7}\"],[\"\u{abe9}\",\"\u{abea}\"],\"\u{abec}\"],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"class\",\"value\":[[\"\u{300}\",\"\u{36f}\"],[\"\u{483}\",\"\u{487}\"],[\"\u{591}\",\"\u{5bd}\"],\"\u{5bf}\",[\"\u{5c1}\",\"\u{5c2}\"],[\"\u{5c4}\",\"\u{5c5}\"],\"\u{5c7}\",[\"\u{610}\",\"\u{61a}\"],[\"\u{64b}\",\"\u{65f}\"],\"\u{670}\",[\"\u{6d6}\",\"\u{6dc}\"],[\"\u{6df}\",\"\u{6e4}\"],[\"\u{6e7}\",\"\u{6e8}\"],[\"\u{6ea}\",\"\u{6ed}\"],\"\u{711}\",[\"\u{730}\",\"\u{74a}\"],[\"\u{7a6}\",\"\u{7b0}\"],[\"\u{7eb}\",\"\u{7f3}\"],\"\u{7fd}\",[\"\u{816}\",\"\u{819}\"],[\"\u{81b}\",\"\u{823}\"],[\"\u{825}\",\"\u{827}\"],[\"\u{829}\",\"\u{82d}\"],[\"\u{859}\",\"\u{85b}\"],[\"\u{8d3}\",\"\u{8e1}\"],[\"\u{8e3}\",\"\u{902}\"],\"\u{93a}\",\"\u{93c}\",[\"\u{941}\",\"\u{948}\"],\"\u{94d}\",[\"\u{951}\",\"\u{957}\"],[\"\u{962}\",\"\u{963}\"],\"\u{981}\",\"\u{9bc}\",[\"\u{9c1}\",\"\u{9c4}\"],\"\u{9cd}\",[\"\u{9e2}\",\"\u{9e3}\"],\"\u{9fe}\",[\"\u{a01}\",\"\u{a02}\"],\"\u{a3c}\",[\"\u{a41}\",\"\u{a42}\"],[\"\u{a47}\",\"\u{a48}\"],[\"\u{a4b}\",\"\u{a4d}\"],\"\u{a51}\",[\"\u{a70}\",\"\u{a71}\"],\"\u{a75}\",[\"\u{a81}\",\"\u{a82}\"],\"\u{abc}\",[\"\u{ac1}\",\"\u{ac5}\"],[\"\u{ac7}\",\"\u{ac8}\"],\"\u{acd}\",[\"\u{ae2}\",\"\u{ae3}\"],[\"\u{afa}\",\"\u{aff}\"],\"\u{b01}\",\"\u{b3c}\",\"\u{b3f}\",[\"\u{b41}\",\"\u{b44}\"],\"\u{b4d}\",\"\u{b56}\",[\"\u{b62}\",\"\u{b63}\"],\"\u{b82}\",\"\u{bc0}\",\"\u{bcd}\",\"\u{c00}\",\"\u{c04}\",[\"\u{c3e}\",\"\u{c40}\"],[\"\u{c46}\",\"\u{c48}\"],[\"\u{c4a}\",\"\u{c4d}\"],[\"\u{c55}\",\"\u{c56}\"],[\"\u{c62}\",\"\u{c63}\"],\"\u{c81}\",\"\u{cbc}\",\"\u{cbf}\",\"\u{cc6}\",[\"\u{ccc}\",\"\u{ccd}\"],[\"\u{ce2}\",\"\u{ce3}\"],[\"\u{d00}\",\"\u{d01}\"],[\"\u{d3b}\",\"\u{d3c}\"],[\"\u{d41}\",\"\u{d44}\"],\"\u{d4d}\",[\"\u{d62}\",\"\u{d63}\"],\"\u{dca}\",[\"\u{dd2}\",\"\u{dd4}\"],\"\u{dd6}\",\"\u{e31}\",[\"\u{e34}\",\"\u{e3a}\"],[\"\u{e47}\",\"\u{e4e}\"],\"\u{eb1}\",[\"\u{eb4}\",\"\u{eb9}\"],[\"\u{ebb}\",\"\u{ebc}\"],[\"\u{ec8}\",\"\u{ecd}\"],[\"\u{f18}\",\"\u{f19}\"],\"\u{f35}\",\"\u{f37}\",\"\u{f39}\",[\"\u{f71}\",\"\u{f7e}\"],[\"\u{f80}\",\"\u{f84}\"],[\"\u{f86}\",\"\u{f87}\"],[\"\u{f8d}\",\"\u{f97}\"],[\"\u{f99}\",\"\u{fbc}\"],\"\u{fc6}\",[\"\u{102d}\",\"\u{1030}\"],[\"\u{1032}\",\"\u{1037}\"],[\"\u{1039}\",\"\u{103a}\"],[\"\u{103d}\",\"\u{103e}\"],[\"\u{1058}\",\"\u{1059}\"],[\"\u{105e}\",\"\u{1060}\"],[\"\u{1071}\",\"\u{1074}\"],\"\u{1082}\",[\"\u{1085}\",\"\u{1086}\"],\"\u{108d}\",\"\u{109d}\",[\"\u{135d}\",\"\u{135f}\"],[\"\u{1712}\",\"\u{1714}\"],[\"\u{1732}\",\"\u{1734}\"],[\"\u{1752}\",\"\u{1753}\"],[\"\u{1772}\",\"\u{1773}\"],[\"\u{17b4}\",\"\u{17b5}\"],[\"\u{17b7}\",\"\u{17bd}\"],\"\u{17c6}\",[\"\u{17c9}\",\"\u{17d3}\"],\"\u{17dd}\",[\"\u{180b}\",\"\u{180d}\"],[\"\u{1885}\",\"\u{1886}\"],\"\u{18a9}\",[\"\u{1920}\",\"\u{1922}\"],[\"\u{1927}\",\"\u{1928}\"],\"\u{1932}\",[\"\u{1939}\",\"\u{193b}\"],[\"\u{1a17}\",\"\u{1a18}\"],\"\u{1a1b}\",\"\u{1a56}\",[\"\u{1a58}\",\"\u{1a5e}\"],\"\u{1a60}\",\"\u{1a62}\",[\"\u{1a65}\",\"\u{1a6c}\"],[\"\u{1a73}\",\"\u{1a7c}\"],\"\u{1a7f}\",[\"\u{1ab0}\",\"\u{1abd}\"],[\"\u{1b00}\",\"\u{1b03}\"],\"\u{1b34}\",[\"\u{1b36}\",\"\u{1b3a}\"],\"\u{1b3c}\",\"\u{1b42}\",[\"\u{1b6b}\",\"\u{1b73}\"],[\"\u{1b80}\",\"\u{1b81}\"],[\"\u{1ba2}\",\"\u{1ba5}\"],[\"\u{1ba8}\",\"\u{1ba9}\"],[\"\u{1bab}\",\"\u{1bad}\"],\"\u{1be6}\",[\"\u{1be8}\",\"\u{1be9}\"],\"\u{1bed}\",[\"\u{1bef}\",\"\u{1bf1}\"],[\"\u{1c2c}\",\"\u{1c33}\"],[\"\u{1c36}\",\"\u{1c37}\"],[\"\u{1cd0}\",\"\u{1cd2}\"],[\"\u{1cd4}\",\"\u{1ce0}\"],[\"\u{1ce2}\",\"\u{1ce8}\"],\"\u{1ced}\",\"\u{1cf4}\",[\"\u{1cf8}\",\"\u{1cf9}\"],[\"\u{1dc0}\",\"\u{1df9}\"],[\"\u{1dfb}\",\"\u{1dff}\"],[\"\u{20d0}\",\"\u{20dc}\"],\"\u{20e1}\",[\"\u{20e5}\",\"\u{20f0}\"],[\"\u{2cef}\",\"\u{2cf1}\"],\"\u{2d7f}\",[\"\u{2de0}\",\"\u{2dff}\"],[\"\u{302a}\",\"\u{302d}\"],[\"\u{3099}\",\"\u{309a}\"],\"\u{a66f}\",[\"\u{a674}\",\"\u{a67d}\"],[\"\u{a69e}\",\"\u{a69f}\"],[\"\u{a6f0}\",\"\u{a6f1}\"],\"\u{a802}\",\"\u{a806}\",\"\u{a80b}\",[\"\u{a825}\",\"\u{a826}\"],[\"\u{a8c4}\",\"\u{a8c5}\"],[\"\u{a8e0}\",\"\u{a8f1}\"],\"\u{a8ff}\",[\"\u{a926}\",\"\u{a92d}\"],[\"\u{a947}\",\"\u{a951}\"],[\"\u{a980}\",\"\u{a982}\"],\"\u{a9b3}\",[\"\u{a9b6}\",\"\u{a9b9}\"],\"\u{a9bc}\",\"\u{a9e5}\",[\"\u{aa29}\",\"\u{aa2e}\"],[\"\u{aa31}\",\"\u{aa32}\"],[\"\u{aa35}\",\"\u{aa36}\"],\"\u{aa43}\",\"\u{aa4c}\",\"\u{aa7c}\",\"\u{aab0}\",[\"\u{aab2}\",\"\u{aab4}\"],[\"\u{aab7}\",\"\u{aab8}\"],[\"\u{aabe}\",\"\u{aabf}\"],\"\u{aac1}\",[\"\u{aaec}\",\"\u{aaed}\"],\"\u{aaf6}\",\"\u{abe5}\",\"\u{abe8}\",\"\u{abed}\",\"\u{fb1e}\",[\"\u{fe00}\",\"\u{fe0f}\"],[\"\u{fe20}\",\"\u{fe2f}\"]],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"class\",\"value\":[[\"0\",\"9\"],[\"\u{660}\",\"\u{669}\"],[\"\u{6f0}\",\"\u{6f9}\"],[\"\u{7c0}\",\"\u{7c9}\"],[\"\u{966}\",\"\u{96f}\"],[\"\u{9e6}\",\"\u{9ef}\"],[\"\u{a66}\",\"\u{a6f}\"],[\"\u{ae6}\",\"\u{aef}\"],[\"\u{b66}\",\"\u{b6f}\"],[\"\u{be6}\",\"\u{bef}\"],[\"\u{c66}\",\"\u{c6f}\"],[\"\u{ce6}\",\"\u{cef}\"],[\"\u{d66}\",\"\u{d6f}\"],[\"\u{de6}\",\"\u{def}\"],[\"\u{e50}\",\"\u{e59}\"],[\"\u{ed0}\",\"\u{ed9}\"],[\"\u{f20}\",\"\u{f29}\"],[\"\u{1040}\",\"\u{1049}\"],[\"\u{1090}\",\"\u{1099}\"],[\"\u{17e0}\",\"\u{17e9}\"],[\"\u{1810}\",\"\u{1819}\"],[\"\u{1946}\",\"\u{194f}\"],[\"\u{19d0}\",\"\u{19d9}\"],[\"\u{1a80}\",\"\u{1a89}\"],[\"\u{1a90}\",\"\u{1a99}\"],[\"\u{1b50}\",\"\u{1b59}\"],[\"\u{1bb0}\",\"\u{1bb9}\"],[\"\u{1c40}\",\"\u{1c49}\"],[\"\u{1c50}\",\"\u{1c59}\"],[\"\u{a620}\",\"\u{a629}\"],[\"\u{a8d0}\",\"\u{a8d9}\"],[\"\u{a900}\",\"\u{a909}\"],[\"\u{a9d0}\",\"\u{a9d9}\"],[\"\u{a9f0}\",\"\u{a9f9}\"],[\"\u{aa50}\",\"\u{aa59}\"],[\"\u{abf0}\",\"\u{abf9}\"],[\"\u{ff10}\",\"\u{ff19}\"]],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"class\",\"value\":[[\"\u{16ee}\",\"\u{16f0}\"],[\"\u{2160}\",\"\u{2182}\"],[\"\u{2185}\",\"\u{2188}\"],\"\u{3007}\",[\"\u{3021}\",\"\u{3029}\"],[\"\u{3038}\",\"\u{303a}\"],[\"\u{a6e6}\",\"\u{a6ef}\"]],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"class\",\"value\":[\"_\",[\"\u{203f}\",\"\u{2040}\"],\"\u{2054}\",[\"\u{fe33}\",\"\u{fe34}\"],[\"\u{fe4d}\",\"\u{fe4f}\"],\"\u{ff3f}\"],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"break\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"case\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"catch\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"class\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"const\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"continue\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"debugger\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"default\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"delete\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"do\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"else\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"enum\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"export\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"extends\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"false\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"finally\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"for\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"function\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"get\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"if\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"import\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"instanceof\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"in\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"new\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"null\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"return\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"set\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"super\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"switch\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"this\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"throw\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"true\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"try\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"typeof\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"var\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"void\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"while\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"with\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\";\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"}\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"(\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\")\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"[\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"]\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\",\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"{\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\":\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\".\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"++\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"--\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"+\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"-\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"~\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"!\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"*\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"/\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"%\",\"ignoreCase\":false},{\"type\":\"class\",\"value\":[\"+\",\"=\"],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"class\",\"value\":[\"-\",\"=\"],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"<<\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\">>>\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\">>\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"<=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\">=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"<\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\">\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"===\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"!==\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"==\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"!=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"&\",\"ignoreCase\":false},{\"type\":\"class\",\"value\":[\"&\",\"=\"],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"^\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"|\",\"ignoreCase\":false},{\"type\":\"class\",\"value\":[\"|\",\"=\"],\"inverted\":false,\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"&&\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"||\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"?\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"*=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"/=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"%=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"+=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"-=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"<<=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\">>=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\">>>=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"&=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"^=\",\"ignoreCase\":false},{\"type\":\"literal\",\"value\":\"|=\",\"ignoreCase\":false}],\"functions\":[{\"predicate\":false,\"params\":[\"program\"],\"body\":\" return program; \"},{\"predicate\":false,\"params\":[\"name\"],\"body\":\" return name; \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\"\\n      return {\\n        type: \\\"Identifier\\\",\\n        name: head + tail.join(\\\"\\\")\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"sequence\"],\"body\":\" return sequence; \"},{\"predicate\":false,\"params\":[],\"body\":\" return { type: \\\"Literal\\\", value: null }; \"},{\"predicate\":false,\"params\":[],\"body\":\" return { type: \\\"Literal\\\", value: true  }; \"},{\"predicate\":false,\"params\":[],\"body\":\" return { type: \\\"Literal\\\", value: false }; \"},{\"predicate\":false,\"params\":[\"literal\"],\"body\":\"\\n      return literal;\\n    \"},{\"predicate\":false,\"params\":[],\"body\":\"\\n      return { type: \\\"Literal\\\", value: parseFloat(text()) };\\n    \"},{\"predicate\":false,\"params\":[\"digits\"],\"body\":\"\\n      return { type: \\\"Literal\\\", value: parseInt(digits, 16) };\\n     \"},{\"predicate\":false,\"params\":[\"chars\"],\"body\":\"\\n      return { type: \\\"Literal\\\", value: chars.join(\\\"\\\") };\\n    \"},{\"predicate\":false,\"params\":[],\"body\":\" return text(); \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\\0\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\\b\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\\f\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\\n\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\\r\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\\t\\\"; \"},{\"predicate\":false,\"params\":[],\"body\":\" return \\\"\\\\v\\\"; \"},{\"predicate\":false,\"params\":[\"digits\"],\"body\":\"\\n      return String.fromCharCode(parseInt(digits, 16));\\n    \"},{\"predicate\":false,\"params\":[\"pattern\",\"flags\"],\"body\":\"\\n      var value;\\n\\n      try {\\n        value = new RegExp(pattern, flags);\\n      } catch (e) {\\n        error(e.message);\\n      }\\n\\n      return { type: \\\"Literal\\\", value: value };\\n    \"},{\"predicate\":false,\"params\":[],\"body\":\" return { type: \\\"ThisExpression\\\" }; \"},{\"predicate\":false,\"params\":[\"expression\"],\"body\":\" return expression; \"},{\"predicate\":false,\"params\":[\"elision\"],\"body\":\"\\n      return {\\n        type: \\\"ArrayExpression\\\",\\n        elements: optionalList(extractOptional(elision, 0))\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"elements\"],\"body\":\"\\n      return {\\n        type: \\\"ArrayExpression\\\",\\n        elements: elements\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"elements\",\"elision\"],\"body\":\"\\n      return {\\n        type: \\\"ArrayExpression\\\",\\n        elements: elements.concat(optionalList(extractOptional(elision, 0)))\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"elision\",\"element\"],\"body\":\"\\n        return optionalList(extractOptional(elision, 0)).concat(element);\\n      \"},{\"predicate\":false,\"params\":[\"head\",\"elision\",\"element\"],\"body\":\"\\n        return optionalList(extractOptional(elision, 0)).concat(element);\\n      \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\" return Array.prototype.concat.apply(head, tail); \"},{\"predicate\":false,\"params\":[\"commas\"],\"body\":\" return filledArray(commas.length + 1, null); \"},{\"predicate\":false,\"params\":[],\"body\":\" return { type: \\\"ObjectExpression\\\", properties: [] }; \"},{\"predicate\":false,\"params\":[\"properties\"],\"body\":\"\\n       return { type: \\\"ObjectExpression\\\", properties: properties };\\n     \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\"\\n      return buildList(head, tail, 3);\\n    \"},{\"predicate\":false,\"params\":[\"key\",\"value\"],\"body\":\"\\n      return { type: \\\"Property\\\", key: key, value: value, kind: \\\"init\\\" };\\n    \"},{\"predicate\":false,\"params\":[\"key\",\"body\"],\"body\":\"\\n      return {\\n        type: \\\"Property\\\",\\n        key: key,\\n        value: {\\n          type: \\\"FunctionExpression\\\",\\n          id: null,\\n          params: [],\\n          body: body\\n        },\\n        kind: \\\"get\\\"\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"key\",\"params\",\"body\"],\"body\":\"\\n      return {\\n        type: \\\"Property\\\",\\n        key: key,\\n        value: {\\n          type: \\\"FunctionExpression\\\",\\n          id: null,\\n          params: params,\\n          body: body\\n        },\\n        kind: \\\"set\\\"\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"id\"],\"body\":\" return [id]; \"},{\"predicate\":false,\"params\":[\"callee\",\"args\"],\"body\":\"\\n          return { type: \\\"NewExpression\\\", callee: callee, arguments: args };\\n        \"},{\"predicate\":false,\"params\":[\"head\",\"property\"],\"body\":\"\\n          return { property: property, computed: true };\\n        \"},{\"predicate\":false,\"params\":[\"head\",\"property\"],\"body\":\"\\n          return { property: property, computed: false };\\n        \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\"\\n      return tail.reduce(function(result, element) {\\n        return {\\n          type: \\\"MemberExpression\\\",\\n          object: result,\\n          property: element.property,\\n          computed: element.computed\\n        };\\n      }, head);\\n    \"},{\"predicate\":false,\"params\":[\"callee\"],\"body\":\"\\n      return { type: \\\"NewExpression\\\", callee: callee, arguments: [] };\\n    \"},{\"predicate\":false,\"params\":[\"callee\",\"args\"],\"body\":\"\\n        return { type: \\\"CallExpression\\\", callee: callee, arguments: args };\\n      \"},{\"predicate\":false,\"params\":[\"head\",\"args\"],\"body\":\"\\n          return { type: \\\"CallExpression\\\", arguments: args };\\n        \"},{\"predicate\":false,\"params\":[\"head\",\"property\"],\"body\":\"\\n          return {\\n            type: \\\"MemberExpression\\\",\\n            property: property,\\n            computed: true\\n          };\\n        \"},{\"predicate\":false,\"params\":[\"head\",\"property\"],\"body\":\"\\n          return {\\n            type: \\\"MemberExpression\\\",\\n            property: property,\\n            computed: false\\n          };\\n        \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\"\\n      return tail.reduce(function(result, element) {\\n        element[TYPES_TO_PROPERTY_NAMES[element.type]] = result;\\n\\n        return element;\\n      }, head);\\n    \"},{\"predicate\":false,\"params\":[\"args\"],\"body\":\"\\n      return optionalList(extractOptional(args, 0));\\n    \"},{\"predicate\":false,\"params\":[\"argument\",\"operator\"],\"body\":\"\\n      return {\\n        type: \\\"UpdateExpression\\\",\\n        operator: operator,\\n        argument: argument,\\n        prefix: false\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"operator\",\"argument\"],\"body\":\"\\n      var type = (operator === \\\"++\\\" || operator === \\\"--\\\")\\n        ? \\\"UpdateExpression\\\"\\n        : \\\"UnaryExpression\\\";\\n\\n      return {\\n        type: type,\\n        operator: operator,\\n        argument: argument,\\n        prefix: true\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\" return buildBinaryExpression(head, tail); \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\" return buildLogicalExpression(head, tail); \"},{\"predicate\":false,\"params\":[\"test\",\"consequent\",\"alternate\"],\"body\":\"\\n      return {\\n        type: \\\"ConditionalExpression\\\",\\n        test: test,\\n        consequent: consequent,\\n        alternate: alternate\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"left\",\"right\"],\"body\":\"\\n      return {\\n        type: \\\"AssignmentExpression\\\",\\n        operator: \\\"=\\\",\\n        left: left,\\n        right: right\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"left\",\"operator\",\"right\"],\"body\":\"\\n      return {\\n        type: \\\"AssignmentExpression\\\",\\n        operator: operator,\\n        left: left,\\n        right: right\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\"\\n      return tail.length > 0\\n        ? { type: \\\"SequenceExpression\\\", expressions: buildList(head, tail, 3) }\\n        : head;\\n    \"},{\"predicate\":false,\"params\":[\"body\"],\"body\":\"\\n      return {\\n        type: \\\"BlockStatement\\\",\\n        body: optionalList(extractOptional(body, 0))\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\" return buildList(head, tail, 1); \"},{\"predicate\":false,\"params\":[\"declarations\"],\"body\":\"\\n      return {\\n        type: \\\"VariableDeclaration\\\",\\n        declarations: declarations,\\n        kind: \\\"var\\\"\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"id\",\"init\"],\"body\":\"\\n      return {\\n        type: \\\"VariableDeclarator\\\",\\n        id: id,\\n        init: extractOptional(init, 1)\\n      };\\n    \"},{\"predicate\":false,\"params\":[],\"body\":\" return { type: \\\"EmptyStatement\\\" }; \"},{\"predicate\":false,\"params\":[\"expression\"],\"body\":\"\\n      return {\\n        type: \\\"ExpressionStatement\\\",\\n        expression: expression\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"test\",\"consequent\",\"alternate\"],\"body\":\"\\n      return {\\n        type: \\\"IfStatement\\\",\\n        test: test,\\n        consequent: consequent,\\n        alternate: alternate\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"test\",\"consequent\"],\"body\":\"\\n      return {\\n        type: \\\"IfStatement\\\",\\n        test: test,\\n        consequent: consequent,\\n        alternate: null\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"body\",\"test\"],\"body\":\" return { type: \\\"DoWhileStatement\\\", body: body, test: test }; \"},{\"predicate\":false,\"params\":[\"test\",\"body\"],\"body\":\" return { type: \\\"WhileStatement\\\", test: test, body: body }; \"},{\"predicate\":false,\"params\":[\"init\",\"test\",\"update\",\"body\"],\"body\":\"\\n      return {\\n        type: \\\"ForStatement\\\",\\n        init: extractOptional(init, 0),\\n        test: extractOptional(test, 0),\\n        update: extractOptional(update, 0),\\n        body: body\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"declarations\",\"test\",\"update\",\"body\"],\"body\":\"\\n      return {\\n        type: \\\"ForStatement\\\",\\n        init: {\\n          type: \\\"VariableDeclaration\\\",\\n          declarations: declarations,\\n          kind: \\\"var\\\"\\n        },\\n        test: extractOptional(test, 0),\\n        update: extractOptional(update, 0),\\n        body: body\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"left\",\"right\",\"body\"],\"body\":\"\\n      return {\\n        type: \\\"ForInStatement\\\",\\n        left: left,\\n        right: right,\\n        body: body\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"declarations\",\"right\",\"body\"],\"body\":\"\\n      return {\\n        type: \\\"ForInStatement\\\",\\n        left: {\\n          type: \\\"VariableDeclaration\\\",\\n          declarations: declarations,\\n          kind: \\\"var\\\"\\n        },\\n        right: right,\\n        body: body\\n      };\\n    \"},{\"predicate\":false,\"params\":[],\"body\":\"\\n      return { type: \\\"ContinueStatement\\\", label: null };\\n    \"},{\"predicate\":false,\"params\":[\"label\"],\"body\":\"\\n      return { type: \\\"ContinueStatement\\\", label: label };\\n    \"},{\"predicate\":false,\"params\":[],\"body\":\"\\n      return { type: \\\"BreakStatement\\\", label: null };\\n    \"},{\"predicate\":false,\"params\":[\"label\"],\"body\":\"\\n      return { type: \\\"BreakStatement\\\", label: label };\\n    \"},{\"predicate\":false,\"params\":[],\"body\":\"\\n      return { type: \\\"ReturnStatement\\\", argument: null };\\n    \"},{\"predicate\":false,\"params\":[\"argument\"],\"body\":\"\\n      return { type: \\\"ReturnStatement\\\", argument: argument };\\n    \"},{\"predicate\":false,\"params\":[\"object\",\"body\"],\"body\":\" return { type: \\\"WithStatement\\\", object: object, body: body }; \"},{\"predicate\":false,\"params\":[\"discriminant\",\"cases\"],\"body\":\"\\n      return {\\n        type: \\\"SwitchStatement\\\",\\n        discriminant: discriminant,\\n        cases: cases\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"clauses\"],\"body\":\"\\n      return optionalList(extractOptional(clauses, 0));\\n    \"},{\"predicate\":false,\"params\":[\"before\",\"default_\",\"after\"],\"body\":\"\\n      return optionalList(extractOptional(before, 0))\\n        .concat(default_)\\n        .concat(optionalList(extractOptional(after, 0)));\\n    \"},{\"predicate\":false,\"params\":[\"test\",\"consequent\"],\"body\":\"\\n      return {\\n        type: \\\"SwitchCase\\\",\\n        test: test,\\n        consequent: optionalList(extractOptional(consequent, 1))\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"consequent\"],\"body\":\"\\n      return {\\n        type: \\\"SwitchCase\\\",\\n        test: null,\\n        consequent: optionalList(extractOptional(consequent, 1))\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"label\",\"body\"],\"body\":\"\\n      return { type: \\\"LabeledStatement\\\", label: label, body: body };\\n    \"},{\"predicate\":false,\"params\":[\"argument\"],\"body\":\"\\n      return { type: \\\"ThrowStatement\\\", argument: argument };\\n    \"},{\"predicate\":false,\"params\":[\"block\",\"handler\",\"finalizer\"],\"body\":\"\\n      return {\\n        type: \\\"TryStatement\\\",\\n        block: block,\\n        handler: handler,\\n        finalizer: finalizer\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"block\",\"handler\"],\"body\":\"\\n      return {\\n        type: \\\"TryStatement\\\",\\n        block: block,\\n        handler: handler,\\n        finalizer: null\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"block\",\"finalizer\"],\"body\":\"\\n      return {\\n        type: \\\"TryStatement\\\",\\n        block: block,\\n        handler: null,\\n        finalizer: finalizer\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"param\",\"body\"],\"body\":\"\\n      return {\\n        type: \\\"CatchClause\\\",\\n        param: param,\\n        body: body\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"block\"],\"body\":\" return block; \"},{\"predicate\":false,\"params\":[],\"body\":\" return { type: \\\"DebuggerStatement\\\" }; \"},{\"predicate\":false,\"params\":[\"id\",\"params\",\"body\"],\"body\":\"\\n      return {\\n        type: \\\"FunctionDeclaration\\\",\\n        id: id,\\n        params: optionalList(extractOptional(params, 0)),\\n        body: body\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"id\",\"params\",\"body\"],\"body\":\"\\n      return {\\n        type: \\\"FunctionExpression\\\",\\n        id: extractOptional(id, 0),\\n        params: optionalList(extractOptional(params, 0)),\\n        body: body\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"body\"],\"body\":\"\\n      return {\\n        type: \\\"BlockStatement\\\",\\n        body: optionalList(body)\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"body\"],\"body\":\"\\n      return {\\n        type: \\\"Program\\\",\\n        body: optionalList(body)\\n      };\\n    \"},{\"predicate\":false,\"params\":[\"head\",\"tail\"],\"body\":\"\\n      return buildList(head, tail, 1);\\n    \"}]}",
-  ),
+  ("arithmetics", example_arithmetics_source, example_arithmetics_program),
+  ("json", example_json_source, example_json_program),
+  ("css", example_css_source, example_css_program),
+  ("javascript", example_javascript_source, example_javascript_program),
 ]
 
 ///|

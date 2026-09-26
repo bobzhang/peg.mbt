@@ -45,6 +45,24 @@ function normalize(v) {
 function jsonLit(v) {
   return mbtString(JSON.stringify(normalize(v)));
 }
+// A multi-line MoonBit raw string expression for `s` (for large fixtures),
+// or an escaped literal when `s` cannot be written raw.
+function mbtMultiline(s, indent) {
+  if (/[\x00-\x08\x0b-\x1f\x7f\ud800-\udfff]/.test(s)) return mbtString(s);
+  return "(\n" + s.split("\n").map(line => indent + "#|" + line).join("\n") + "\n" + indent.slice(2) + ")";
+}
+// JSON with one line per entry of each top-level array (compact inside).
+function jsonMultiline(v, indent) {
+  v = normalize(v);
+  const fields = Object.keys(v).map(k => {
+    const x = v[k];
+    const body = Array.isArray(x)
+      ? "[\n" + x.map(e => "  " + JSON.stringify(e)).join(",\n") + "\n]"
+      : JSON.stringify(x);
+    return JSON.stringify(k) + ": " + body;
+  });
+  return mbtMultiline("{\n" + fields.join(",\n") + "\n}", indent);
+}
 function unique(records, key) {
   const seen = new Map();
   for (const r of records) {
@@ -244,16 +262,19 @@ test "compiler passes match PEG.js" {
 {
   const { compileInternals } = require("./dump");
   const out = [header("The compiler must produce the same programs as PEG.js for examples/*.pegjs.")];
-  out.push("///|", "let example_cases : Array[(String, String, String)] = [");
-  for (const name of ["arithmetics", "json", "css", "javascript"]) {
+  const names = ["arithmetics", "json", "css", "javascript"];
+  for (const name of names) {
     const source = fs.readFileSync(path.join(root, ".repos", "pegjs", "examples", name + ".pegjs"), "utf8");
     const { ast } = compileInternals(source);
     const program = {
       rules: ast.rules.map(r => ({ name: r.name, bytecode: r.bytecode })),
       literals: ast.literals, classes: ast.classes, expectations: ast.expectations, functions: ast.functions,
     };
-    out.push("  (" + mbtString(name) + ", " + mbtString(source) + ", " + jsonLit(program) + "),");
+    out.push("///|", "let example_" + name + "_source : String = " + mbtMultiline(source, "  "), "");
+    out.push("///|", "let example_" + name + "_program : String = " + jsonMultiline(program, "  "), "");
   }
+  out.push("///|", "let example_cases : Array[(String, String, String)] = [");
+  for (const name of names) out.push("  (" + mbtString(name) + ", example_" + name + "_source, example_" + name + "_program),");
   out.push("]", "");
   out.push(`///|
 test "example grammars compile to the same programs as PEG.js" {

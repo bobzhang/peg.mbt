@@ -96,3 +96,9 @@ pub fn Program::rule_index(self : Program, name : String) -> Int? {
   }
   None
 }
+
+///|
+pub extend ClassConst with ToJson::{to_json}
+
+///|
+pub extend FunctionConst with ToJson::{to_json}

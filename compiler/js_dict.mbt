@@ -34,11 +34,6 @@ fn[V] JsDict::get(self : JsDict[V], key : String) -> V? {
 }
 
 ///|
-fn[V] JsDict::has(self : JsDict[V], key : String) -> Bool {
-  self.map.contains(key)
-}
-
-///|
 /// Parses `key` as a JavaScript array index (canonical decimal < 2^32 - 1).
 fn array_index(key : String) -> Int64? {
   if key == "" ||

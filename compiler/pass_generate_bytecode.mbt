@@ -68,6 +68,7 @@ fn match_of(node : @ast.Node) -> Int {
 ///|
 /// Generates bytecode for every rule and stores the constant tables on the
 /// grammar.
+#warnings("-unused_error_type")
 pub fn[T] generate_bytecode(
   grammar : @ast.Grammar,
   session : Session[T],

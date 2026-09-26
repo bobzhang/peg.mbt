@@ -1,6 +1,7 @@
 ///|
 /// Marks the rules whose failures can be visible (`calc-report-failures.js`):
 /// start rules, and rules reachable from them outside named rules.
+#warnings("-unused_error_type")
 pub fn[T] calc_report_failures(
   grammar : @ast.Grammar,
   _session : Session[T],

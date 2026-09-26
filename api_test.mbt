@@ -202,7 +202,7 @@ test "plugin: can change options" {
 
 ///|
 test "unbound code blocks are rejected at generate time" {
-  let result = try generate("start = 'a' { nope }") catch {
+  let result = try (generate("start = 'a' { nope }") : Parser[Unit]) catch {
     @vm.UnboundCode(kind~, code~) => "\{kind}: \{code}"
     e => "other: \{e}"
   } noraise {

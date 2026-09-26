@@ -80,3 +80,6 @@ pub impl Show for ReferenceError with fn output(self, logger) {
   logger.write_string(name)
   logger.write_string(" is not defined")
 }
+
+///|
+pub extend SyntaxError with ToJson::{to_json}

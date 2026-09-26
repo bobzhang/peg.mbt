@@ -106,47 +106,6 @@ priv struct Run[T] {
 }
 
 ///|
-fn[T] slot_value(slot : @runtime.Slot[T]) -> Value[T] {
-  match slot {
-    Val(v) => v
-    Failed => abort("unexpected FAILED marker used as a value")
-    Pos(_) => abort("unexpected position used as a value")
-  }
-}
-
-///|
-fn[T] slot_pos(slot : @runtime.Slot[T]) -> Int {
-  match slot {
-    Pos(p) => p
-    _ => abort("expected a saved position on the stack")
-  }
-}
-
-///|
-fn starts_with_at(input : String, pos : Int, lit : String) -> Bool {
-  if pos + lit.length() > input.length() {
-    return false
-  }
-  for i in 0..<lit.length() {
-    if input.code_unit_at(pos + i) != lit.code_unit_at(i) {
-      return false
-    }
-  }
-  true
-}
-
-///|
-/// `input.substr(pos, n)`.
-fn substr(input : String, pos : Int, n : Int) -> String {
-  let end = if pos + n > input.length() { input.length() } else { pos + n }
-  if pos >= end {
-    ""
-  } else {
-    input.unsafe_substring(start=pos, end~)
-  }
-}
-
-///|
 fn[T] Run::call_function(
   self : Run[T],
   index : Int,
@@ -245,7 +204,7 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
           ip += 1
         }
         PopCurrPos => {
-          state.curr_pos = slot_pos(stack.pop().unwrap())
+          state.curr_pos = @runtime.slot_pos(stack.pop().unwrap())
           ip += 1
         }
         PopN => {
@@ -258,7 +217,7 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
           ip += 1
         }
         Append => {
-          let v = slot_value(stack.pop().unwrap())
+          let v = @runtime.slot_value(stack.pop().unwrap())
           match top() {
             Val(Arr(arr)) => arr.push(v)
             _ => abort("APPEND target is not an array")
@@ -268,13 +227,13 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
         Wrap => {
           let n = bc[ip + 1]
           let base = stack.length() - n
-          let values = Array::makei(n, i => slot_value(stack[base + i]))
+          let values = Array::makei(n, i => @runtime.slot_value(stack[base + i]))
           stack.truncate(base)
           stack.push(Val(Arr(values)))
           ip += 2
         }
         Text => {
-          let start = slot_pos(stack.pop().unwrap())
+          let start = @runtime.slot_pos(stack.pop().unwrap())
           stack.push(
             Val(Str(@runtime.js_substring(input, start, state.curr_pos))),
           )
@@ -285,17 +244,19 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
           let k = bc[ip + 2]
           let len = stack.length()
           let value = if k == 1 {
-            slot_value(stack[len - 1 - bc[ip + 3]])
+            @runtime.slot_value(stack[len - 1 - bc[ip + 3]])
           } else {
             Arr(
-              Array::makei(k, i => slot_value(stack[len - 1 - bc[ip + 3 + i]])),
+              Array::makei(k, i => {
+                @runtime.slot_value(stack[len - 1 - bc[ip + 3 + i]])
+              }),
             )
           }
           stack.truncate(len - n)
           stack.push(Val(value))
           ip += 3 + k
         }
-        If => condition(slot_value(top()).truthy(), 0)
+        If => condition(@runtime.slot_value(top()).truthy(), 0)
         IfError => condition(top() is Failed, 0)
         IfNotError => condition(!(top() is Failed), 0)
         WhileNotError => {
@@ -312,12 +273,16 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
         MatchAny => condition(input.length() > state.curr_pos, 0)
         MatchString =>
           condition(
-            starts_with_at(input, state.curr_pos, program.literals[bc[ip + 1]]),
+            @runtime.starts_with_at(
+              input,
+              state.curr_pos,
+              program.literals[bc[ip + 1]],
+            ),
             1,
           )
         MatchStringIc => {
           let lit = program.literals[bc[ip + 1]]
-          let chunk = substr(input, state.curr_pos, lit.length())
+          let chunk = @runtime.js_substr(input, state.curr_pos, lit.length())
           condition(@runtime.js_to_lower(chunk) == lit, 1)
         }
         MatchClass =>
@@ -327,7 +292,7 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
           )
         AcceptN => {
           let n = bc[ip + 1]
-          stack.push(Val(Str(substr(input, state.curr_pos, n))))
+          stack.push(Val(Str(@runtime.js_substr(input, state.curr_pos, n))))
           state.curr_pos += n
           ip += 2
         }
@@ -346,7 +311,9 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
           ip += 2
         }
         LoadSavedPos => {
-          state.saved_pos = slot_pos(stack[stack.length() - 1 - bc[ip + 1]])
+          state.saved_pos = @runtime.slot_pos(
+            stack[stack.length() - 1 - bc[ip + 1]],
+          )
           ip += 2
         }
         UpdateSavedPos => {
@@ -359,7 +326,7 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
           let pc = bc[ip + 3]
           let len = stack.length()
           let args = Array::makei(pc, i => {
-            slot_value(stack[len - 1 - bc[ip + 4 + i]])
+            @runtime.slot_value(stack[len - 1 - bc[ip + 4 + i]])
           })
           let value = self.call_function(
             f,

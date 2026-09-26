@@ -169,3 +169,9 @@ pub fn build_message(expected : Array[Expectation], found : String?) -> String {
   }
   "Expected " + describe_expected(expected) + " but " + found_desc + " found."
 }
+
+///|
+pub extend ClassPart with ToJson::{to_json}
+
+///|
+pub extend Expectation with ToJson::{to_json}

@@ -1,14 +1,14 @@
 import {
   "dii/peg/runtime",
-  "dii/peg/bytecode",
-  "dii/peg/ast",
   "dii/peg/vm",
   "dii/peg/parser",
   "dii/peg/compiler",
 }
 
 import {
+  "dii/peg/ast",
   "dii/peg/internal/fixture",
   "moonbitlang/core/string",
   "moonbitlang/core/double",
+  "moonbitlang/core/json",
 } for "test"

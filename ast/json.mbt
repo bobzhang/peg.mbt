@@ -130,3 +130,18 @@ pub impl ToJson for Grammar with fn to_json(self) {
   }
   Json::object(obj)
 }
+
+///|
+pub extend Node with ToJson::{to_json}
+
+///|
+pub extend Initializer with ToJson::{to_json}
+
+///|
+pub extend Rule with ToJson::{to_json}
+
+///|
+pub extend Comment with ToJson::{to_json}
+
+///|
+pub extend Grammar with ToJson::{to_json}

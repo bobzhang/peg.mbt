@@ -96,3 +96,9 @@ pub fn[T] Location::to_value(self : Location) -> Value[T] {
   obj["end"] = pos(self.end)
   Obj(obj)
 }
+
+///|
+pub extend Pos with ToJson::{to_json}
+
+///|
+pub extend Location with ToJson::{to_json}
