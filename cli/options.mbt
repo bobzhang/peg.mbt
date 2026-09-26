@@ -174,10 +174,15 @@ fn add_extra_options(
         }
       "features" =>
         match value {
-          Object(fs) =>
+          Object(fs) => {
+            // Like PEG.js' shallow option merge, a new object replaces the
+            // previous one.
+            let features : Map[String, Bool] = Map([])
             for name, enabled in fs {
-              options.features[name] = enabled is True
+              features[name] = enabled is True
             }
+            options.features = features
+          }
           _ => raise CliError("The option `features` must be an object.")
         }
       "parser" =>

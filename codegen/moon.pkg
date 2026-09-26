@@ -3,4 +3,5 @@ import {
   "dii/peg/bytecode",
   "dii/peg/ast",
   "dii/peg/compiler",
+  "moonbitlang/core/string",
 }

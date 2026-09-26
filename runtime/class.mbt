@@ -20,20 +20,75 @@ fn part_code(s : String) -> Int {
 }
 
 ///|
+/// The code-unit ranges denoted by class parts.
+///
+/// PEG.js turns parts into the source of a regexp class, escaping every
+/// character. An empty range endpoint (produced by a line continuation, as
+/// in `[a-\<newline>]`) leaves a bare `-` in that source, which the regexp
+/// parser then combines with its neighbours; such classes are re-parsed the
+/// way V8 does. (A range out of order makes V8 reject the regexp, failing
+/// `generate`; here it matches nothing.)
+fn class_ranges(parts : ArrayView[ClassPart]) -> Array[(Int, Int)] {
+  let has_empty = parts
+    .iter()
+    .any(part => {
+      match part {
+        Char(c) => c == ""
+        Range(a, b) => a == "" || b == ""
+      }
+    })
+  if !has_empty {
+    return parts.map(part => {
+      match part {
+        Char(c) => {
+          let x = part_code(c)
+          (x, x)
+        }
+        Range(a, b) => (part_code(a), part_code(b))
+      }
+    })
+  }
+  // Tokens: a code unit, or -1 for a bare dash.
+  let tokens : Array[Int] = []
+  for part in parts {
+    match part {
+      Char(c) => if c != "" { tokens.push(part_code(c)) }
+      Range(a, b) => {
+        if a != "" {
+          tokens.push(part_code(a))
+        }
+        tokens.push(-1)
+        if b != "" {
+          tokens.push(part_code(b))
+        }
+      }
+    }
+  }
+  let dash = '-'.to_int()
+  let atom = (t : Int) => if t < 0 { dash } else { t }
+  let ranges = []
+  for i = 0; i < tokens.length(); {
+    let a = atom(tokens[i])
+    if i + 2 < tokens.length() && tokens[i + 1] == -1 {
+      let b = atom(tokens[i + 2])
+      if a <= b {
+        ranges.push((a, b))
+      }
+      continue i + 3
+    }
+    ranges.push((a, a))
+    continue i + 1
+  }
+  ranges
+}
+
+///|
 pub fn ClassMatcher::new(
   parts : ArrayView[ClassPart],
   inverted~ : Bool,
   ignore_case~ : Bool,
 ) -> ClassMatcher {
-  let raw = parts.map(part => {
-    match part {
-      Char(c) => {
-        let x = part_code(c)
-        (x, x)
-      }
-      Range(a, b) => (part_code(a), part_code(b))
-    }
-  })
+  let raw = class_ranges(parts)
   raw.sort_by_key(r => r.0)
   let ranges : Array[(Int, Int)] = []
   for r in raw {

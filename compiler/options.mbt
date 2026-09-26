@@ -131,3 +131,33 @@ pub fn[T] Options::start_rules(
     None => [grammar.rules[0].name]
   }
 }
+
+///|
+pub fn ParserOptions::copy(self : ParserOptions) -> ParserOptions {
+  {
+    reserved_words: self.reserved_words.map(words => words.copy()),
+    extract_comments: self.extract_comments,
+    filename: self.filename,
+  }
+}
+
+///|
+/// A copy that can be modified without affecting `self` (like PEG.js'
+/// `processOptions`, which builds a fresh options object).
+pub fn[T] Options::copy(self : Options[T]) -> Options[T] {
+  {
+    allowed_start_rules: self.allowed_start_rules.map(rules => rules.copy()),
+    cache: self.cache,
+    optimize: self.optimize,
+    output: self.output,
+    trace: self.trace,
+    features: self.features.copy(),
+    header: self.header.copy(),
+    parser: self.parser.copy(),
+    actions: self.actions.copy(),
+    initializer: self.initializer,
+    value_type: self.value_type,
+    name_prefix: self.name_prefix,
+    extra: self.extra.copy(),
+  }
+}

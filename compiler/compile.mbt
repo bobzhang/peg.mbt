@@ -65,16 +65,19 @@ pub fn[T] compile(
   session : Session[T],
   options : Options[T],
 ) -> Compiled[T] raise {
+  // Resolve defaults on a copy, leaving the caller's options untouched.
+  let options = options.copy()
   options.allowed_start_rules = Some(options.start_rules(grammar))
-  for
-    stage in [
-      session.passes.check,
-      session.passes.transform,
-      session.passes.generate,
-    ] {
-    for pass in stage {
-      (pass.run)(grammar, session, options)
-    }
+  // Each stage is looked up when it starts, so a pass may replace the
+  // passes of later stages.
+  for pass in session.passes.check.copy() {
+    (pass.run)(grammar, session, options)
+  }
+  for pass in session.passes.transform.copy() {
+    (pass.run)(grammar, session, options)
+  }
+  for pass in session.passes.generate.copy() {
+    (pass.run)(grammar, session, options)
   }
   match options.output {
     Parser => Parser((session.backend)(grammar, session, options))

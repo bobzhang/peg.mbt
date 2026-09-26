@@ -500,21 +500,19 @@ fn[T] Machine::run(
     trace=program.trace,
     features=program.features,
     run=(state, start) => {
-      // The initializer runs per parse, after start rule validation.
-      let bindings = match self.initializer {
-        Some(init) => {
-          let dynamic = init(@runtime.ActionContext::new(state, [][:], [][:]))
-          let merged = self.static_bindings.copy()
-          for k, v in dynamic {
-            merged[k] = v
-          }
-          merged
-        }
-        None => self.static_bindings
+      // The initializer runs per parse, after start rule validation. Its
+      // bindings take precedence over the static ones.
+      let dynamic = match self.initializer {
+        Some(init) => init(@runtime.ActionContext::new(state, [][:], [][:]))
+        None => Map([])
       }
       let functions = []
       for i, f in program.functions {
-        match lookup_binding(bindings, i, f.body) {
+        let binding = match lookup_binding(dynamic, i, f.body) {
+          Some(impl_) => Some(impl_)
+          None => lookup_binding(self.static_bindings, i, f.body)
+        }
+        match binding {
           Some(impl_) => functions.push(impl_)
           None =>
             raise UnboundCode(

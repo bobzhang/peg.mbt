@@ -91,6 +91,7 @@ pub fn[T] generate_source(
   options? : Options[T] = Options::new(),
   plugins? : Array[Plugin[T]] = [],
 ) -> String raise {
+  let options = options.copy()
   options.output = Source
   if options.parser.reserved_words is None {
     options.parser.reserved_words = Some(@codegen.reserved_words())

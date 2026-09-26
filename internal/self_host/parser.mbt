@@ -95,6 +95,12 @@ fn peg_actions(ctx : @runtime.ActionContext[Meta]) -> PegActions raise {
 
   PegActions::{
     f0: fn(initializer : PegValue, rules : PegValue) -> PegValue raise {
+      let ctx = @runtime.ActionContext::new(
+        ctx.state,
+        ["initializer", "rules"][:],
+        [initializer, rules][:],
+      )
+
       let init = match initializer {
         Custom(I(i)) => Some(i)
         _ => None
@@ -117,6 +123,8 @@ fn peg_actions(ctx : @runtime.ActionContext[Meta]) -> PegActions raise {
       )
     },
     f1: fn(code : PegValue) -> PegValue raise {
+      let ctx = @runtime.ActionContext::new(ctx.state, ["code"][:], [code][:])
+
       Custom(I({ code: str(code), location: ctx.location(), }))
     },
     f2: fn(
@@ -124,6 +132,12 @@ fn peg_actions(ctx : @runtime.ActionContext[Meta]) -> PegActions raise {
       display_name : PegValue,
       expression : PegValue,
     ) -> PegValue raise {
+      let ctx = @runtime.ActionContext::new(
+        ctx.state,
+        ["name", "display_name", "expression"][:],
+        [name, display_name, expression][:],
+      )
+
       let expression = if display_name.truthy() {
         @ast.Node::new(
           Named(name=str(display_name), node(expression)),
@@ -163,6 +177,8 @@ fn peg_actions(ctx : @runtime.ActionContext[Meta]) -> PegActions raise {
       create_node(Labeled(label=Some(str(label)), pick=false, node(expression)))
     },
     f8: fn(name : PegValue) -> PegValue raise {
+      let ctx = @runtime.ActionContext::new(ctx.state, ["name"][:], [name][:])
+
       if reserved.contains(str(name)) {
         ctx.error(
           "Label can't be a reserved word \"" + str(name) + "\".",
@@ -202,6 +218,7 @@ fn peg_actions(ctx : @runtime.ActionContext[Meta]) -> PegActions raise {
     f15: fn() -> PegValue raise { Str("zero_or_more") },
     f16: fn() -> PegValue raise { Str("one_or_more") },
     f17: fn(e : PegValue) -> PegValue raise {
+
       // The purpose of the "group" AST node is just to isolate label scope.
       match node(e).kind {
         Labeled(_, ..) | Sequence(_) => create_node(Group(node(e)))
@@ -256,6 +273,12 @@ fn peg_actions(ctx : @runtime.ActionContext[Meta]) -> PegActions raise {
       )
     },
     f28: fn(begin : PegValue, end : PegValue) -> PegValue raise {
+      let ctx = @runtime.ActionContext::new(
+        ctx.state,
+        ["begin", "end"][:],
+        [begin, end][:],
+      )
+
       let (b, e) = (str(begin), str(end))
       if b != "" && e != "" && b.code_unit_at(0) > e.code_unit_at(0) {
         ctx.error("Invalid character range: " + ctx.text() + ".")

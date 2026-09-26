@@ -162,7 +162,7 @@ Conventions for code blocks:
   identifiers (lowercase, not keywords).
 - Predicates (`&{ }`, `!{ }`) return a `Bool` or a `PegValue` (truthiness).
 - `ctx : @runtime.ActionContext[T]` provides `text()`, `location()`, `error()`,
-  and the other helpers.
+  the other helpers, and `ctx.label(name)`.
 - The initializer is pasted into a per-parse function. It must fall through
   (no `return`), and generated names start with `peg_` / `Peg`.
 - As in PEG.js, code blocks end at the first unbalanced `}`, even when that
@@ -185,6 +185,9 @@ several parsers can share a package).
   and MoonBit keywords are the default reserved words.
 - An action referring to an out-of-scope label raises `ReferenceError` at
   runtime; in generated source it is a compile error.
+- A class whose line continuations produce an out-of-order regexp range
+  (e.g. `[z\<newline>-a]`) makes PEG.js' `generate` fail on the invalid
+  regexp; here that range matches nothing.
 
 ## Packages
 

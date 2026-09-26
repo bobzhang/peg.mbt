@@ -16,4 +16,5 @@ warnings = "-implicit_impl_as_method"
 
 import {
   "moonbitlang/x@0.5.5",
+  "moonbitlang/async@0.22.4",
 }

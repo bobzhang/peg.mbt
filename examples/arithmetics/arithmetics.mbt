@@ -140,6 +140,7 @@ let peg_e7 : @runtime.Expectation = @runtime.Expectation::Other(
 )
 
 ///|
+#warnings("-unused_field")
 priv struct PegParser {
   state : @runtime.State[Unit]
   actions : PegActions
@@ -492,7 +493,7 @@ let peg_parser : @vm.Parser[Unit] = @vm.Parser::from_fn((input, options, tracer)
       default_tracer: true,
     },
     run=(state, start) => {
-      let p = {
+      let p = PegParser::{
         state,
         actions: peg_actions(@runtime.ActionContext::new(state, [][:], [][:])),
       }

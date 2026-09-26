@@ -79,6 +79,7 @@ pub(all) struct Options[T] {
   mut name_prefix : String
   extra : Map[String, Json]
 }
+pub fn[T] Options::copy(Self[T]) -> Self[T]
 pub fn[T] Options::new(allowed_start_rules? : Array[String], cache? : Bool, optimize? : Optimize, output? : Output, trace? : Bool, features? : Map[String, Bool], header? : Array[String], parser? : ParserOptions, actions? : Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise], initializer? : (@runtime.ActionContext[T]) -> Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise] raise, value_type? : String, name_prefix? : String, extra? : Map[String, Json]) -> Self[T]
 pub fn[T] Options::runtime_features(Self[T]) -> @runtime.Features
 pub fn[T] Options::start_rules(Self[T], @ast.Grammar) -> Array[String]
@@ -94,6 +95,7 @@ pub(all) struct ParserOptions {
   mut extract_comments : Bool
   mut filename : String?
 } derive(@debug.Debug)
+pub fn ParserOptions::copy(Self) -> Self
 pub fn ParserOptions::new(reserved_words? : Array[String], extract_comments? : Bool, filename? : String) -> Self
 
 pub(all) struct Pass[T] {
