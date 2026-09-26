@@ -373,3 +373,10 @@ pub fn parse(
     _ => abort("meta parser: expected a grammar")
   }
 }
+
+///|
+/// The frozen program the grammar parser runs (exposed for self-hosting
+/// tests).
+pub fn meta_program_for_testing() -> @bytecode.Program {
+  meta_program
+}

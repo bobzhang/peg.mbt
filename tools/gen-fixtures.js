@@ -239,3 +239,54 @@ test "compiler passes match PEG.js" {
   fs.writeFileSync(path.join(root, "generate_fixture_test.mbt"), out.join("\n") + "\n");
   console.log("generate cases:", cases.size, "parse cases:", parseCount, "skipped (plugins/source/context):", skipped);
 }
+
+// ---- example grammars: compiled programs ------------------------------------
+{
+  const { compileInternals } = require("./dump");
+  const out = [header("The compiler must produce the same programs as PEG.js for examples/*.pegjs.")];
+  out.push("///|", "let example_cases : Array[(String, String, String)] = [");
+  for (const name of ["arithmetics", "json", "css", "javascript"]) {
+    const source = fs.readFileSync(path.join(root, ".repos", "pegjs", "examples", name + ".pegjs"), "utf8");
+    const { ast } = compileInternals(source);
+    const program = {
+      rules: ast.rules.map(r => ({ name: r.name, bytecode: r.bytecode })),
+      literals: ast.literals, classes: ast.classes, expectations: ast.expectations, functions: ast.functions,
+    };
+    out.push("  (" + mbtString(name) + ", " + mbtString(source) + ", " + jsonLit(program) + "),");
+  }
+  out.push("]", "");
+  out.push(`///|
+test "example grammars compile to the same programs as PEG.js" {
+  for c in example_cases {
+    let (name, source, expected_text) = c
+    let session : @compiler.Session[Unit] = @compiler.Session::new(parser=(
+      input,
+      _,
+    ) => @parser.parse(input))
+    let captured : Ref[@bytecode.Program?] = Ref(None)
+    session.backend = (grammar, session, options) => {
+      captured.val = Some(@compiler.program_of(grammar, session, options))
+      @vm.Parser::from_fn((_, _, _) => Undefined)
+    }
+    @compiler.compile(@parser.parse(source), session, @compiler.Options::new())
+    |> ignore
+    let p = captured.val.unwrap()
+    let actual : Json = {
+      "rules": Json::array(
+        p.rules.map(r => { "name": r.name.to_json(), "bytecode": r.bytecode.to_json() }),
+      ),
+      "literals": p.literals.to_json(),
+      "classes": p.classes.to_json(),
+      "expectations": Json::array(p.expectations.map(@bytecode.expectation_const_json)),
+      "functions": p.functions.to_json(),
+    }
+    let expected = @json.parse(expected_text)
+    if @fixture.normalize(actual) != expected {
+      fail("program for \\{name} differs")
+    }
+  }
+}
+`);
+  fs.writeFileSync(path.join(root, "compiler", "examples_fixture_test.mbt"), out.join("\n"));
+  console.log("example grammars: 4");
+}
