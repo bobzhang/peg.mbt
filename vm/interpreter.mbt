@@ -471,8 +471,8 @@ fn[T] Machine::run(
     None => self.static_bindings
   }
   let functions = []
-  for f in program.functions {
-    match lookup_binding(bindings, f.body) {
+  for i, f in program.functions {
+    match lookup_binding(bindings, i, f.body) {
       Some(impl_) => functions.push(impl_)
       None =>
         raise UnboundCode(
@@ -504,8 +504,8 @@ pub fn[T] Parser::from_program(
     raise UnboundCode(kind="initializer", code~)
   }
   if initializer is None {
-    for f in program.functions {
-      if lookup_binding(actions, f.body) is None {
+    for i, f in program.functions {
+      if lookup_binding(actions, i, f.body) is None {
         raise UnboundCode(
           kind=if f.predicate { "predicate" } else { "action" },
           code=f.body,

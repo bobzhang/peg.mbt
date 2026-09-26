@@ -67,12 +67,27 @@ pub impl Show for UnboundCode with fn output(self, logger) {
 }
 
 ///|
-/// Looks up the implementation of a code block: by exact body first, then by
-/// the body with surrounding whitespace trimmed (so a grammar can simply say
-/// `{ makeNumber }`).
-pub fn[V] lookup_binding(bindings : Map[String, V], body : String) -> V? {
-  match bindings.get(body) {
+/// Looks up the implementation of code block number `index` (its position
+/// in `Program::functions`) with source text `body`. Keys are tried in order:
+///
+/// 1. `"#<index>"` — exact, but specific to one compilation of the grammar;
+/// 2. the exact body text;
+/// 3. the body with surrounding whitespace trimmed (so a grammar can simply
+///    say `{ makeNumber }`).
+///
+/// Identical bodies with different labels in scope share a text key, so
+/// actions bound by text should read labels by name (`ActionContext::label`).
+pub fn[V] lookup_binding(
+  bindings : Map[String, V],
+  index : Int,
+  body : String,
+) -> V? {
+  match bindings.get("#\{index}") {
     Some(f) => Some(f)
-    None => bindings.get(body.trim().to_owned())
+    None =>
+      match bindings.get(body) {
+        Some(f) => Some(f)
+        None => bindings.get(body.trim().to_owned())
+      }
   }
 }

@@ -65,10 +65,56 @@ peg.parser.parse = function (input, options) {
   return record({ kind: "meta", input, options: encode(options) }, () => origMetaParse.call(this, input, options));
 };
 
+// Direct compiler-pass invocations (the pass unit specs):
+//   {"kind":"pass", name, grammar, options, ruleProps, ok, result|error, warnings}
+let inGenerate = 0;
+const origSessionParse = peg.compiler.Session.prototype.parse;
+peg.compiler.Session.prototype.parse = function (input, options) {
+  this.__grammar = input;
+  return origSessionParse.call(this, input, options);
+};
+for (const stage of Object.keys(peg.compiler.passes)) {
+  const passes = peg.compiler.passes[stage];
+  for (const name of Object.keys(passes)) {
+    const pass = passes[name];
+    if (name === "generateJS") continue;
+    passes[name] = function (ast, session, options) {
+      if (inGenerate > 0 || typeof session.__grammar !== "string") return pass.call(this, ast, session, options);
+      const warnings = [];
+      const origWarn = session.warn;
+      session.warn = function (message, location) {
+        warnings.push({ message, location: encode(location) });
+        return origWarn.call(this, message, location);
+      };
+      const base = {
+        kind: "pass", name, grammar: session.__grammar, options: encode(options),
+        ruleProps: ast.rules.map(r => ({ reportFailures: r.reportFailures })),
+      };
+      try {
+        pass.call(this, ast, session, options);
+        emit(Object.assign(base, { ok: true, result: encode(ast), warnings }));
+      } catch (e) {
+        emit(Object.assign(base, { ok: false, error: encodeError(e), warnings }));
+        throw e;
+      } finally {
+        session.warn = origWarn;
+      }
+    };
+  }
+}
+
 let nextId = 0;
 const origGenerate = peg.generate;
 peg.generate = function (grammar, options) {
   const id = nextId++;
+  inGenerate++;
+  try {
+    return generateImpl(id, grammar, options);
+  } finally {
+    inGenerate--;
+  }
+};
+function generateImpl(id, grammar, options) {
   const base = { kind: "generate", id, grammar, options: encode(options) };
   let parser;
   try {
@@ -85,4 +131,4 @@ peg.generate = function (grammar, options) {
     };
   }
   return parser;
-};
+}
