@@ -1,0 +1,10 @@
+import {
+  "dii/peg/runtime",
+  "dii/peg/vm",
+  "dii/peg/bytecode",
+}
+
+import {
+  "dii/peg/internal/fixture",
+  "moonbitlang/core/json",
+} for "test"

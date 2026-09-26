@@ -5,7 +5,6 @@
 ///|
 priv struct RuleCompiler {
   program : @bytecode.Program
-  rule_index : Int
   rule_name : String
   mut sp : Int
   mut max_sp : Int
@@ -300,7 +299,6 @@ fn rule_function(program : @bytecode.Program, index : Int) -> String raise {
   let rule = program.rules[index]
   let compiler : RuleCompiler = {
     program,
-    rule_index: index,
     rule_name: rule.name,
     sp: -1,
     max_sp: -1,

@@ -42,3 +42,67 @@ pub fn normalize(j : Json) -> Json {
     _ => j
   }
 }
+
+///|
+/// Decodes a value encoded by tools/harvest.js (`{"$": "undefined"}` for
+/// `undefined`).
+pub fn value_of_json(j : Json) -> @runtime.Value[Unit] {
+  match j {
+    Null => Null
+    True => Bool(true)
+    False => Bool(false)
+    Number(n, ..) => Num(n)
+    String(s) => Str(s)
+    Array(xs) => Arr(xs.map(value_of_json))
+    Object(m) =>
+      match m.get("$") {
+        Some(String("undefined")) => Undefined
+        _ => {
+          let r : Map[String, @runtime.Value[Unit]] = Map([])
+          for k, v in m {
+            r[k] = value_of_json(v)
+          }
+          Obj(r)
+        }
+      }
+  }
+}
+
+///|
+/// Parse options encoded by tools/harvest.js, without the tracer.
+pub fn parse_options(text : String) -> Map[String, @runtime.Value[Unit]] {
+  let json = @json.parse(text) catch { _ => Json::null() }
+  let options = match value_of_json(json) {
+    Obj(m) => m
+    _ => Map([])
+  }
+  options.remove("tracer")
+  options
+}
+
+///|
+/// JSON of an error in the shape recorded by tools/harvest.js. A thrown
+/// non-error (`throw 'Boom!'`, emulated with `fail`) has no name or message.
+pub fn error_json(e : Error) -> Json {
+  match e {
+    @runtime.SyntaxError(_) as e => e.to_json()
+    @runtime.ReferenceError(_) as e =>
+      { "name": "ReferenceError", "message": e.to_string() }
+    @runtime.InvalidStartRule(_) as e =>
+      { "name": "Error", "message": e.to_string() }
+    Failure(_) => {}
+    e => { "name": "unexpected", "message": "\{e}" }
+  }
+}
+
+///|
+/// Runs a generated or interpreted parse and returns its outcome as fixture
+/// JSON: `{"ok": value}` or `{"error": ...}`, normalized.
+pub fn outcome(f : () -> @runtime.Value[Unit] raise) -> Json {
+  let j : Json = try f() catch {
+    e => { "error": error_json(e) }
+  } noraise {
+    v => { "ok": v.to_json_with(_ => Json::null()) }
+  }
+  normalize(j)
+}

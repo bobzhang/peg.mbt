@@ -187,18 +187,18 @@ fn actions_factory(program : @bytecode.Program, value_type : String) -> String {
     "fn \u{E000}peg_actions(ctx : @runtime.ActionContext[\{value_type}]) -> \u{E001}PegActions raise {",
   )
   if program.initializer is Some(code) {
-    lines.push(code)
+    lines.push(indent(code, 2))
   }
   lines.push("  \u{E001}PegActions::{")
   for i, f in program.functions {
     let params = f.params.map(p => p + " : \u{E001}PegValue").join(", ")
     if f.predicate {
       lines.push(
-        "    f\{i}: fn(\{params}) -> Bool raise { @runtime.truthy((fn() raise {\{f.body}\n})()) },",
+        "    f\{i}: fn(\{params}) -> Bool raise { @runtime.truthy((fn() raise {\{indent(f.body, 6)}\n    })()) },",
       )
     } else {
       lines.push(
-        "    f\{i}: fn(\{params}) -> \u{E001}PegValue raise {\{f.body}\n},",
+        "    f\{i}: fn(\{params}) -> \u{E001}PegValue raise {\{indent(f.body, 6)}\n    },",
       )
     }
   }
@@ -233,6 +233,7 @@ fn speed_parser(
     lines.push("")
   }
   lines.push("///|")
+  lines.push("#warnings(\"-unused_field\")")
   lines.push("priv struct \u{E001}PegParser {")
   lines.push("  state : @runtime.State[\{value_type}]")
   lines.push("  actions : \u{E001}PegActions")
@@ -260,7 +261,7 @@ fn speed_parser(
   lines.push("  features=" + features_literal(program.features) + ",")
   lines.push("  run=(state, start) => {")
   lines.push(
-    "    let p = { state, actions: \u{E000}peg_actions(@runtime.ActionContext::new(state, [][:], [][:])) }",
+    "    let p = \u{E001}PegParser::{ state, actions: \u{E000}peg_actions(@runtime.ActionContext::new(state, [][:], [][:])) }",
   )
   lines.push("    state.begin()")
   lines.push("    match start {")
@@ -289,7 +290,11 @@ fn size_parser(program : @bytecode.Program, value_type : String) -> String {
   )
   lines.push("  \u{E000}peg_program,")
   lines.push("  initializer=ctx => {")
-  lines.push("    let a = \u{E000}peg_actions(ctx)")
+  if program.functions.is_empty() {
+    lines.push("    \u{E000}peg_actions(ctx) |> ignore")
+  } else {
+    lines.push("    let a = \u{E000}peg_actions(ctx)")
+  }
   lines.push("    {")
   for i, f in program.functions {
     let args = []
@@ -297,10 +302,11 @@ fn size_parser(program : @bytecode.Program, value_type : String) -> String {
       args.push("c.args[\{j}]")
     }
     let call = "(a.f\{i})(" + args.join(", ") + ")"
+    let param = if args.is_empty() { "_" } else { "c" }
     if f.predicate {
-      lines.push("      \"#\{i}\": c => Bool(\{call}),")
+      lines.push("      \"#\{i}\": \{param} => Bool(\{call}),")
     } else {
-      lines.push("      \"#\{i}\": c => \{call},")
+      lines.push("      \"#\{i}\": \{param} => \{call},")
     }
   }
   lines.push("    }")
@@ -340,7 +346,9 @@ pub fn generate_source(
   parts.push(
     "///|\n/// Values produced by the parser.\npub type \u{E001}PegValue = @runtime.Value[\{value_type}]",
   )
-  parts.push("///|\ntype \u{E001}PegSlot = @runtime.Slot[\{value_type}]")
+  if !size {
+    parts.push("///|\ntype \u{E001}PegSlot = @runtime.Slot[\{value_type}]")
+  }
   parts.push(actions_factory(program, value_type))
   parts.push(
     if size {

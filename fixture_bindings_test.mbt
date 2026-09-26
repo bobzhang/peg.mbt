@@ -13,10 +13,10 @@ struct GenerateCase {
 }
 
 ///|
-type V = Value[Unit]
+type V = @peg.Value[Unit]
 
 ///|
-type Ctx = ActionContext[Unit]
+type Ctx = @peg.ActionContext[Unit]
 
 ///|
 /// Stands in for `throw 'Boom!'`.
@@ -93,7 +93,7 @@ fn js_strict_equal(a : V, b : V) -> Bool {
 }
 
 ///|
-fn fixed_location() -> Location {
+fn fixed_location() -> @peg.Location {
   {
     filename: None,
     start: { offset: 1, line: 1, column: 2, },
@@ -130,12 +130,12 @@ fn reduce_arith(ctx : Ctx, plus : String, minus : String) -> V raise {
 
 ///|
 /// Stateless code blocks, keyed by their (trimmed) JavaScript text.
-fn label_action(name : String) -> ActionFn[Unit] {
+fn label_action(name : String) -> @peg.ActionFn[Unit] {
   ctx => ctx.label(name)
 }
 
 ///|
-fn static_bindings() -> Map[String, ActionFn[Unit]] {
+fn static_bindings() -> Map[String, @peg.ActionFn[Unit]] {
   let l = label_action
   {
     "return 'a';": _ => Str("a"),
@@ -206,7 +206,7 @@ fn static_bindings() -> Map[String, ActionFn[Unit]] {
 ///|
 /// Initializer blocks, keyed by their trimmed JavaScript text. Each returns
 /// the per-parse bindings of the code blocks that share its state.
-fn initializer_bindings() -> Map[String, InitFn[Unit]] {
+fn initializer_bindings() -> Map[String, @peg.InitFn[Unit]] {
   {
     "var n = 0;": _ => {
       let n = Ref(0.0)
@@ -321,7 +321,7 @@ test "generate and generated parsers match PEG.js" {
   }
 
   for c in generate_cases {
-    let options : Options[Unit] = Options::new(
+    let options : @peg.Options[Unit] = @peg.Options::new(
       allowed_start_rules?=c.start,
       cache=c.cache,
       trace=c.trace,
@@ -334,7 +334,7 @@ test "generate and generated parsers match PEG.js" {
       if ast.initializer is Some(init) {
         options.initializer = initializers.get(init.code.trim().to_owned())
       }
-      generate(c.grammar, options~)
+      @peg.generate(c.grammar, options~)
     } catch {
       e => {
         let actual = @fixture.normalize({ "error": error_json(e) })
@@ -358,7 +358,7 @@ test "generate and generated parsers match PEG.js" {
         Obj(m) => m
         _ => {}
       }
-      let tracer : Tracer[Unit]? = if c.trace {
+      let tracer : @peg.Tracer[Unit]? = if c.trace {
         Some({ trace: _ => (), })
       } else {
         None
