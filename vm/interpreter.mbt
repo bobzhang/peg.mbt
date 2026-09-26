@@ -103,6 +103,40 @@ priv struct Run[T] {
   machine : Machine[T]
   state : @runtime.State[T]
   functions : Array[ActionFn[T]]
+  /// The machine stack, shared by all rule activations (each works above its
+  /// own base).
+  stack : Array[@runtime.Slot[T]]
+  /// Saved instruction pointers / block ends of the enclosing blocks.
+  ips : Array[Int]
+  ends : Array[Int]
+}
+
+///|
+let empty_expectations : Array[@runtime.Expectation] = []
+
+///|
+/// Enters the then/else block of a condition instruction starting at `ip`
+/// (with `args_length` operands), saving the current block on `ips`/`ends`.
+/// Returns the new `(ip, end)`.
+fn branch(
+  bc : Array[Int],
+  ip : Int,
+  end : Int,
+  cond : Bool,
+  args_length : Int,
+  ips : Array[Int],
+  ends : Array[Int],
+) -> (Int, Int) {
+  let base = args_length + 3
+  let then_length = bc[ip + base - 2]
+  let else_length = bc[ip + base - 1]
+  ends.push(end)
+  ips.push(ip + base + then_length + else_length)
+  if cond {
+    (ip + base, ip + base + then_length)
+  } else {
+    (ip + base + then_length, ip + base + then_length + else_length)
+  }
 }
 
 ///|
@@ -125,7 +159,11 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
   let bc = rule.code
   let ops = rule.ops
   let start_pos = state.curr_pos
-  let rule_expectations : Array[@runtime.Expectation] = []
+  let rule_expectations : Array[@runtime.Expectation] = if program.cache {
+    []
+  } else {
+    empty_expectations
+  }
   if program.trace {
     state.trace(RuleEnter, rule.name, start_pos)
   }
@@ -146,31 +184,13 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
       return entry.result
     }
   }
-  let stack : Array[@runtime.Slot[T]] = []
-  let ips : Array[Int] = []
-  let ends : Array[Int] = []
+  let stack = self.stack
+  let ips = self.ips
+  let ends = self.ends
+  let stack_base = stack.length()
+  let ends_base = ends.length()
   let mut ip = 0
   let mut end = bc.length()
-  fn top() {
-    stack[stack.length() - 1]
-  }
-
-  // Pushes the current block, then continues in the then/else branch.
-  fn condition(cond : Bool, args_length : Int) {
-    let base = args_length + 3
-    let then_length = bc[ip + base - 2]
-    let else_length = bc[ip + base - 1]
-    ends.push(end)
-    ips.push(ip + base + then_length + else_length)
-    if cond {
-      end = ip + base + then_length
-      ip += base
-    } else {
-      end = ip + base + then_length + else_length
-      ip += base + then_length
-    }
-  }
-
   let input = state.input
   while true {
     while ip < end {
@@ -218,7 +238,7 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
         }
         Append => {
           let v = @runtime.slot_value(stack.pop().unwrap())
-          match top() {
+          match stack[stack.length() - 1] {
             Val(Arr(arr)) => arr.push(v)
             _ => abort("APPEND target is not an array")
           }
@@ -256,12 +276,48 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
           stack.push(Val(value))
           ip += 3 + k
         }
-        If => condition(@runtime.slot_value(top()).truthy(), 0)
-        IfError => condition(top() is Failed, 0)
-        IfNotError => condition(!(top() is Failed), 0)
+        If => {
+          let (next_ip, next_end) = branch(
+            bc,
+            ip,
+            end,
+            @runtime.slot_value(stack[stack.length() - 1]).truthy(),
+            0,
+            ips,
+            ends,
+          )
+          ip = next_ip
+          end = next_end
+        }
+        IfError => {
+          let (next_ip, next_end) = branch(
+            bc,
+            ip,
+            end,
+            stack[stack.length() - 1] is Failed,
+            0,
+            ips,
+            ends,
+          )
+          ip = next_ip
+          end = next_end
+        }
+        IfNotError => {
+          let (next_ip, next_end) = branch(
+            bc,
+            ip,
+            end,
+            !(stack[stack.length() - 1] is Failed),
+            0,
+            ips,
+            ends,
+          )
+          ip = next_ip
+          end = next_end
+        }
         WhileNotError => {
           let body_length = bc[ip + 1]
-          if !(top() is Failed) {
+          if !(stack[stack.length() - 1] is Failed) {
             ends.push(end)
             ips.push(ip)
             end = ip + 2 + body_length
@@ -270,26 +326,64 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
             ip += 2 + body_length
           }
         }
-        MatchAny => condition(input.length() > state.curr_pos, 0)
-        MatchString =>
-          condition(
+        MatchAny => {
+          let (next_ip, next_end) = branch(
+            bc,
+            ip,
+            end,
+            input.length() > state.curr_pos,
+            0,
+            ips,
+            ends,
+          )
+          ip = next_ip
+          end = next_end
+        }
+        MatchString => {
+          let (next_ip, next_end) = branch(
+            bc,
+            ip,
+            end,
             @runtime.starts_with_at(
               input,
               state.curr_pos,
               program.literals[bc[ip + 1]],
             ),
             1,
+            ips,
+            ends,
           )
+          ip = next_ip
+          end = next_end
+        }
         MatchStringIc => {
           let lit = program.literals[bc[ip + 1]]
           let chunk = @runtime.js_substr(input, state.curr_pos, lit.length())
-          condition(@runtime.js_to_lower(chunk) == lit, 1)
+          let (next_ip, next_end) = branch(
+            bc,
+            ip,
+            end,
+            @runtime.js_to_lower(chunk) == lit,
+            1,
+            ips,
+            ends,
+          )
+          ip = next_ip
+          end = next_end
         }
-        MatchClass =>
-          condition(
+        MatchClass => {
+          let (next_ip, next_end) = branch(
+            bc,
+            ip,
+            end,
             machine.classes[bc[ip + 1]].matches_at(input, state.curr_pos),
             1,
+            ips,
+            ends,
           )
+          ip = next_ip
+          end = next_end
+        }
         AcceptN => {
           let n = bc[ip + 1]
           stack.push(Val(Str(@runtime.js_substr(input, state.curr_pos, n))))
@@ -363,14 +457,15 @@ fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
           )
       }
     }
-    if ends.length() > 0 {
+    if ends.length() > ends_base {
       end = ends.pop().unwrap()
       ip = ips.pop().unwrap()
     } else {
       break
     }
   }
-  let result = stack[0]
+  let result = stack[stack_base]
+  stack.truncate(stack_base)
   if program.cache {
     state.cache_store(index, start_pos, result, rule_expectations)
   }
@@ -428,7 +523,14 @@ fn[T] Machine::run(
             )
         }
       }
-      let run = { machine: self, state, functions, }
+      let run = {
+        machine: self,
+        state,
+        functions,
+        stack: [],
+        ips: [],
+        ends: [],
+      }
       state.begin()
       run.parse_rule(program.rule_index(start).unwrap())
     },

@@ -2,7 +2,10 @@
 /// A compiled character class, equivalent to the `/^[...]/i?` regexps PEG.js
 /// generates. It tests a single UTF-16 code unit.
 pub struct ClassMatcher {
+  /// Sorted, merged, inclusive code-unit ranges.
   priv ranges : Array[(Int, Int)]
+  /// Membership of the ASCII code units, one bit per unit.
+  priv ascii : FixedArray[UInt64]
   priv inverted : Bool
   priv ignore_case : Bool
 }
@@ -22,7 +25,7 @@ pub fn ClassMatcher::new(
   inverted~ : Bool,
   ignore_case~ : Bool,
 ) -> ClassMatcher {
-  let ranges = parts.map(part => {
+  let raw = parts.map(part => {
     match part {
       Char(c) => {
         let x = part_code(c)
@@ -31,17 +34,49 @@ pub fn ClassMatcher::new(
       Range(a, b) => (part_code(a), part_code(b))
     }
   })
-  { ranges, inverted, ignore_case, }
+  raw.sort_by_key(r => r.0)
+  let ranges : Array[(Int, Int)] = []
+  for r in raw {
+    if r.0 > r.1 {
+      continue
+    }
+    match ranges.last() {
+      Some(last) if r.0 <= last.1 + 1 =>
+        if r.1 > last.1 {
+          ranges[ranges.length() - 1] = (last.0, r.1)
+        }
+      _ => ranges.push(r)
+    }
+  }
+  let ascii : FixedArray[UInt64] = FixedArray::make(2, 0)
+  for r in ranges {
+    let start = if r.0 < 0 { 0 } else { r.0 }
+    for c = start; c <= r.1 && c < 128; c = c + 1 {
+      ascii[c >> 6] = ascii[c >> 6] | (1UL << (c & 63))
+    }
+  }
+  { ranges, ascii, inverted, ignore_case, }
 }
 
 ///|
 fn ClassMatcher::contains(self : ClassMatcher, c : Int) -> Bool {
-  for r in self.ranges {
-    if c >= r.0 && c <= r.1 {
+  if c >= 0 && c < 128 {
+    return ((self.ascii[c >> 6] >> (c & 63)) & 1UL) != 0UL
+  }
+  let ranges = self.ranges
+  for lo = 0, hi = ranges.length(); lo < hi; {
+    let mid = lo + (hi - lo) / 2
+    let r = ranges[mid]
+    if c < r.0 {
+      continue lo, mid
+    } else if c > r.1 {
+      continue mid + 1, hi
+    } else {
       return true
     }
+  } nobreak {
+    false
   }
-  false
 }
 
 ///|
