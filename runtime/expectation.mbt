@@ -6,7 +6,7 @@ pub(all) enum ClassPart {
 } derive(Eq, Debug)
 
 ///|
-pub impl ToJson for ClassPart with to_json(self) {
+pub impl ToJson for ClassPart with fn to_json(self) {
   match self {
     Char(c) => c.to_json()
     Range(a, b) => [a.to_json(), b.to_json()]
@@ -25,10 +25,14 @@ pub(all) enum Expectation {
 } derive(Eq, Debug)
 
 ///|
-pub impl ToJson for Expectation with to_json(self) {
+pub impl ToJson for Expectation with fn to_json(self) {
   match self {
     Literal(text~, ignore_case~) =>
-      { "type": "literal", "text": text.to_json(), "ignoreCase": ignore_case.to_json() }
+      {
+        "type": "literal",
+        "text": text.to_json(),
+        "ignoreCase": ignore_case.to_json(),
+      }
     Class(parts~, inverted~, ignore_case~) =>
       {
         "type": "class",
@@ -121,9 +125,11 @@ pub fn Expectation::describe(self : Expectation) -> String {
     Literal(text~, ..) => "\"" + literal_escape(text) + "\""
     Class(parts~, inverted~, ..) => {
       // JS coerces the escaped-parts array to a string, joining with ",".
-      let escaped = parts.map(part => match part {
-        Char(c) => class_escape(c)
-        Range(a, b) => class_escape(a) + "-" + class_escape(b)
+      let escaped = parts.map(part => {
+        match part {
+          Char(c) => class_escape(c)
+          Range(a, b) => class_escape(a) + "-" + class_escape(b)
+        }
       })
       "[" + (if inverted { "^" } else { "" }) + escaped.join(",") + "]"
     }

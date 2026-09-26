@@ -1,0 +1,4 @@
+import {
+  "dii/peg/runtime",
+  "dii/peg/bytecode",
+}

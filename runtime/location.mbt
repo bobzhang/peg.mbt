@@ -16,12 +16,12 @@ pub(all) struct Location {
 } derive(Eq, Debug)
 
 ///|
-pub impl ToJson for Pos with to_json(self) {
+pub impl ToJson for Pos with fn to_json(self) {
   { "offset": self.offset, "line": self.line, "column": self.column }
 }
 
 ///|
-pub impl ToJson for Location with to_json(self) {
+pub impl ToJson for Location with fn to_json(self) {
   let obj : Map[String, Json] = Map([])
   if self.filename is Some(f) {
     obj["filename"] = f.to_json()
@@ -42,13 +42,13 @@ pub struct PosCache {
 
 ///|
 pub fn PosCache::new(input : String, filename? : String) -> PosCache {
-  { input, details: { 0: (1, 1) }, filename }
+  { input, details: { 0: (1, 1) }, filename, }
 }
 
 ///|
 pub fn PosCache::pos(self : PosCache, offset : Int) -> Pos {
   match self.details.get(offset) {
-    Some((line, column)) => { offset, line, column }
+    Some((line, column)) => { offset, line, column, }
     None => {
       let mut p = offset - 1
       while !self.details.contains(p) {
@@ -67,16 +67,12 @@ pub fn PosCache::pos(self : PosCache, offset : Int) -> Pos {
         p += 1
       }
       self.details[offset] = (line, column)
-      { offset, line, column }
+      { offset, line, column, }
     }
   }
 }
 
 ///|
-pub fn PosCache::location(
-  self : PosCache,
-  start : Int,
-  end : Int,
-) -> Location {
-  { filename: self.filename, start: self.pos(start), end: self.pos(end) }
+pub fn PosCache::location(self : PosCache, start : Int, end : Int) -> Location {
+  { filename: self.filename, start: self.pos(start), end: self.pos(end), }
 }
