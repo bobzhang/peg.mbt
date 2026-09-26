@@ -140,7 +140,7 @@ pub fn js_canonicalize(ch : Int) -> Int {
 /// Inverse of `js_canonicalize`: canonical value -> code units mapping to it
 /// (excluding identity mappings, which callers check directly).
 let canon_inverse : Map[Int, Array[Int]] = {
-  let m : Map[Int, Array[Int]] = {}
+  let m : Map[Int, Array[Int]] = Map([])
   for i, k in canon_keys {
     let v = canon_vals[i]
     match m.get(v) {

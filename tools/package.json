@@ -1,0 +1,11 @@
+{
+  "name": "peg-mbt-tools",
+  "private": true,
+  "description": "Reference-implementation harness for the MoonBit port of PEG.js",
+  "dependencies": {
+    "chai": "4.2.0",
+    "chai-like": "1.1.1",
+    "mocha": "6.2.2",
+    "sinon": "7.5.0"
+  }
+}
