@@ -3,6 +3,7 @@ import {
   "dii/peg/vm",
   "dii/peg/parser",
   "dii/peg/compiler",
+  "dii/peg/codegen",
 }
 
 import {

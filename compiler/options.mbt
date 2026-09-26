@@ -53,6 +53,12 @@ pub(all) struct Options[T] {
   mut actions : Map[String, @runtime.ActionFn[T]]
   /// Implementation of the grammar's initializer block.
   mut initializer : @runtime.InitFn[T]?
+  /// Payload type `T` of `Value[T]` in generated MoonBit source (a MoonBit
+  /// type expression; default `Unit`).
+  mut value_type : String
+  /// Prefix of the top-level names in generated MoonBit source (lets several
+  /// generated parsers share a package).
+  mut name_prefix : String
   /// Free-form options for plugins.
   extra : Map[String, Json]
 }
@@ -69,6 +75,8 @@ pub fn[T] Options::new(
   parser? : ParserOptions = ParserOptions::new(),
   actions? : Map[String, @runtime.ActionFn[T]] = {},
   initializer? : @runtime.InitFn[T],
+  value_type? : String = "Unit",
+  name_prefix? : String = "",
   extra? : Map[String, Json] = {},
 ) -> Options[T] {
   {
@@ -82,6 +90,8 @@ pub fn[T] Options::new(
     parser,
     actions,
     initializer,
+    value_type,
+    name_prefix,
     extra,
   }
 }

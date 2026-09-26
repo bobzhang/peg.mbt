@@ -214,7 +214,7 @@ fn RuleCompiler::compile(
       let lit = program.literals[bc[ip + 1]]
       condition(
         if lit.length() > 1 {
-          "@runtime.starts_with_at(input, state.curr_pos, peg_c\{bc[ip + 1]})"
+          "@runtime.starts_with_at(input, state.curr_pos, \u{E000}peg_c\{bc[ip + 1]})"
         } else {
           "@runtime.code_unit_is(input, state.curr_pos, \{lit.code_unit_at(0).to_int()})"
         },
@@ -222,11 +222,14 @@ fn RuleCompiler::compile(
       )
     } else if code == op.match_string_ic {
       condition(
-        "@runtime.matches_ignore_case_at(input, state.curr_pos, peg_c\{bc[ip + 1]})",
+        "@runtime.matches_ignore_case_at(input, state.curr_pos, \u{E000}peg_c\{bc[ip + 1]})",
         1,
       )
     } else if code == op.match_class {
-      condition("peg_r\{bc[ip + 1]}.matches_at(input, state.curr_pos)", 1)
+      condition(
+        "\u{E000}peg_r\{bc[ip + 1]}.matches_at(input, state.curr_pos)",
+        1,
+      )
     } else if code == op.accept_n {
       let n = bc[ip + 1]
       parts.push(
@@ -236,13 +239,13 @@ fn RuleCompiler::compile(
       ip += 2
     } else if code == op.accept_string {
       let i = bc[ip + 1]
-      parts.push(self.push("Val(Str(peg_c\{i}))"))
+      parts.push(self.push("Val(Str(\u{E000}peg_c\{i}))"))
       parts.push("state.curr_pos += \{program.literals[i].length()}")
       ip += 2
     } else if code == op.expect {
-      parts.push("state.rule_expects(peg_e\{bc[ip + 1]})")
+      parts.push("state.rule_expects(\u{E000}peg_e\{bc[ip + 1]})")
       if program.cache {
-        parts.push("rule_expectations.push(peg_e\{bc[ip + 1]})")
+        parts.push("rule_expectations.push(\u{E000}peg_e\{bc[ip + 1]})")
       }
       ip += 2
     } else if code == op.load_saved_pos {
@@ -268,7 +271,7 @@ fn RuleCompiler::compile(
       parts.push(self.push(value))
       ip += 4 + params_length
     } else if code == op.rule {
-      parts.push(self.push("peg_parse_\{bc[ip + 1]}(p)"))
+      parts.push(self.push("\u{E000}peg_parse_\{bc[ip + 1]}(p)"))
       ip += 2
     } else if code == op.silent_fails_on {
       parts.push("state.silent_fails += 1")
@@ -307,8 +310,10 @@ fn rule_function(program : @bytecode.Program, index : Int) -> String raise {
   let lines = []
   lines.push("///|")
   lines.push("/// Rule \{name}.")
-  lines.push("#warnings(\"-unused_value\")")
-  lines.push("fn peg_parse_\{index}(p : PegParser) -> PegSlot raise {")
+  lines.push("#warnings(\"-unused_value-unused_error_type-unused_mut\")")
+  lines.push(
+    "fn \u{E000}peg_parse_\{index}(p : \u{E001}PegParser) -> \u{E001}PegSlot raise {",
+  )
   lines.push("  let state = p.state")
   lines.push("  let input = state.input")
   lines.push("  let start_pos = state.curr_pos")
@@ -329,7 +334,7 @@ fn rule_function(program : @bytecode.Program, index : Int) -> String raise {
     lines.push("  }")
   }
   for i in 0..<=compiler.max_sp {
-    lines.push("  let mut s\{i} : PegSlot = Failed")
+    lines.push("  let mut s\{i} : \u{E001}PegSlot = Failed")
   }
   for line in body {
     lines.push("  " + line)

@@ -35,9 +35,10 @@ pub using @compiler {
 pub type Plugin[T] = (Session[T], Options[T]) -> Unit raise
 
 ///|
-/// A session with the standard grammar parser and passes.
+/// A session with the standard grammar parser and passes, including the
+/// `generateMoonBit` source generation pass.
 pub fn[T] new_session() -> Session[T] {
-  Session::new(parser=(input, options) => {
+  let session = Session::new(parser=(input, options) => {
     @parser.parse(
       input,
       reserved_words?=options.reserved_words,
@@ -45,6 +46,11 @@ pub fn[T] new_session() -> Session[T] {
       filename?=options.filename,
     )
   })
+  session.passes.generate.push({
+    name: "generateMoonBit",
+    run: @codegen.generate_moonbit,
+  })
+  session
 }
 
 ///|
@@ -71,5 +77,32 @@ pub fn[T] generate(
       raise @compiler.CompilerError(
         "generate() returns a parser; use output=Parser (source generation is not available through generate)",
       )
+  }
+}
+
+///|
+/// Generates the MoonBit source of a parser for `grammar`, whose code blocks
+/// contain MoonBit code (see the `codegen` package for the conventions).
+///
+/// Labels may not be MoonBit keywords unless `options.parser.reserved_words`
+/// says otherwise. Raises like `generate`.
+pub fn[T] generate_source(
+  grammar : String,
+  options? : Options[T] = Options::new(),
+  plugins? : Array[Plugin[T]] = [],
+) -> String raise {
+  options.output = Source
+  if options.parser.reserved_words is None {
+    options.parser.reserved_words = Some(@codegen.reserved_words())
+  }
+  let session : Session[T] = new_session()
+  for plugin in plugins {
+    plugin(session, options)
+  }
+  let ast = session.parse(grammar, options.parser)
+  match @compiler.compile(ast, session, options) {
+    Source(code) => code
+    Parser(_) =>
+      raise @compiler.CompilerError("generate_source() requires output=Source")
   }
 }

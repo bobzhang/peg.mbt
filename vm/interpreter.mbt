@@ -397,61 +397,42 @@ fn[T] Machine::run(
   tracer : Tracer[T]?,
 ) -> Value[T] raise {
   let program = self.program
-  let start_index = match options.get("startRule") {
-    Some(Str(name)) =>
-      match program.allowed_start_rules.contains(name) {
-        true => program.rule_index(name).unwrap()
-        false => raise @runtime.InvalidStartRule(name)
-      }
-    Some(other) => raise @runtime.InvalidStartRule(other.js_string())
-    None => program.rule_index(program.allowed_start_rules[0]).unwrap()
-  }
-  let tracer = if program.trace {
-    match tracer {
-      Some(t) => Some(t)
-      None =>
-        if program.features.default_tracer {
-          Some(Tracer::default())
-        } else {
-          Some(Tracer::{ trace: _ => (), })
-        }
-    }
-  } else {
-    None
-  }
-  let state = @runtime.State::new(
+  @runtime.drive(
     input,
-    options~,
+    options,
+    tracer,
+    allowed_start_rules=program.allowed_start_rules[:],
+    trace=program.trace,
     features=program.features,
-    tracer?,
-  )
-  // The initializer runs per parse, after start rule validation.
-  let bindings = match self.initializer {
-    Some(init) => {
-      let dynamic = init(@runtime.ActionContext::new(state, [][:], [][:]))
-      let merged = self.static_bindings.copy()
-      for k, v in dynamic {
-        merged[k] = v
+    run=(state, start) => {
+      // The initializer runs per parse, after start rule validation.
+      let bindings = match self.initializer {
+        Some(init) => {
+          let dynamic = init(@runtime.ActionContext::new(state, [][:], [][:]))
+          let merged = self.static_bindings.copy()
+          for k, v in dynamic {
+            merged[k] = v
+          }
+          merged
+        }
+        None => self.static_bindings
       }
-      merged
-    }
-    None => self.static_bindings
-  }
-  let functions = []
-  for i, f in program.functions {
-    match lookup_binding(bindings, i, f.body) {
-      Some(impl_) => functions.push(impl_)
-      None =>
-        raise UnboundCode(
-          kind=if f.predicate { "predicate" } else { "action" },
-          code=f.body,
-        )
-    }
-  }
-  let run = { machine: self, state, functions, }
-  state.begin()
-  let result = run.parse_rule(start_index)
-  state.finish(result)
+      let functions = []
+      for i, f in program.functions {
+        match lookup_binding(bindings, i, f.body) {
+          Some(impl_) => functions.push(impl_)
+          None =>
+            raise UnboundCode(
+              kind=if f.predicate { "predicate" } else { "action" },
+              code=f.body,
+            )
+        }
+      }
+      let run = { machine: self, state, functions, }
+      state.begin()
+      run.parse_rule(program.rule_index(start).unwrap())
+    },
+  )
 }
 
 ///|
