@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/peg/cli"
+package "bobzhang/peg/cli"
 
 import {
   "moonbitlang/core/debug",

@@ -1,7 +1,7 @@
 import {
-  "dii/peg/runtime",
-  "dii/peg/bytecode",
-  "dii/peg/ast",
-  "dii/peg/compiler",
+  "bobzhang/peg/runtime",
+  "bobzhang/peg/bytecode",
+  "bobzhang/peg/ast",
+  "bobzhang/peg/compiler",
   "moonbitlang/core/string",
 }

@@ -1,0 +1,7 @@
+# Development-only files, not packaged for mooncakes.io.
+.repos/
+_build/
+.mooncakes/
+node_modules/
+tools/
+internal/codegen_corpus/

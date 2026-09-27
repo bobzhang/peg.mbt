@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/peg/bytecode"
+package "bobzhang/peg/bytecode"
 
 import {
-  "dii/peg/runtime",
+  "bobzhang/peg/runtime",
   "moonbitlang/core/debug",
 }
 

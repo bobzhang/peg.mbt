@@ -1,12 +1,12 @@
 import {
-  "dii/peg/runtime",
-  "dii/peg/bytecode",
-  "dii/peg/ast",
-  "dii/peg/vm",
+  "bobzhang/peg/runtime",
+  "bobzhang/peg/bytecode",
+  "bobzhang/peg/ast",
+  "bobzhang/peg/vm",
 }
 
 import {
-  "dii/peg/internal/fixture",
-  "dii/peg/compiler",
+  "bobzhang/peg/internal/fixture",
+  "bobzhang/peg/compiler",
   "moonbitlang/core/json",
 } for "test"

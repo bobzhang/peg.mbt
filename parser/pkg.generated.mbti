@@ -1,9 +1,9 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/peg/parser"
+package "bobzhang/peg/parser"
 
 import {
-  "dii/peg/ast",
-  "dii/peg/bytecode",
+  "bobzhang/peg/ast",
+  "bobzhang/peg/bytecode",
 }
 
 // Values

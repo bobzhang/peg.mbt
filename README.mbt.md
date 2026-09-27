@@ -1,5 +1,7 @@
 # peg.mbt
 
+[![CI](https://github.com/bobzhang/peg.mbt/actions/workflows/ci.yml/badge.svg)](https://github.com/bobzhang/peg.mbt/actions/workflows/ci.yml)
+
 A MoonBit port of [PEG.js](https://github.com/pegjs/pegjs) (dev branch, v0.11.0,
 commit `b7b87ea`): a parser generator based on parsing expression grammars.
 
@@ -151,7 +153,7 @@ moon run --target native cmd/pegmbt -- sum.pegjs        # writes sum.mbt
 
 The generated file defines `pub fn parse(input, start_rule?, filename?,
 tracer?, options?) -> PegValue raise` and belongs to a package importing
-`"dii/peg/runtime"` and `"dii/peg/vm"` (plus `"dii/peg/bytecode"` with
+`"bobzhang/peg/runtime"` and `"bobzhang/peg/vm"` (plus `"bobzhang/peg/bytecode"` with
 `-O size`). Types and helper functions can live in sibling files of that
 package. See `examples/arithmetics` and `examples/json`.
 
@@ -193,15 +195,15 @@ several parsers can share a package).
 
 | Package | Contents |
 | --- | --- |
-| `dii/peg` | `generate`, `generate_source`, `new_session`, re-exports |
-| `dii/peg/runtime` | `Value`, locations, expectations, errors, parse state, JS string semantics |
-| `dii/peg/bytecode` | opcodes and compiled `Program`s |
-| `dii/peg/ast` | grammar AST (JSON-compatible with PEG.js') |
-| `dii/peg/parser` | the grammar parser (frozen bytecode of `src/parser.pegjs`) |
-| `dii/peg/compiler` | session, options and all compiler passes |
-| `dii/peg/vm` | the bytecode interpreter |
-| `dii/peg/codegen` | MoonBit source generation |
-| `dii/peg/cli`, `cmd/pegmbt` | the command-line tool (native) |
+| `bobzhang/peg` | `generate`, `generate_source`, `new_session`, re-exports |
+| `bobzhang/peg/runtime` | `Value`, locations, expectations, errors, parse state, JS string semantics |
+| `bobzhang/peg/bytecode` | opcodes and compiled `Program`s |
+| `bobzhang/peg/ast` | grammar AST (JSON-compatible with PEG.js') |
+| `bobzhang/peg/parser` | the grammar parser (frozen bytecode of `src/parser.pegjs`) |
+| `bobzhang/peg/compiler` | session, options and all compiler passes |
+| `bobzhang/peg/vm` | the bytecode interpreter |
+| `bobzhang/peg/codegen` | MoonBit source generation |
+| `bobzhang/peg/cli`, `cmd/pegmbt` | the command-line tool (native) |
 
 ## Development
 
@@ -218,6 +220,9 @@ harness around it. Install the harness with `npm install` in `tools/`:
 - `tools/gen-program.js`, `tools/gen-self-host.js`, `tools/gen-unicode.js`:
   produce the frozen meta-grammar program, the self-hosted grammar and the case
   tables.
+
+- `tools/regenerate.sh`: rebuilds every generated file from the pinned
+  reference; CI checks that the result matches the repository.
 
 ```bash
 moon test --target all

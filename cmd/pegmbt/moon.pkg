@@ -1,7 +1,7 @@
 import {
-  "dii/peg",
-  "dii/peg/cli",
-  "dii/peg/codegen",
+  "bobzhang/peg",
+  "bobzhang/peg/cli",
+  "bobzhang/peg/codegen",
   "moonbitlang/x/fs",
   "moonbitlang/x/sys",
   "moonbitlang/async",

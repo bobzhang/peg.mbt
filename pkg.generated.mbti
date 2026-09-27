@@ -1,10 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/peg"
+package "bobzhang/peg"
 
 import {
-  "dii/peg/compiler",
-  "dii/peg/runtime",
-  "dii/peg/vm",
+  "bobzhang/peg/compiler",
+  "bobzhang/peg/runtime",
+  "bobzhang/peg/vm",
 }
 
 // Values

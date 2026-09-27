@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/peg/internal/fixture"
+package "bobzhang/peg/internal/fixture"
 
 import {
-  "dii/peg/runtime",
+  "bobzhang/peg/runtime",
 }
 
 // Values

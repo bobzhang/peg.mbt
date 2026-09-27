@@ -1,11 +1,11 @@
 import {
-  "dii/peg/runtime",
-  "dii/peg/vm",
-  "dii/peg/ast",
-  "dii/peg/parser",
+  "bobzhang/peg/runtime",
+  "bobzhang/peg/vm",
+  "bobzhang/peg/ast",
+  "bobzhang/peg/parser",
 }
 
 import {
-  "dii/peg/internal/fixture",
+  "bobzhang/peg/internal/fixture",
   "moonbitlang/core/json",
 } for "test"

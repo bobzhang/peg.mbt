@@ -1,6 +1,6 @@
 import {
-  "dii/peg",
-  "dii/peg/runtime",
-  "dii/peg/compiler",
+  "bobzhang/peg",
+  "bobzhang/peg/runtime",
+  "bobzhang/peg/compiler",
   "moonbitlang/core/json",
 }

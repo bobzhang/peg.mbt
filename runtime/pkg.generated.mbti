@@ -1,5 +1,5 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/peg/runtime"
+package "bobzhang/peg/runtime"
 
 import {
   "moonbitlang/core/debug",

@@ -1,5 +1,5 @@
 import {
-  "dii/peg/runtime",
-  "dii/peg/vm",
+  "bobzhang/peg/runtime",
+  "bobzhang/peg/vm",
   "moonbitlang/core/string",
 }

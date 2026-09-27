@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Toolchain versions
+        run: moon version --all
+
+      - name: Fetch dependencies
+        run: moon update && moon install
+
+      - name: Check (all targets)
+        run: moon check --target all
+
+      - name: Formatting and interfaces are up to date
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          moon fmt --check
+          moon info
+          git diff --exit-code
+
+      - name: Test (all targets)
+        run: moon test --target all
+
+      - name: pegmbt smoke test
+        run: |
+          moon build --target native cmd/pegmbt
+          printf "start = 'a'+ { Arr([]) }\n" \
+            | _build/native/debug/build/cmd/pegmbt/pegmbt.exe -o - \
+            | grep -q "pub fn parse("
+
+  reproduce:
+    # Every generated file (fixtures, frozen meta-grammar program, Unicode
+    # tables, generated parsers) must be reproducible from the pinned
+    # reference PEG.js implementation.
+    name: generated files match reference PEG.js
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 25
+
+      - name: Install MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
+
+      - name: Regenerate
+        run: |
+          moon update
+          tools/regenerate.sh
+
+      - name: No differences
+        run: git diff --exit-code

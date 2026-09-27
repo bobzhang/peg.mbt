@@ -1,8 +1,8 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/peg/examples/json"
+package "bobzhang/peg/examples/json"
 
 import {
-  "dii/peg/runtime",
+  "bobzhang/peg/runtime",
 }
 
 // Values

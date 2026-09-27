@@ -1,11 +1,11 @@
 // Generated using `moon info`, DON'T EDIT IT
-package "dii/peg/compiler"
+package "bobzhang/peg/compiler"
 
 import {
-  "dii/peg/ast",
-  "dii/peg/bytecode",
-  "dii/peg/runtime",
-  "dii/peg/vm",
+  "bobzhang/peg/ast",
+  "bobzhang/peg/bytecode",
+  "bobzhang/peg/runtime",
+  "bobzhang/peg/vm",
   "moonbitlang/core/debug",
 }
 
