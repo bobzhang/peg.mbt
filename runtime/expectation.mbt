@@ -8,8 +8,8 @@ pub(all) enum ClassPart {
 ///|
 pub impl ToJson for ClassPart with fn to_json(self) {
   match self {
-    Char(c) => ToJson::to_json(c)
-    Range(a, b) => [ToJson::to_json(a), ToJson::to_json(b)]
+    Char(c) => Json(c)
+    Range(a, b) => [Json(a), Json(b)]
   }
 }
 
@@ -28,22 +28,17 @@ pub(all) enum Expectation {
 pub impl ToJson for Expectation with fn to_json(self) {
   match self {
     Literal(text~, ignore_case~) =>
-      {
-        "type": "literal",
-        "text": ToJson::to_json(text),
-        "ignoreCase": ToJson::to_json(ignore_case),
-      }
+      { "type": "literal", "text": Json(text), "ignoreCase": Json(ignore_case) }
     Class(parts~, inverted~, ignore_case~) =>
       {
         "type": "class",
-        "parts": ToJson::to_json(parts),
-        "inverted": ToJson::to_json(inverted),
-        "ignoreCase": ToJson::to_json(ignore_case),
+        "parts": Json(parts),
+        "inverted": Json(inverted),
+        "ignoreCase": Json(ignore_case),
       }
     Any => { "type": "any" }
     End => { "type": "end" }
-    Other(description~) =>
-      { "type": "other", "description": ToJson::to_json(description) }
+    Other(description~) => { "type": "other", "description": Json(description) }
     Not(e) => { "type": "not", "expected": e.to_json() }
   }
 }

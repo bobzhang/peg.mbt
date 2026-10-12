@@ -24,7 +24,7 @@ pub impl ToJson for Pos with fn to_json(self) {
 pub impl ToJson for Location with fn to_json(self) {
   let obj : Map[String, Json] = Map([])
   if self.filename is Some(f) {
-    obj["filename"] = ToJson::to_json(f)
+    obj["filename"] = Json(f)
   }
   obj["start"] = self.start.to_json()
   obj["end"] = self.end.to_json()

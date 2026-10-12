@@ -3005,17 +3005,14 @@ test "example grammars compile to the same programs as PEG.js" {
     let p = captured.val.unwrap()
     let actual : Json = {
       "rules": Json::array(
-        p.rules.map(r => {
-          "name": ToJson::to_json(r.name),
-          "bytecode": ToJson::to_json(r.bytecode),
-        }),
+        p.rules.map(r => { "name": Json(r.name), "bytecode": Json(r.bytecode) }),
       ),
-      "literals": ToJson::to_json(p.literals),
-      "classes": ToJson::to_json(p.classes),
+      "literals": Json(p.literals),
+      "classes": Json(p.classes),
       "expectations": Json::array(
         p.expectations.map(@bytecode.expectation_const_json),
       ),
-      "functions": ToJson::to_json(p.functions),
+      "functions": Json(p.functions),
     }
     let expected = @json.parse(expected_text)
     if @fixture.normalize(actual) != expected {
