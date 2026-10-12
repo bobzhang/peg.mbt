@@ -6,7 +6,7 @@ pub(all) struct Grammar {
   mut rules : Array[Rule]
   /// Comments keyed by start offset, in source order; `None` unless the
   /// `extractComments` option was set.
-  mut comments : Array[(Int, Comment)]?
+  mut comments : Array[(Int32, Comment)]?
   location : Location
   mut literals : Array[String]?
   mut classes : Array[@bytecode.ClassConst]?
@@ -20,7 +20,7 @@ pub(all) struct Grammar {
 pub fn Grammar::new(
   initializer : Initializer?,
   rules : Array[Rule],
-  comments : Array[(Int, Comment)]?,
+  comments : Array[(Int32, Comment)]?,
   location : Location,
 ) -> Grammar {
   {
@@ -48,7 +48,7 @@ pub fn Grammar::find_rule(self : Grammar, name : String) -> Rule? {
 
 ///|
 /// Index of the rule named `name`, or -1.
-pub fn Grammar::index_of_rule(self : Grammar, name : String) -> Int {
+pub fn Grammar::index_of_rule(self : Grammar, name : String) -> Int32 {
   for i, rule in self.rules {
     if rule.name == name {
       return i

@@ -44,13 +44,13 @@ pub fn fatal(message : String, location? : @runtime.Location) -> Unit raise {
 ///|
 pub fn[T] Session::new(
   parser~ : (String, ParserOptions) -> @ast.Grammar raise,
-  passes? : Passes[T] = default_passes(),
-  opcodes? : @bytecode.Opcodes = @bytecode.default_opcodes,
-  warn? : (String, @runtime.Location?) -> Unit = (_, _) => (),
-  error? : (String, @runtime.Location?) -> Unit raise = (m, l) => {
+  passes~ : Passes[T] = default_passes(),
+  opcodes~ : @bytecode.Opcodes = @bytecode.default_opcodes,
+  warn~ : (String, @runtime.Location?) -> Unit = (_, _) => (),
+  error~ : (String, @runtime.Location?) -> Unit raise = (m, l) => {
     fatal(m, location?=l)
   },
-  backend? : (@ast.Grammar, Session[T], Options[T]) -> @vm.Parser[T] raise = interpreter_backend,
+  backend~ : (@ast.Grammar, Session[T], Options[T]) -> @vm.Parser[T] raise = interpreter_backend,
 ) -> Session[T] {
   { parser, passes, opcodes, warn, error, backend, }
 }

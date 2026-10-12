@@ -41,7 +41,7 @@ priv enum Op {
 
 ///|
 /// Maps opcode numbers of `ops` to interpreter operations.
-fn decode_table(ops : @bytecode.Opcodes) -> Map[Int, Op] {
+fn decode_table(ops : @bytecode.Opcodes) -> Map[Int32, Op] {
   Map::from_array([
     (ops.push_empty_string, PushEmptyString),
     (ops.push_undefined, PushUndefined),
@@ -83,7 +83,7 @@ fn decode_table(ops : @bytecode.Opcodes) -> Map[Int, Op] {
 /// A rule's bytecode with opcodes pre-decoded.
 priv struct DecodedRule {
   name : String
-  code : Array[Int]
+  code : Array[Int32]
   ops : Array[Op]
 }
 
@@ -107,8 +107,8 @@ priv struct Run[T] {
   /// own base).
   stack : Array[@runtime.Slot[T]]
   /// Saved instruction pointers / block ends of the enclosing blocks.
-  ips : Array[Int]
-  ends : Array[Int]
+  ips : Array[Int32]
+  ends : Array[Int32]
 }
 
 ///|
@@ -119,14 +119,14 @@ let empty_expectations : Array[@runtime.Expectation] = []
 /// (with `args_length` operands), saving the current block on `ips`/`ends`.
 /// Returns the new `(ip, end)`.
 fn branch(
-  bc : Array[Int],
-  ip : Int,
-  end : Int,
+  bc : Array[Int32],
+  ip : Int32,
+  end : Int32,
   cond : Bool,
-  args_length : Int,
-  ips : Array[Int],
-  ends : Array[Int],
-) -> (Int, Int) {
+  args_length : Int32,
+  ips : Array[Int32],
+  ends : Array[Int32],
+) -> (Int32, Int32) {
   let base = args_length + 3
   let then_length = bc[ip + base - 2]
   let else_length = bc[ip + base - 1]
@@ -142,7 +142,7 @@ fn branch(
 ///|
 fn[T] Run::call_function(
   self : Run[T],
-  index : Int,
+  index : Int32,
   params : ArrayView[String],
   args : Array[Value[T]],
 ) -> Value[T] raise {
@@ -151,7 +151,7 @@ fn[T] Run::call_function(
 }
 
 ///|
-fn[T] Run::parse_rule(self : Run[T], index : Int) -> @runtime.Slot[T] raise {
+fn[T] Run::parse_rule(self : Run[T], index : Int32) -> @runtime.Slot[T] raise {
   let machine = self.machine
   let program = machine.program
   let state = self.state
@@ -545,7 +545,7 @@ fn[T] Machine::run(
 /// parse time for bindings the initializer is expected to provide).
 pub fn[T] Parser::from_program(
   program : @bytecode.Program,
-  actions? : Map[String, ActionFn[T]] = {},
+  actions~ : Map[String, ActionFn[T]] = {},
   initializer? : InitFn[T],
 ) -> Parser[T] raise UnboundCode {
   if program.initializer is Some(code) && initializer is None {
