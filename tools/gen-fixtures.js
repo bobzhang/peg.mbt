@@ -172,7 +172,7 @@ test "compiler passes match PEG.js" {
     let warnings : Array[Json] = []
     let session : @compiler.Session[Unit] = @compiler.Session::new(
       parser=(input, _) => @parser.parse(input),
-      warn=(message, _) => warnings.push(message.to_json()),
+      warn=(message, _) => warnings.push(Json(message)),
     )
     let options : @compiler.Options[Unit] = @compiler.Options::new()
     options.allowed_start_rules = start_rules
@@ -294,12 +294,12 @@ test "example grammars compile to the same programs as PEG.js" {
     let p = captured.val.unwrap()
     let actual : Json = {
       "rules": Json::array(
-        p.rules.map(r => { "name": r.name.to_json(), "bytecode": r.bytecode.to_json() }),
+        p.rules.map(r => { "name": Json(r.name), "bytecode": Json(r.bytecode) }),
       ),
-      "literals": p.literals.to_json(),
-      "classes": p.classes.to_json(),
+      "literals": Json(p.literals),
+      "classes": Json(p.classes),
       "expectations": Json::array(p.expectations.map(@bytecode.expectation_const_json)),
-      "functions": p.functions.to_json(),
+      "functions": Json(p.functions),
     }
     let expected = @json.parse(expected_text)
     if @fixture.normalize(actual) != expected {

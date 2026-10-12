@@ -7,7 +7,7 @@
 /// the `peg$FAILED` marker. Actions never observe `Failed` or `Pos`.
 pub(all) enum Slot[T] {
   Failed
-  Pos(Int)
+  Pos(Int32)
   Val(Value[T])
 } derive(Eq, Debug)
 
@@ -72,7 +72,7 @@ pub(all) struct Tracer[T] {
 ///|
 /// The PEG.js `DefaultTracer`: logs indented events through `log`
 /// (`println` by default).
-pub fn[T] Tracer::default(log? : (String) -> Unit = println) -> Tracer[T] {
+pub fn[T] Tracer::default(log~ : (String) -> Unit = println) -> Tracer[T] {
   let indent = Ref(0)
   fn emit(event : TraceEvent[T]) {
     let loc = event.location
@@ -111,14 +111,14 @@ pub fn[T] Tracer::default(log? : (String) -> Unit = println) -> Tracer[T] {
 
 ///|
 priv struct ExpectFrame {
-  mut pos : Int
+  mut pos : Int32
   mut variants : Array[Expectation]
 }
 
 ///|
 /// A memoized rule result (the `cache` option).
 pub(all) struct CacheEntry[T] {
-  next_pos : Int
+  next_pos : Int32
   result : Slot[T]
   expectations : Array[Expectation]
 }
@@ -126,12 +126,12 @@ pub(all) struct CacheEntry[T] {
 ///|
 pub(all) struct State[T] {
   input : String
-  mut curr_pos : Int
-  mut saved_pos : Int
-  mut silent_fails : Int
+  mut curr_pos : Int32
+  mut saved_pos : Int32
+  mut silent_fails : Int32
   priv expected : Array[ExpectFrame]
   priv pos_cache : PosCache
-  priv results_cache : Map[(Int, Int), CacheEntry[T]]
+  priv results_cache : Map[(Int32, Int32), CacheEntry[T]]
   tracer : Tracer[T]?
   options : Map[String, Value[T]]
   features : Features
@@ -164,7 +164,7 @@ pub fn[T] State::new(
 
 ///|
 /// JavaScript `String.prototype.substring`: clamps and swaps its bounds.
-pub fn js_substring(s : String, start : Int, end : Int) -> String {
+pub fn js_substring(s : String, start : Int32, end : Int32) -> String {
   let len = s.length()
   let a = if start < 0 { 0 } else if start > len { len } else { start }
   let b = if end < 0 { 0 } else if end > len { len } else { end }
@@ -178,8 +178,8 @@ pub fn js_substring(s : String, start : Int, end : Int) -> String {
 ///|
 pub fn[T] State::compute_location(
   self : State[T],
-  start : Int,
-  end : Int,
+  start : Int32,
+  end : Int32,
 ) -> Location {
   self.pos_cache.location(start, end)
 }
@@ -238,7 +238,7 @@ pub fn[T] State::rule_expects(self : State[T], expected : Expectation) -> Unit {
 ///|
 /// Looks up a memoized result for `rule` at the current position. On a hit,
 /// restores the position and replays the recorded expectations.
-pub fn[T] State::cache_lookup(self : State[T], rule : Int) -> CacheEntry[T]? {
+pub fn[T] State::cache_lookup(self : State[T], rule : Int32) -> CacheEntry[T]? {
   match self.results_cache.get((self.curr_pos, rule)) {
     Some(entry) => {
       self.curr_pos = entry.next_pos
@@ -256,8 +256,8 @@ pub fn[T] State::cache_lookup(self : State[T], rule : Int) -> CacheEntry[T]? {
 ///|
 pub fn[T] State::cache_store(
   self : State[T],
-  rule : Int,
-  start_pos : Int,
+  rule : Int32,
+  start_pos : Int32,
   result : Slot[T],
   expectations : Array[Expectation],
 ) -> Unit {
@@ -274,7 +274,7 @@ pub fn[T] State::trace(
   self : State[T],
   type_ : TraceType,
   rule : String,
-  start_pos : Int,
+  start_pos : Int32,
   result? : Slot[T],
 ) -> Unit raise {
   guard self.tracer is Some(tracer) else { return }
@@ -380,13 +380,13 @@ pub fn[T] ActionContext::text(self : ActionContext[T]) -> String raise {
 }
 
 ///|
-pub fn[T] ActionContext::offset(self : ActionContext[T]) -> Int raise {
+pub fn[T] ActionContext::offset(self : ActionContext[T]) -> Int32 raise {
   guard self.state.features.offset else { raise FeatureDisabled("offset") }
   self.state.saved_pos
 }
 
 ///|
-pub fn[T] ActionContext::range(self : ActionContext[T]) -> (Int, Int) raise {
+pub fn[T] ActionContext::range(self : ActionContext[T]) -> (Int32, Int32) raise {
   guard self.state.features.range else { raise FeatureDisabled("range") }
   (self.state.saved_pos, self.state.curr_pos)
 }

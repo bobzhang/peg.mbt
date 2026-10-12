@@ -113,13 +113,13 @@ fn expectation_literal(e : @runtime.Expectation) -> String {
 }
 
 ///|
-fn int_array_literal(xs : Array[Int]) -> String {
+fn int_array_literal(xs : Array[Int32]) -> String {
   "[" + xs.map(x => x.to_string()).join(", ") + "]"
 }
 
 ///|
 /// Indents every non-empty line of `code` by `n` spaces.
-fn indent(code : String, n : Int) -> String {
+fn indent(code : String, n : Int32) -> String {
   let pad = " ".repeat(n)
   code
   .split("\n")

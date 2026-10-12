@@ -4,11 +4,11 @@
 
 ///|
 priv struct BytecodeContext {
-  sp : Int
+  sp : Int32
   /// Label name -> stack position.
-  env : JsDict[Int]
+  env : JsDict[Int32]
   /// Stack positions of plucked (`@`) elements of the enclosing sequence.
-  pluck : Array[Int]?
+  pluck : Array[Int32]?
   /// Action node whose code the enclosing sequence calls.
   action : @ast.Node?
   report_failures : Bool
@@ -23,7 +23,7 @@ priv struct BytecodeTables {
 }
 
 ///|
-fn[X : Eq] add_const(table : Array[X], value : X) -> Int {
+fn[X : Eq] add_const(table : Array[X], value : X) -> Int32 {
   for i, x in table {
     if x == value {
       return i
@@ -35,11 +35,11 @@ fn[X : Eq] add_const(table : Array[X], value : X) -> Int {
 
 ///|
 fn build_condition(
-  match_ : Int,
-  cond_code : Array[Int],
-  then_code : Array[Int],
-  else_code : Array[Int],
-) -> Array[Int] {
+  match_ : Int32,
+  cond_code : Array[Int32],
+  then_code : Array[Int32],
+  else_code : Array[Int32],
+) -> Array[Int32] {
   if match_ > 0 {
     return then_code
   }
@@ -56,12 +56,15 @@ fn build_condition(
 }
 
 ///|
-fn build_loop(cond_code : Array[Int], body_code : Array[Int]) -> Array[Int] {
+fn build_loop(
+  cond_code : Array[Int32],
+  body_code : Array[Int32],
+) -> Array[Int32] {
   [..cond_code, body_code.length(), ..body_code]
 }
 
 ///|
-fn match_of(node : @ast.Node) -> Int {
+fn match_of(node : @ast.Node) -> Int32 {
   node.match_result.unwrap_or(0)
 }
 
@@ -85,26 +88,26 @@ pub fn[T] generate_bytecode(
     predicate : Bool,
     params : Array[String],
     code : String,
-  ) -> Int {
+  ) -> Int32 {
     add_const(tables.functions, { predicate, params, body: code, })
   }
 
   fn build_call(
-    function_index : Int,
-    delta : Int,
-    env : JsDict[Int],
-    sp : Int,
-  ) -> Array[Int] {
+    function_index : Int32,
+    delta : Int32,
+    env : JsDict[Int32],
+    sp : Int32,
+  ) -> Array[Int32] {
     let params = env.keys().map(k => sp - env.get(k).unwrap())
     [op.call, function_index, delta, params.length(), ..params]
   }
 
-  fn generate(node : @ast.Node, context : BytecodeContext) -> Array[Int] {
+  fn generate(node : @ast.Node, context : BytecodeContext) -> Array[Int32] {
     fn build_simple_predicate(
       expression : @ast.Node,
       negative : Bool,
       context : BytecodeContext,
-    ) -> Array[Int] {
+    ) -> Array[Int32] {
       let match_ = match_of(expression)
       [
         op.push_curr_pos,
@@ -156,7 +159,7 @@ pub fn[T] generate_bytecode(
       code : String,
       negative : Bool,
       context : BytecodeContext,
-    ) -> Array[Int] {
+    ) -> Array[Int32] {
       let function_index = add_function_const(true, context.env.keys(), code)
       [
         op.update_saved_pos,
@@ -199,7 +202,7 @@ pub fn[T] generate_bytecode(
       Choice(alternatives) => {
         fn build_alternatives(
           alternatives : ArrayView[@ast.Node],
-        ) -> Array[Int] {
+        ) -> Array[Int32] {
           let first = generate(alternatives[0], {
             sp: context.sp,
             env: context.env.clone(),
@@ -267,7 +270,7 @@ pub fn[T] generate_bytecode(
         fn build_elements(
           elements : ArrayView[@ast.Node],
           context : BytecodeContext,
-        ) -> Array[Int] {
+        ) -> Array[Int32] {
           if elements.length() > 0 {
             let processed_count = total - elements[1:].length()
             let first = generate(elements[0], {

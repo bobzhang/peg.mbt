@@ -13,7 +13,7 @@ pub(all) struct ParserOptions {
 ///|
 pub fn ParserOptions::new(
   reserved_words? : Array[String],
-  extract_comments? : Bool = false,
+  extract_comments~ : Bool = false,
   filename? : String,
 ) -> ParserOptions {
   { reserved_words, extract_comments, filename, }
@@ -66,18 +66,18 @@ pub(all) struct Options[T] {
 ///|
 pub fn[T] Options::new(
   allowed_start_rules? : Array[String],
-  cache? : Bool = false,
-  optimize? : Optimize = Speed,
-  output? : Output = Parser,
-  trace? : Bool = false,
-  features? : Map[String, Bool] = {},
-  header? : Array[String] = [],
-  parser? : ParserOptions = ParserOptions::new(),
-  actions? : Map[String, @runtime.ActionFn[T]] = {},
+  cache~ : Bool = false,
+  optimize~ : Optimize = Speed,
+  output~ : Output = Parser,
+  trace~ : Bool = false,
+  features~ : Map[String, Bool] = {},
+  header~ : Array[String] = [],
+  parser~ : ParserOptions = ParserOptions::new(),
+  actions~ : Map[String, @runtime.ActionFn[T]] = {},
   initializer? : @runtime.InitFn[T],
-  value_type? : String = "Unit",
-  name_prefix? : String = "",
-  extra? : Map[String, Json] = {},
+  value_type~ : String = "Unit",
+  name_prefix~ : String = "",
+  extra~ : Map[String, Json] = {},
 ) -> Options[T] {
   {
     allowed_start_rules,

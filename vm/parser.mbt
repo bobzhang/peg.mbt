@@ -79,7 +79,7 @@ pub impl Show for UnboundCode with fn output(self, logger) {
 /// actions bound by text should read labels by name (`ActionContext::label`).
 pub fn[V] lookup_binding(
   bindings : Map[String, V],
-  index : Int,
+  index : Int32,
   body : String,
 ) -> V? {
   match bindings.get("#\{index}") {

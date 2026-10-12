@@ -3,7 +3,7 @@
 /// generates. It tests a single UTF-16 code unit.
 pub struct ClassMatcher {
   /// Sorted, merged, inclusive code-unit ranges.
-  priv ranges : Array[(Int, Int)]
+  priv ranges : Array[(Int32, Int32)]
   /// Membership of the ASCII code units, one bit per unit.
   priv ascii : FixedArray[UInt64]
   priv inverted : Bool
@@ -11,7 +11,7 @@ pub struct ClassMatcher {
 }
 
 ///|
-fn part_code(s : String) -> Int {
+fn part_code(s : String) -> Int32 {
   if s.length() == 0 {
     -1
   } else {
@@ -28,7 +28,7 @@ fn part_code(s : String) -> Int {
 /// parser then combines with its neighbours; such classes are re-parsed the
 /// way V8 does. (A range out of order makes V8 reject the regexp, failing
 /// `generate`; here it matches nothing.)
-fn class_ranges(parts : ArrayView[ClassPart]) -> Array[(Int, Int)] {
+fn class_ranges(parts : ArrayView[ClassPart]) -> Array[(Int32, Int32)] {
   let has_empty = parts
     .iter()
     .any(part => {
@@ -49,7 +49,7 @@ fn class_ranges(parts : ArrayView[ClassPart]) -> Array[(Int, Int)] {
     })
   }
   // Tokens: a code unit, or -1 for a bare dash.
-  let tokens : Array[Int] = []
+  let tokens : Array[Int32] = []
   for part in parts {
     match part {
       Char(c) => if c != "" { tokens.push(part_code(c)) }
@@ -65,7 +65,7 @@ fn class_ranges(parts : ArrayView[ClassPart]) -> Array[(Int, Int)] {
     }
   }
   let dash = '-'.to_int()
-  let atom = (t : Int) => if t < 0 { dash } else { t }
+  let atom = (t : Int32) => if t < 0 { dash } else { t }
   let ranges = []
   for i = 0; i < tokens.length(); {
     let a = atom(tokens[i])
@@ -90,7 +90,7 @@ pub fn ClassMatcher::new(
 ) -> ClassMatcher {
   let raw = class_ranges(parts)
   raw.sort_by_key(r => r.0)
-  let ranges : Array[(Int, Int)] = []
+  let ranges : Array[(Int32, Int32)] = []
   for r in raw {
     if r.0 > r.1 {
       continue
@@ -114,7 +114,7 @@ pub fn ClassMatcher::new(
 }
 
 ///|
-fn ClassMatcher::contains(self : ClassMatcher, c : Int) -> Bool {
+fn ClassMatcher::contains(self : ClassMatcher, c : Int32) -> Bool {
   if c >= 0 && c < 128 {
     return ((self.ascii[c >> 6] >> (c & 63)) & 1UL) != 0UL
   }
@@ -136,7 +136,7 @@ fn ClassMatcher::contains(self : ClassMatcher, c : Int) -> Bool {
 
 ///|
 /// Tests the code unit `c`.
-pub fn ClassMatcher::matches(self : ClassMatcher, c : Int) -> Bool {
+pub fn ClassMatcher::matches(self : ClassMatcher, c : Int32) -> Bool {
   let found = if self.ignore_case {
     js_case_variants_any(c, d => self.contains(d))
   } else {
@@ -151,7 +151,7 @@ pub fn ClassMatcher::matches(self : ClassMatcher, c : Int) -> Bool {
 pub fn ClassMatcher::matches_at(
   self : ClassMatcher,
   input : String,
-  pos : Int,
+  pos : Int32,
 ) -> Bool {
   pos < input.length() && self.matches(input.code_unit_at(pos).to_int())
 }
