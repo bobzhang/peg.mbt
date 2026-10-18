@@ -46,7 +46,7 @@ priv struct Inference[T] {
 }
 
 ///|
-fn[T] Inference::rule(self : Inference[T], rule : @ast.Rule) -> Int raise {
+fn[T] Inference::rule(self : Inference[T], rule : @ast.Rule) -> Int32 raise {
   match rule.match_result {
     Some(m) => m
     None => {
@@ -76,7 +76,7 @@ fn[T] Inference::elements(
   self : Inference[T],
   elements : Array[@ast.Node],
   for_choice : Bool,
-) -> Int raise {
+) -> Int32 raise {
   let length = elements.length()
   let mut always = 0
   let mut never = 0
@@ -105,7 +105,7 @@ fn[T] Inference::elements(
 }
 
 ///|
-fn[T] Inference::node(self : Inference[T], node : @ast.Node) -> Int raise {
+fn[T] Inference::node(self : Inference[T], node : @ast.Node) -> Int32 raise {
   let result = match node.kind {
     Named(e, ..)
     | Action(e, ..)

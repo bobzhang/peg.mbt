@@ -2,9 +2,9 @@
 /// A position in the input: a UTF-16 code-unit offset plus 1-based line and
 /// column (lines are only broken by `\n`, as in PEG.js).
 pub(all) struct Pos {
-  offset : Int
-  line : Int
-  column : Int
+  offset : Int32
+  line : Int32
+  column : Int32
 } derive(Eq, Debug)
 
 ///|
@@ -24,7 +24,7 @@ pub impl ToJson for Pos with fn to_json(self) {
 pub impl ToJson for Location with fn to_json(self) {
   let obj : Map[String, Json] = Map([])
   if self.filename is Some(f) {
-    obj["filename"] = f.to_json()
+    obj["filename"] = ToJson::to_json(f)
   }
   obj["start"] = self.start.to_json()
   obj["end"] = self.end.to_json()
@@ -36,7 +36,7 @@ pub impl ToJson for Location with fn to_json(self) {
 /// strategy as the generated `peg$computePosDetails`.
 pub struct PosCache {
   input : String
-  details : Map[Int, (Int, Int)]
+  details : Map[Int32, (Int32, Int32)]
   filename : String?
 }
 
@@ -46,7 +46,7 @@ pub fn PosCache::new(input : String, filename? : String) -> PosCache {
 }
 
 ///|
-pub fn PosCache::pos(self : PosCache, offset : Int) -> Pos {
+pub fn PosCache::pos(self : PosCache, offset : Int32) -> Pos {
   match self.details.get(offset) {
     Some((line, column)) => { offset, line, column, }
     None => {
@@ -73,7 +73,11 @@ pub fn PosCache::pos(self : PosCache, offset : Int) -> Pos {
 }
 
 ///|
-pub fn PosCache::location(self : PosCache, start : Int, end : Int) -> Location {
+pub fn PosCache::location(
+  self : PosCache,
+  start : Int32,
+  end : Int32,
+) -> Location {
   { filename: self.filename, start: self.pos(start), end: self.pos(end), }
 }
 

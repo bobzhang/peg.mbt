@@ -75,7 +75,7 @@ fn peg_actions(ctx : @runtime.ActionContext[Meta]) -> PegActions raise {
     Some(v) => v.truthy()
     None => false
   }
-  let comments : Map[Int, @ast.Comment] = Map([])
+  let comments : Map[Int32, @ast.Comment] = Map([])
   fn add_comment(text : PegValue, multiline : Bool) -> PegValue raise {
     if extract_comments {
       let location = ctx.location()

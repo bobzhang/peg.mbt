@@ -9,9 +9,9 @@ pub(all) struct ClassConst {
 ///|
 pub impl ToJson for ClassConst with fn to_json(self) {
   {
-    "value": self.parts.to_json(),
-    "inverted": self.inverted.to_json(),
-    "ignoreCase": self.ignore_case.to_json(),
+    "value": ToJson::to_json(self.parts),
+    "inverted": ToJson::to_json(self.inverted),
+    "ignoreCase": ToJson::to_json(self.ignore_case),
   }
 }
 
@@ -27,9 +27,9 @@ pub(all) struct FunctionConst {
 ///|
 pub impl ToJson for FunctionConst with fn to_json(self) {
   {
-    "predicate": self.predicate.to_json(),
-    "params": self.params.to_json(),
-    "body": self.body.to_json(),
+    "predicate": ToJson::to_json(self.predicate),
+    "params": ToJson::to_json(self.params),
+    "body": ToJson::to_json(self.body),
   }
 }
 
@@ -38,19 +38,20 @@ pub impl ToJson for FunctionConst with fn to_json(self) {
 /// (`{type: "rule", value}` for named rules, `value` for literal text).
 pub fn expectation_const_json(e : @runtime.Expectation) -> Json {
   match e {
-    Other(description~) => { "type": "rule", "value": description.to_json() }
+    Other(description~) =>
+      { "type": "rule", "value": ToJson::to_json(description) }
     Literal(text~, ignore_case~) =>
       {
         "type": "literal",
-        "value": text.to_json(),
-        "ignoreCase": ignore_case.to_json(),
+        "value": ToJson::to_json(text),
+        "ignoreCase": ToJson::to_json(ignore_case),
       }
     Class(parts~, inverted~, ignore_case~) =>
       {
         "type": "class",
-        "value": parts.to_json(),
-        "inverted": inverted.to_json(),
-        "ignoreCase": ignore_case.to_json(),
+        "value": ToJson::to_json(parts),
+        "inverted": ToJson::to_json(inverted),
+        "ignoreCase": ToJson::to_json(ignore_case),
       }
     Any => { "type": "any" }
     End => { "type": "end" }
@@ -62,7 +63,7 @@ pub fn expectation_const_json(e : @runtime.Expectation) -> Json {
 /// The compiled form of one rule.
 pub(all) struct RuleCode {
   name : String
-  bytecode : Array[Int]
+  bytecode : Array[Int32]
 } derive(Eq, Debug)
 
 ///|
@@ -88,7 +89,7 @@ pub(all) struct Program {
 } derive(Debug)
 
 ///|
-pub fn Program::rule_index(self : Program, name : String) -> Int? {
+pub fn Program::rule_index(self : Program, name : String) -> Int32? {
   for i, r in self.rules {
     if r.name == name {
       return Some(i)

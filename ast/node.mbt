@@ -32,7 +32,7 @@ pub(all) enum Kind {
 pub(all) struct Node {
   mut kind : Kind
   location : Location
-  mut match_result : Int?
+  mut match_result : Int32?
 } derive(Debug)
 
 ///|
@@ -111,8 +111,8 @@ pub(all) struct Rule {
   mut expression : Node
   location : Location
   mut report_failures : Bool?
-  mut match_result : Int?
-  mut bytecode : Array[Int]?
+  mut match_result : Int32?
+  mut bytecode : Array[Int32]?
 } derive(Debug)
 
 ///|

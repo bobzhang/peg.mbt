@@ -1539,7 +1539,7 @@ test "compiler passes match PEG.js" {
     let warnings : Array[Json] = []
     let session : @compiler.Session[Unit] = @compiler.Session::new(
       parser=(input, _) => @parser.parse(input),
-      warn=(message, _) => warnings.push(message.to_json()),
+      warn=(message, _) => warnings.push(ToJson::to_json(message)),
     )
     let options : @compiler.Options[Unit] = @compiler.Options::new()
     options.allowed_start_rules = start_rules

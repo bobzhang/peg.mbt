@@ -7,7 +7,7 @@
 // (see tools/gen-unicode.js).
 
 ///|
-fn search_int(keys : ReadOnlyArray[Int], key : Int) -> Int? {
+fn search_int(keys : ReadOnlyArray[Int32], key : Int32) -> Int32? {
   for lo = 0, hi = keys.length(); lo < hi; {
     let mid = lo + (hi - lo) / 2
     let k = keys[mid]
@@ -24,7 +24,7 @@ fn search_int(keys : ReadOnlyArray[Int], key : Int) -> Int? {
 }
 
 ///|
-fn in_ranges(ranges : ReadOnlyArray[Int], cp : Int) -> Bool {
+fn in_ranges(ranges : ReadOnlyArray[Int32], cp : Int32) -> Bool {
   // `ranges` holds sorted inclusive [start, end] pairs.
   for lo = 0, hi = ranges.length() / 2; lo < hi; {
     let mid = lo + (hi - lo) / 2
@@ -41,19 +41,19 @@ fn in_ranges(ranges : ReadOnlyArray[Int], cp : Int) -> Bool {
 }
 
 ///|
-fn is_cased(cp : Int) -> Bool {
+fn is_cased(cp : Int32) -> Bool {
   in_ranges(cased_ranges, cp)
 }
 
 ///|
-fn is_case_ignorable(cp : Int) -> Bool {
+fn is_case_ignorable(cp : Int32) -> Bool {
   in_ranges(case_ignorable_ranges, cp)
 }
 
 ///|
 /// Decodes the code point starting at code unit `i`, returning it with its
 /// width in code units. Lone surrogates decode as themselves.
-fn code_point_at(s : StringView, i : Int) -> (Int, Int) {
+fn code_point_at(s : StringView, i : Int32) -> (Int32, Int32) {
   let c = s.code_unit_at(i).to_int()
   if c >= 0xD800 && c <= 0xDBFF && i + 1 < s.length() {
     let d = s.code_unit_at(i + 1).to_int()
@@ -66,7 +66,7 @@ fn code_point_at(s : StringView, i : Int) -> (Int, Int) {
 
 ///|
 /// Decodes the code point ending just before code unit `i`.
-fn code_point_before(s : StringView, i : Int) -> (Int, Int) {
+fn code_point_before(s : StringView, i : Int32) -> (Int32, Int32) {
   let d = s.code_unit_at(i - 1).to_int()
   if d >= 0xDC00 && d <= 0xDFFF && i >= 2 {
     let c = s.code_unit_at(i - 2).to_int()
@@ -80,7 +80,7 @@ fn code_point_before(s : StringView, i : Int) -> (Int, Int) {
 ///|
 /// Unicode Final_Sigma condition for the sigma occupying `[i, i + 1)`.
 /// Mirrors ICU: case-ignorable characters are skipped before testing cased.
-fn is_final_sigma(s : StringView, i : Int) -> Bool {
+fn is_final_sigma(s : StringView, i : Int32) -> Bool {
   let preceded = for j = i; j > 0; {
     let (cp, w) = code_point_before(s, j)
     if is_case_ignorable(cp) {
@@ -129,7 +129,7 @@ pub fn js_to_lower(s : StringView) -> String {
 
 ///|
 /// ES `Canonicalize(ch)` for non-unicode, ignore-case regexps.
-pub fn js_canonicalize(ch : Int) -> Int {
+pub fn js_canonicalize(ch : Int32) -> Int32 {
   match search_int(canon_keys, ch) {
     Some(k) => canon_vals[k]
     None => ch
@@ -139,8 +139,8 @@ pub fn js_canonicalize(ch : Int) -> Int {
 ///|
 /// Inverse of `js_canonicalize`: canonical value -> code units mapping to it
 /// (excluding identity mappings, which callers check directly).
-let canon_inverse : Map[Int, Array[Int]] = {
-  let m : Map[Int, Array[Int]] = Map([])
+let canon_inverse : Map[Int32, Array[Int32]] = {
+  let m : Map[Int32, Array[Int32]] = Map([])
   for i, k in canon_keys {
     let v = canon_vals[i]
     match m.get(v) {
@@ -154,7 +154,7 @@ let canon_inverse : Map[Int, Array[Int]] = {
 ///|
 /// Calls `f` on every code unit whose canonical form equals that of `ch`
 /// (including `ch` itself), stopping early when `f` returns `true`.
-pub fn js_case_variants_any(ch : Int, f : (Int) -> Bool) -> Bool {
+pub fn js_case_variants_any(ch : Int32, f : (Int32) -> Bool) -> Bool {
   let k = js_canonicalize(ch)
   if f(ch) {
     return true
@@ -177,7 +177,7 @@ pub fn js_case_variants_any(ch : Int, f : (Int) -> Bool) -> Bool {
 ///|
 /// Lexicographic comparison by UTF-16 code units, like JavaScript's default
 /// `Array.prototype.sort` and relational string operators.
-pub fn js_compare(a : String, b : String) -> Int {
+pub fn js_compare(a : String, b : String) -> Int32 {
   let n = if a.length() < b.length() { a.length() } else { b.length() }
   for i in 0..<n {
     let x = a.code_unit_at(i)
@@ -193,7 +193,7 @@ pub fn js_compare(a : String, b : String) -> Int {
 /// Builds a string from UTF-16 code units. Unlike string literals, this can
 /// produce lone surrogates, which JavaScript strings (and PEG.js grammars)
 /// may contain.
-pub fn string_of_code_units(units : ArrayView[Int]) -> String {
+pub fn string_of_code_units(units : ArrayView[Int32]) -> String {
   let sb = StringBuilder(size_hint=units.length())
   for u in units {
     sb.write_char(u.unsafe_to_char())
