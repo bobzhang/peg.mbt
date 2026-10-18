@@ -63,8 +63,8 @@ pub fn[T] new_session() -> Session[T] {
 /// `@vm.UnboundCode` for code blocks without an implementation.
 pub fn[T] generate(
   grammar : String,
-  options? : Options[T] = Options::new(),
-  plugins? : Array[Plugin[T]] = [],
+  options~ : Options[T] = Options::new(),
+  plugins~ : Array[Plugin[T]] = [],
 ) -> Parser[T] raise {
   let session : Session[T] = new_session()
   for plugin in plugins {
@@ -88,8 +88,8 @@ pub fn[T] generate(
 /// says otherwise. Raises like `generate`.
 pub fn[T] generate_source(
   grammar : String,
-  options? : Options[T] = Options::new(),
-  plugins? : Array[Plugin[T]] = [],
+  options~ : Options[T] = Options::new(),
+  plugins~ : Array[Plugin[T]] = [],
 ) -> String raise {
   let options = options.copy()
   options.output = Source

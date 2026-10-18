@@ -27,11 +27,11 @@ pub impl ToJson for SyntaxError with fn to_json(self) {
     "name": "SyntaxError",
     "message": message,
     "expected": match expected {
-      Some(e) => e.to_json()
+      Some(e) => ToJson::to_json(e)
       None => Json::null()
     },
     "found": match found {
-      Some(f) => f.to_json()
+      Some(f) => ToJson::to_json(f)
       None => Json::null()
     },
     "location": location.to_json(),

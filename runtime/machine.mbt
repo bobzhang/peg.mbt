@@ -13,7 +13,7 @@ pub fn[T] slot_value(slot : Slot[T]) -> Value[T] {
 
 ///|
 /// The saved position in a stack slot; aborts otherwise (a compiler bug).
-pub fn[T] slot_pos(slot : Slot[T]) -> Int {
+pub fn[T] slot_pos(slot : Slot[T]) -> Int32 {
   match slot {
     Pos(p) => p
     _ => abort("expected a saved position on the stack")
@@ -32,7 +32,7 @@ pub fn[T] slot_append(target : Slot[T], value : Slot[T]) -> Unit {
 ///|
 /// Whether `lit` occurs in `input` at code-unit offset `pos`
 /// (`input.substr(pos, lit.length) === lit`).
-pub fn starts_with_at(input : String, pos : Int, lit : String) -> Bool {
+pub fn starts_with_at(input : String, pos : Int32, lit : String) -> Bool {
   if pos + lit.length() > input.length() {
     return false
   }
@@ -46,13 +46,13 @@ pub fn starts_with_at(input : String, pos : Int, lit : String) -> Bool {
 
 ///|
 /// Whether the code unit at `pos` is `unit` (`input.charCodeAt(pos) === unit`).
-pub fn code_unit_is(input : String, pos : Int, unit : Int) -> Bool {
+pub fn code_unit_is(input : String, pos : Int32, unit : Int32) -> Bool {
   pos < input.length() && input.code_unit_at(pos).to_int() == unit
 }
 
 ///|
 /// JavaScript `input.substr(pos, n)` for non-negative `pos` and `n`.
-pub fn js_substr(input : String, pos : Int, n : Int) -> String {
+pub fn js_substr(input : String, pos : Int32, n : Int32) -> String {
   let end = if pos + n > input.length() { input.length() } else { pos + n }
   if pos >= end {
     ""
@@ -64,6 +64,10 @@ pub fn js_substr(input : String, pos : Int, n : Int) -> String {
 ///|
 /// Case-insensitive literal test: `lower(input.substr(pos, lit.length)) ===
 /// lit`, where `lit` is already lowercased.
-pub fn matches_ignore_case_at(input : String, pos : Int, lit : String) -> Bool {
+pub fn matches_ignore_case_at(
+  input : String,
+  pos : Int32,
+  lit : String,
+) -> Bool {
   js_to_lower(js_substr(input, pos, lit.length())) == lit
 }

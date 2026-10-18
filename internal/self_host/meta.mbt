@@ -44,7 +44,7 @@ fn joined(v : PegValue) -> String {
 }
 
 ///|
-fn hex(digits : String) -> Int {
+fn hex(digits : String) -> Int32 {
   let mut n = 0
   for c in digits {
     let d = if c >= '0' && c <= '9' {
@@ -68,7 +68,7 @@ fn js_reserved_words() -> Array[String] {
 /// Parses PEG.js grammar source with the self-hosted parser.
 pub fn parse_grammar(
   input : String,
-  extract_comments? : Bool = false,
+  extract_comments~ : Bool = false,
 ) -> @ast.Grammar raise {
   match parse(input, options={ "extractComments": Bool(extract_comments) }) {
     Custom(G(g)) => g

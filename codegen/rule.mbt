@@ -6,12 +6,12 @@
 priv struct RuleCompiler {
   program : @bytecode.Program
   rule_name : String
-  mut sp : Int
-  mut max_sp : Int
+  mut sp : Int32
+  mut max_sp : Int32
 }
 
 ///|
-fn RuleCompiler::slot_var(self : RuleCompiler, i : Int) -> String raise {
+fn RuleCompiler::slot_var(self : RuleCompiler, i : Int32) -> String raise {
   if i < 0 {
     raise @compiler.CompilerError(
       "Rule '\{self.rule_name}': Var stack underflow: attempt to use var at index \{i}",
@@ -37,7 +37,7 @@ fn RuleCompiler::pop(self : RuleCompiler) -> String raise {
 }
 
 ///|
-fn RuleCompiler::pop_n(self : RuleCompiler, n : Int) -> Array[String] raise {
+fn RuleCompiler::pop_n(self : RuleCompiler, n : Int32) -> Array[String] raise {
   let values = []
   for i in 0..<n {
     values.push(self.slot_var(self.sp - n + 1 + i))
@@ -52,7 +52,7 @@ fn RuleCompiler::top(self : RuleCompiler) -> String raise {
 }
 
 ///|
-fn RuleCompiler::index(self : RuleCompiler, i : Int) -> String raise {
+fn RuleCompiler::index(self : RuleCompiler, i : Int32) -> String raise {
   self.slot_var(self.sp - i)
 }
 
@@ -69,13 +69,13 @@ fn pos_of(v : String) -> String {
 ///|
 fn RuleCompiler::compile(
   self : RuleCompiler,
-  bc : ArrayView[Int],
+  bc : ArrayView[Int32],
 ) -> Array[String] raise {
   let op = self.program.opcodes
   let program = self.program
   let parts : Array[String] = []
   let mut ip = 0
-  fn condition(cond : String, arg_count : Int) raise {
+  fn condition(cond : String, arg_count : Int32) raise {
     let pos = ip
     let base = arg_count + 3
     let then_length = bc[ip + base - 2]
@@ -295,7 +295,7 @@ fn RuleCompiler::compile(
 
 ///|
 /// Generates `fn peg_parse_<index>(p : PegParser) -> PegSlot raise`.
-fn rule_function(program : @bytecode.Program, index : Int) -> String raise {
+fn rule_function(program : @bytecode.Program, index : Int32) -> String raise {
   let rule = program.rules[index]
   let compiler : RuleCompiler = {
     program,

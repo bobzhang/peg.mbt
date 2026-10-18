@@ -373,10 +373,10 @@ fn size_parser(program : @bytecode.Program, value_type : String) -> String {
 /// several parsers can live in one package.
 pub fn generate_source(
   program : @bytecode.Program,
-  size? : Bool = false,
-  value_type? : String = "Unit",
-  header? : Array[String] = [],
-  name_prefix? : String = "",
+  size~ : Bool = false,
+  value_type~ : String = "Unit",
+  header~ : Array[String] = [],
+  name_prefix~ : String = "",
 ) -> String raise {
   let user = { parts: [], }
   let parts = []

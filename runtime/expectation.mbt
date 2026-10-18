@@ -8,8 +8,8 @@ pub(all) enum ClassPart {
 ///|
 pub impl ToJson for ClassPart with fn to_json(self) {
   match self {
-    Char(c) => c.to_json()
-    Range(a, b) => [a.to_json(), b.to_json()]
+    Char(c) => ToJson::to_json(c)
+    Range(a, b) => [ToJson::to_json(a), ToJson::to_json(b)]
   }
 }
 
@@ -30,26 +30,26 @@ pub impl ToJson for Expectation with fn to_json(self) {
     Literal(text~, ignore_case~) =>
       {
         "type": "literal",
-        "text": text.to_json(),
-        "ignoreCase": ignore_case.to_json(),
+        "text": ToJson::to_json(text),
+        "ignoreCase": ToJson::to_json(ignore_case),
       }
     Class(parts~, inverted~, ignore_case~) =>
       {
         "type": "class",
-        "parts": parts.to_json(),
-        "inverted": inverted.to_json(),
-        "ignoreCase": ignore_case.to_json(),
+        "parts": ToJson::to_json(parts),
+        "inverted": ToJson::to_json(inverted),
+        "ignoreCase": ToJson::to_json(ignore_case),
       }
     Any => { "type": "any" }
     End => { "type": "end" }
     Other(description~) =>
-      { "type": "other", "description": description.to_json() }
+      { "type": "other", "description": ToJson::to_json(description) }
     Not(e) => { "type": "not", "expected": e.to_json() }
   }
 }
 
 ///|
-fn hex_upper(c : Int) -> String {
+fn hex_upper(c : Int32) -> String {
   let digits = "0123456789ABCDEF"
   if c < 16 {
     digits[c:c + 1].to_owned()
@@ -69,7 +69,7 @@ fn hex_upper(c : Int) -> String {
 
 ///|
 /// Shared tail of `literalEscape` / `classEscape` in the generated parser.
-fn escape_controls(sb : StringBuilder, c : Int) -> Unit {
+fn escape_controls(sb : StringBuilder, c : Int32) -> Unit {
   match c {
     0 => sb.write_string("\\0")
     9 => sb.write_string("\\t")

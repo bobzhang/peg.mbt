@@ -94,7 +94,7 @@ fn meta_actions(init : Ctx) -> Array[@runtime.ActionFn[Meta]] {
     Some(v) => v.truthy()
     None => false
   }
-  let comments : Map[Int, @ast.Comment] = Map([])
+  let comments : Map[Int32, @ast.Comment] = Map([])
   fn add_comment(ctx : Ctx, text : String, multiline : Bool) -> MValue raise {
     if extract_comments {
       let location = ctx.location()
@@ -357,7 +357,7 @@ let meta_parser : @vm.Parser[Meta] = {
 pub fn parse(
   input : String,
   reserved_words? : Array[String],
-  extract_comments? : Bool = false,
+  extract_comments~ : Bool = false,
   filename? : String,
 ) -> @ast.Grammar raise {
   let options : Map[String, MValue] = Map([])

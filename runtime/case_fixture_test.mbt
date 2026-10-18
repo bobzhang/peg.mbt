@@ -1256,7 +1256,7 @@ test "js_to_lower matches V8" {
 
 ///|
 test "js_case_variants_any matches V8 regexp /i" {
-  let cases : Array[(Int, Int, Bool)] = [
+  let cases : Array[(Int32, Int32, Bool)] = [
     (65, 65, true),
     (65, 97, true),
     (65, 931, false),
