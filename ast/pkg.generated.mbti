@@ -23,7 +23,7 @@ pub impl ToJson for Comment
 pub(all) struct Grammar {
   mut initializer : Initializer?
   mut rules : Array[Rule]
-  mut comments : Array[(Int, Comment)]?
+  mut comments : Array[(Int32, Comment)]?
   location : @runtime.Location
   mut literals : Array[String]?
   mut classes : Array[@bytecode.ClassConst]?
@@ -33,8 +33,8 @@ pub(all) struct Grammar {
 } derive(@debug.Debug)
 pub fn Grammar::always_consumes_on_success(Self, Node) -> Bool
 pub fn Grammar::find_rule(Self, String) -> Rule?
-pub fn Grammar::index_of_rule(Self, String) -> Int
-pub fn Grammar::new(Initializer?, Array[Rule], Array[(Int, Comment)]?, @runtime.Location) -> Self
+pub fn Grammar::index_of_rule(Self, String) -> Int32
+pub fn Grammar::new(Initializer?, Array[Rule], Array[(Int32, Comment)]?, @runtime.Location) -> Self
 pub fn Grammar::to_json(Self) -> Json
 pub impl ToJson for Grammar
 
@@ -69,7 +69,7 @@ pub(all) enum Kind {
 pub(all) struct Node {
   mut kind : Kind
   location : @runtime.Location
-  mut match_result : Int?
+  mut match_result : Int32?
 } derive(@debug.Debug)
 pub fn Node::children(Self) -> ArrayView[Self]
 pub fn Node::expression(Self) -> Self?
@@ -83,8 +83,8 @@ pub(all) struct Rule {
   mut expression : Node
   location : @runtime.Location
   mut report_failures : Bool?
-  mut match_result : Int?
-  mut bytecode : Array[Int]?
+  mut match_result : Int32?
+  mut bytecode : Array[Int32]?
 } derive(@debug.Debug)
 pub fn Rule::new(String, Node, @runtime.Location) -> Self
 pub fn Rule::to_json(Self) -> Json
