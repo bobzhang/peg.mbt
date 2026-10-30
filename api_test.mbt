@@ -32,8 +32,8 @@ test "custom tracer receives tracing events" {
   parser.parse("b", tracer={
     trace: event => {
       let obj : Map[String, Json] = {
-        "type": ToJson::to_json(event.type_.name()),
-        "rule": ToJson::to_json(event.rule),
+        "type": Json(event.type_.name()),
+        "rule": Json(event.rule),
         "location": event.location.to_json(),
       }
       if event.result is Some(result) {

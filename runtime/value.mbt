@@ -54,7 +54,7 @@ pub fn[T] Value::to_json_with(self : Value[T], custom : (T) -> Json) -> Json {
   match self {
     Undefined => { "$": "undefined" }
     Null => Json::null()
-    Bool(b) => ToJson::to_json(b)
+    Bool(b) => Json(b)
     Num(n) =>
       if n.is_nan() {
         { "$": "number", "value": "NaN" }
@@ -70,7 +70,7 @@ pub fn[T] Value::to_json_with(self : Value[T], custom : (T) -> Json) -> Json {
       } else {
         Json::number(n)
       }
-    Str(s) => ToJson::to_json(s)
+    Str(s) => Json(s)
     Arr(xs) => Json::array(xs.map(x => x.to_json_with(custom)))
     Obj(m) => {
       let obj : Map[String, Json] = Map([])

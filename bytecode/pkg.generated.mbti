@@ -31,39 +31,39 @@ pub fn FunctionConst::to_json(Self) -> Json
 pub impl ToJson for FunctionConst
 
 pub(all) struct Opcodes {
-  push_empty_string : Int
-  push_undefined : Int
-  push_null : Int
-  push_failed : Int
-  push_empty_array : Int
-  push_curr_pos : Int
-  pop : Int
-  pop_curr_pos : Int
-  pop_n : Int
-  nip : Int
-  append : Int
-  wrap : Int
-  text : Int
-  pluck : Int
-  if_ : Int
-  if_error : Int
-  if_not_error : Int
-  while_not_error : Int
-  match_any : Int
-  match_string : Int
-  match_string_ic : Int
-  match_class : Int
-  accept_n : Int
-  accept_string : Int
-  expect : Int
-  load_saved_pos : Int
-  update_saved_pos : Int
-  call : Int
-  rule : Int
-  silent_fails_on : Int
-  silent_fails_off : Int
-  expect_ns_begin : Int
-  expect_ns_end : Int
+  push_empty_string : Int32
+  push_undefined : Int32
+  push_null : Int32
+  push_failed : Int32
+  push_empty_array : Int32
+  push_curr_pos : Int32
+  pop : Int32
+  pop_curr_pos : Int32
+  pop_n : Int32
+  nip : Int32
+  append : Int32
+  wrap : Int32
+  text : Int32
+  pluck : Int32
+  if_ : Int32
+  if_error : Int32
+  if_not_error : Int32
+  while_not_error : Int32
+  match_any : Int32
+  match_string : Int32
+  match_string_ic : Int32
+  match_class : Int32
+  accept_n : Int32
+  accept_string : Int32
+  expect : Int32
+  load_saved_pos : Int32
+  update_saved_pos : Int32
+  call : Int32
+  rule : Int32
+  silent_fails_on : Int32
+  silent_fails_off : Int32
+  expect_ns_begin : Int32
+  expect_ns_end : Int32
 } derive(Eq, @debug.Debug)
 
 pub(all) struct Program {
@@ -79,11 +79,11 @@ pub(all) struct Program {
   trace : Bool
   features : @runtime.Features
 } derive(@debug.Debug)
-pub fn Program::rule_index(Self, String) -> Int?
+pub fn Program::rule_index(Self, String) -> Int32?
 
 pub(all) struct RuleCode {
   name : String
-  bytecode : Array[Int]
+  bytecode : Array[Int32]
 } derive(Eq, @debug.Debug)
 
 // Type aliases

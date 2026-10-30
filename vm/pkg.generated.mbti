@@ -8,7 +8,7 @@ import {
 }
 
 // Values
-pub fn[V] lookup_binding(Map[String, V], Int, String) -> V?
+pub fn[V] lookup_binding(Map[String, V], Int32, String) -> V?
 
 // Errors
 pub(all) suberror UnboundCode {

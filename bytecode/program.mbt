@@ -9,9 +9,9 @@ pub(all) struct ClassConst {
 ///|
 pub impl ToJson for ClassConst with fn to_json(self) {
   {
-    "value": ToJson::to_json(self.parts),
-    "inverted": ToJson::to_json(self.inverted),
-    "ignoreCase": ToJson::to_json(self.ignore_case),
+    "value": Json(self.parts),
+    "inverted": Json(self.inverted),
+    "ignoreCase": Json(self.ignore_case),
   }
 }
 
@@ -27,9 +27,9 @@ pub(all) struct FunctionConst {
 ///|
 pub impl ToJson for FunctionConst with fn to_json(self) {
   {
-    "predicate": ToJson::to_json(self.predicate),
-    "params": ToJson::to_json(self.params),
-    "body": ToJson::to_json(self.body),
+    "predicate": Json(self.predicate),
+    "params": Json(self.params),
+    "body": Json(self.body),
   }
 }
 
@@ -38,20 +38,19 @@ pub impl ToJson for FunctionConst with fn to_json(self) {
 /// (`{type: "rule", value}` for named rules, `value` for literal text).
 pub fn expectation_const_json(e : @runtime.Expectation) -> Json {
   match e {
-    Other(description~) =>
-      { "type": "rule", "value": ToJson::to_json(description) }
+    Other(description~) => { "type": "rule", "value": Json(description) }
     Literal(text~, ignore_case~) =>
       {
         "type": "literal",
-        "value": ToJson::to_json(text),
-        "ignoreCase": ToJson::to_json(ignore_case),
+        "value": Json(text),
+        "ignoreCase": Json(ignore_case),
       }
     Class(parts~, inverted~, ignore_case~) =>
       {
         "type": "class",
-        "value": ToJson::to_json(parts),
-        "inverted": ToJson::to_json(inverted),
-        "ignoreCase": ToJson::to_json(ignore_case),
+        "value": Json(parts),
+        "inverted": Json(inverted),
+        "ignoreCase": Json(ignore_case),
       }
     Any => { "type": "any" }
     End => { "type": "end" }

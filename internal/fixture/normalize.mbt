@@ -10,7 +10,7 @@ fn normalize_string(s : String) -> String {
     if c >= 0xD800 && c <= 0xDBFF && i + 1 < s.length() {
       let d = s.code_unit_at(i + 1).to_int()
       if d >= 0xDC00 && d <= 0xDFFF {
-        sb.write_view(s.view(start_offset=i, end_offset=i + 2))
+        sb.write_view(s[i:i + 2])
         continue i + 2
       }
     }
