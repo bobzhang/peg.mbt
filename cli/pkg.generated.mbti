@@ -17,11 +17,13 @@ pub fn replace_extension(String, String) -> String
 pub let usage : String
 
 // Errors
+#derive(@debug.Debug)
 pub(all) suberror CliError {
   CliError(String)
-} derive(@debug.Debug)
+}
 
 // Types and methods
+#derive(@debug.Debug)
 pub(all) struct CliOptions {
   mut input_file : String?
   mut output_file : String?
@@ -35,13 +37,14 @@ pub(all) struct CliOptions {
   mut features : Map[String, Bool]
   mut reserved_words : Array[String]?
   mut rest : Array[String]
-} derive(@debug.Debug)
+}
 
+#derive(@debug.Debug)
 pub(all) enum Command {
   Help
   Version
   Generate(CliOptions)
-} derive(@debug.Debug)
+}
 
 // Type aliases
 

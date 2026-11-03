@@ -7,6 +7,7 @@ import {
   "bobzhang/peg/runtime",
   "bobzhang/peg/vm",
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -43,14 +44,16 @@ pub fn[T] report_undefined_rules(@ast.Grammar, Session[T], Options[T]) -> Unit r
 pub fn[T] report_unused_rules(@ast.Grammar, Session[T], Options[T]) -> Unit raise
 
 // Errors
+#derive(@debug.Debug)
 pub(all) suberror CompilerError {
   CompilerError(String)
-} derive(@debug.Debug)
+}
 pub impl Show for CompilerError
 
+#derive(@debug.Debug)
 pub(all) suberror GrammarError {
   GrammarError(message~ : String, location~ : @runtime.Location)
-} derive(@debug.Debug)
+}
 pub impl Show for GrammarError
 
 // Types and methods
@@ -59,10 +62,11 @@ pub(all) enum Compiled[T] {
   Source(String)
 }
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Optimize {
   Speed
   Size
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct Options[T] {
   mut allowed_start_rules : Array[String]?
@@ -77,24 +81,26 @@ pub(all) struct Options[T] {
   mut initializer : ((@runtime.ActionContext[T]) -> Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise] raise)?
   mut value_type : String
   mut name_prefix : String
-  extra : Map[String, Json]
+  extra : Map[String, @json.Json]
 }
 pub fn[T] Options::copy(Self[T]) -> Self[T]
-pub fn[T] Options::new(allowed_start_rules? : Array[String], cache? : Bool, optimize? : Optimize, output? : Output, trace? : Bool, features? : Map[String, Bool], header? : Array[String], parser? : ParserOptions, actions? : Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise], initializer? : (@runtime.ActionContext[T]) -> Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise] raise, value_type? : String, name_prefix? : String, extra? : Map[String, Json]) -> Self[T]
+pub fn[T] Options::new(allowed_start_rules? : Array[String], cache? : Bool, optimize? : Optimize, output? : Output, trace? : Bool, features? : Map[String, Bool], header? : Array[String], parser? : ParserOptions, actions? : Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise], initializer? : (@runtime.ActionContext[T]) -> Map[String, (@runtime.ActionContext[T]) -> @runtime.Value[T] raise] raise, value_type? : String, name_prefix? : String, extra? : Map[String, @json.Json]) -> Self[T]
 pub fn[T] Options::runtime_features(Self[T]) -> @runtime.Features
 pub fn[T] Options::start_rules(Self[T], @ast.Grammar) -> Array[String]
 pub fn[T] Options::use_feature(Self[T], String) -> Bool
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Output {
   Parser
   Source
-} derive(Eq, @debug.Debug)
+}
 
+#derive(@debug.Debug)
 pub(all) struct ParserOptions {
   mut reserved_words : Array[String]?
   mut extract_comments : Bool
   mut filename : String?
-} derive(@debug.Debug)
+}
 pub fn ParserOptions::copy(Self) -> Self
 pub fn ParserOptions::new(reserved_words? : Array[String], extract_comments? : Bool, filename? : String) -> Self
 

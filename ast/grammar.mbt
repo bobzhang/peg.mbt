@@ -1,6 +1,7 @@
 ///|
 /// The root of a parsed grammar. Code-generation passes fill in the constant
 /// tables and `code`.
+#derive(Debug)
 pub(all) struct Grammar {
   mut initializer : Initializer?
   mut rules : Array[Rule]
@@ -14,7 +15,7 @@ pub(all) struct Grammar {
   mut functions : Array[@bytecode.FunctionConst]?
   /// Generated source code (set by the code generation pass).
   mut code : String?
-} derive(Debug)
+}
 
 ///|
 pub fn Grammar::new(

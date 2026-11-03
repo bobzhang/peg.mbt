@@ -1,9 +1,10 @@
 ///|
 /// A semantic error in the grammar, reported at `location`
 /// (PEG.js' `GrammarError`).
+#derive(Debug)
 pub(all) suberror GrammarError {
   GrammarError(message~ : String, location~ : @runtime.Location)
-} derive(Debug)
+}
 
 ///|
 pub impl Show for GrammarError with fn output(self, logger) {
@@ -14,9 +15,10 @@ pub impl Show for GrammarError with fn output(self, logger) {
 
 ///|
 /// A compiler error without a source location (a plain `Error` in PEG.js).
+#derive(Debug)
 pub(all) suberror CompilerError {
   CompilerError(String)
-} derive(Debug)
+}
 
 ///|
 pub impl Show for CompilerError with fn output(self, logger) {

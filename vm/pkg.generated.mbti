@@ -11,9 +11,10 @@ import {
 pub fn[V] lookup_binding(Map[String, V], Int32, String) -> V?
 
 // Errors
+#derive(@debug.Debug)
 pub(all) suberror UnboundCode {
   UnboundCode(kind~ : String, code~ : String)
-} derive(@debug.Debug)
+}
 pub impl Show for UnboundCode
 
 // Types and methods

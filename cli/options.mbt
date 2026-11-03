@@ -56,6 +56,7 @@ pub let usage : String =
 
 ///|
 /// Parsed command line.
+#derive(Debug)
 pub(all) struct CliOptions {
   mut input_file : String?
   mut output_file : String?
@@ -69,21 +70,23 @@ pub(all) struct CliOptions {
   mut features : Map[String, Bool]
   mut reserved_words : Array[String]?
   mut rest : Array[String]
-} derive(Debug)
+}
 
 ///|
 /// What the command line asks for.
+#derive(Debug)
 pub(all) enum Command {
   Help
   Version
   Generate(CliOptions)
-} derive(Debug)
+}
 
 ///|
 /// Invalid command line; the message is printed and the process exits 1.
+#derive(Debug)
 pub(all) suberror CliError {
   CliError(String)
-} derive(Debug)
+}
 
 ///|
 fn update_list(list : Array[String], s : String) -> Unit {

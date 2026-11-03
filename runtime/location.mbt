@@ -1,19 +1,21 @@
 ///|
 /// A position in the input: a UTF-16 code-unit offset plus 1-based line and
 /// column (lines are only broken by `\n`, as in PEG.js).
+#derive(Eq, Debug)
 pub(all) struct Pos {
   offset : Int32
   line : Int32
   column : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 /// A span of the input, optionally tagged with the source file name.
+#derive(Eq, Debug)
 pub(all) struct Location {
   filename : String?
   start : Pos
   end : Pos
-} derive(Eq, Debug)
+}
 
 ///|
 pub impl ToJson for Pos with fn to_json(self) {

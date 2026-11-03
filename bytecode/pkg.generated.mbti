@@ -4,32 +4,36 @@ package "bobzhang/peg/bytecode"
 import {
   "bobzhang/peg/runtime",
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
 pub let default_opcodes : Opcodes
 
-pub fn expectation_const_json(@runtime.Expectation) -> Json
+pub fn expectation_const_json(@runtime.Expectation) -> @json.Json
 
 // Errors
 
 // Types and methods
+#derive(Eq, @debug.Debug)
 pub(all) struct ClassConst {
   parts : Array[@runtime.ClassPart]
   inverted : Bool
   ignore_case : Bool
-} derive(Eq, @debug.Debug)
-pub fn ClassConst::to_json(Self) -> Json
-pub impl ToJson for ClassConst
+}
+pub fn ClassConst::to_json(Self) -> @json.Json
+pub impl @json.ToJson for ClassConst
 
+#derive(Eq, @debug.Debug)
 pub(all) struct FunctionConst {
   predicate : Bool
   params : Array[String]
   body : String
-} derive(Eq, @debug.Debug)
-pub fn FunctionConst::to_json(Self) -> Json
-pub impl ToJson for FunctionConst
+}
+pub fn FunctionConst::to_json(Self) -> @json.Json
+pub impl @json.ToJson for FunctionConst
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Opcodes {
   push_empty_string : Int32
   push_undefined : Int32
@@ -64,8 +68,9 @@ pub(all) struct Opcodes {
   silent_fails_off : Int32
   expect_ns_begin : Int32
   expect_ns_end : Int32
-} derive(Eq, @debug.Debug)
+}
 
+#derive(@debug.Debug)
 pub(all) struct Program {
   opcodes : Opcodes
   rules : Array[RuleCode]
@@ -78,13 +83,14 @@ pub(all) struct Program {
   cache : Bool
   trace : Bool
   features : @runtime.Features
-} derive(@debug.Debug)
+}
 pub fn Program::rule_index(Self, String) -> Int32?
 
+#derive(Eq, @debug.Debug)
 pub(all) struct RuleCode {
   name : String
   bytecode : Array[Int32]
-} derive(Eq, @debug.Debug)
+}
 
 // Type aliases
 

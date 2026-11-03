@@ -3,6 +3,7 @@ pub using @runtime {type Location, type Pos, type ClassPart}
 
 ///|
 /// The kind-specific payload of an expression node.
+#derive(Debug)
 pub(all) enum Kind {
   Named(name~ : String, Node)
   Choice(Array[Node])
@@ -23,17 +24,18 @@ pub(all) enum Kind {
   Literal(value~ : String, ignore_case~ : Bool)
   Class(parts~ : Array[ClassPart], inverted~ : Bool, ignore_case~ : Bool)
   Any
-} derive(Debug)
+}
 
 ///|
 /// An expression node. Passes may rewrite `kind` in place and annotate
 /// `match_result` (the `match` property of PEG.js nodes: -1 never matches,
 /// 0 may match, 1 always matches).
+#derive(Debug)
 pub(all) struct Node {
   mut kind : Kind
   location : Location
   mut match_result : Int32?
-} derive(Debug)
+}
 
 ///|
 pub fn Node::new(kind : Kind, location : Location) -> Node {
@@ -98,14 +100,16 @@ pub fn Node::children(self : Node) -> ArrayView[Node] {
 
 ///|
 /// An `{ ... }` initializer block at the top of a grammar.
+#derive(Debug)
 pub(all) struct Initializer {
   code : String
   location : Location
-} derive(Debug)
+}
 
 ///|
 /// A grammar rule. Passes annotate `report_failures`, `match_result` and
 /// `bytecode`.
+#derive(Debug)
 pub(all) struct Rule {
   mut name : String
   mut expression : Node
@@ -113,7 +117,7 @@ pub(all) struct Rule {
   mut report_failures : Bool?
   mut match_result : Int32?
   mut bytecode : Array[Int32]?
-} derive(Debug)
+}
 
 ///|
 pub fn Rule::new(name : String, expression : Node, location : Location) -> Rule {
@@ -129,8 +133,9 @@ pub fn Rule::new(name : String, expression : Node, location : Location) -> Rule 
 
 ///|
 /// A comment collected with the `extractComments` parser option.
+#derive(Debug)
 pub(all) struct Comment {
   text : String
   multiline : Bool
   location : Location
-} derive(Debug)
+}

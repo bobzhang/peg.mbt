@@ -56,9 +56,10 @@ pub fn[T] Parser::parse(
 
 ///|
 /// Raised when a code block of the grammar has no MoonBit implementation.
+#derive(Debug)
 pub(all) suberror UnboundCode {
   UnboundCode(kind~ : String, code~ : String)
-} derive(Debug)
+}
 
 ///|
 pub impl Show for UnboundCode with fn output(self, logger) {

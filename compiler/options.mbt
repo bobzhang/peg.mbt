@@ -1,5 +1,6 @@
 ///|
 /// Options of the grammar parser (`peg.parser.parse`).
+#derive(Debug)
 pub(all) struct ParserOptions {
   /// Words that cannot be used as labels; `None` means JavaScript's reserved
   /// words (`util.reservedWords`).
@@ -8,7 +9,7 @@ pub(all) struct ParserOptions {
   mut extract_comments : Bool
   /// Source file name recorded in locations.
   mut filename : String?
-} derive(Debug)
+}
 
 ///|
 pub fn ParserOptions::new(
@@ -20,18 +21,20 @@ pub fn ParserOptions::new(
 }
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum Optimize {
   Speed
   Size
-} derive(Eq, Debug)
+}
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum Output {
   /// Return a ready-to-use parser.
   Parser
   /// Return generated MoonBit source code.
   Source
-} derive(Eq, Debug)
+}
 
 ///|
 /// Options of `compile` / `generate`. Plugins may modify them.

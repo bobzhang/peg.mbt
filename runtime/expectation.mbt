@@ -1,9 +1,10 @@
 ///|
 /// One part of a character class: a single code unit or an inclusive range.
+#derive(Eq, Debug)
 pub(all) enum ClassPart {
   Char(String)
   Range(String, String)
-} derive(Eq, Debug)
+}
 
 ///|
 pub impl ToJson for ClassPart with fn to_json(self) {
@@ -15,6 +16,7 @@ pub impl ToJson for ClassPart with fn to_json(self) {
 
 ///|
 /// Something the parser expected at the failure position.
+#derive(Eq, Debug)
 pub(all) enum Expectation {
   Literal(text~ : String, ignore_case~ : Bool)
   Class(parts~ : Array[ClassPart], inverted~ : Bool, ignore_case~ : Bool)
@@ -22,7 +24,7 @@ pub(all) enum Expectation {
   End
   Other(description~ : String)
   Not(Expectation)
-} derive(Eq, Debug)
+}
 
 ///|
 pub impl ToJson for Expectation with fn to_json(self) {

@@ -3,6 +3,7 @@ package "bobzhang/peg/runtime"
 
 import {
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -39,27 +40,31 @@ pub fn string_of_code_units(ArrayView[Int32]) -> String
 pub fn[R : Truthy] truthy(R) -> Bool
 
 // Errors
+#derive(@debug.Debug)
 pub(all) suberror FeatureDisabled {
   FeatureDisabled(String)
-} derive(@debug.Debug)
+}
 pub impl Show for FeatureDisabled
 
+#derive(@debug.Debug)
 pub(all) suberror InvalidStartRule {
   InvalidStartRule(String)
-} derive(@debug.Debug)
+}
 pub impl Show for InvalidStartRule
 
+#derive(@debug.Debug)
 pub(all) suberror ReferenceError {
   ReferenceError(String)
-} derive(@debug.Debug)
+}
 pub impl Show for ReferenceError
 
+#derive(@debug.Debug)
 pub(all) suberror SyntaxError {
   SyntaxError(message~ : String, expected~ : Array[Expectation]?, found~ : String?, location~ : Location)
-} derive(@debug.Debug)
-pub fn SyntaxError::to_json(Self) -> Json
+}
+pub fn SyntaxError::to_json(Self) -> @json.Json
 pub impl Show for SyntaxError
-pub impl ToJson for SyntaxError
+pub impl @json.ToJson for SyntaxError
 
 // Types and methods
 pub struct ActionContext[T] {
@@ -92,13 +97,15 @@ pub fn ClassMatcher::matches(Self, Int32) -> Bool
 pub fn ClassMatcher::matches_at(Self, String, Int32) -> Bool
 pub fn ClassMatcher::new(ArrayView[ClassPart], inverted~ : Bool, ignore_case~ : Bool) -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) enum ClassPart {
   Char(String)
   Range(String, String)
-} derive(Eq, @debug.Debug)
-pub fn ClassPart::to_json(Self) -> Json
-pub impl ToJson for ClassPart
+}
+pub fn ClassPart::to_json(Self) -> @json.Json
+pub impl @json.ToJson for ClassPart
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Expectation {
   Literal(text~ : String, ignore_case~ : Bool)
   Class(parts~ : Array[ClassPart], inverted~ : Bool, ignore_case~ : Bool)
@@ -106,11 +113,12 @@ pub(all) enum Expectation {
   End
   Other(description~ : String)
   Not(Expectation)
-} derive(Eq, @debug.Debug)
+}
 pub fn Expectation::describe(Self) -> String
-pub fn Expectation::to_json(Self) -> Json
-pub impl ToJson for Expectation
+pub fn Expectation::to_json(Self) -> @json.Json
+pub impl @json.ToJson for Expectation
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Features {
   text : Bool
   offset : Bool
@@ -120,25 +128,27 @@ pub(all) struct Features {
   error : Bool
   filename : Bool
   default_tracer : Bool
-} derive(Eq, @debug.Debug)
+}
 pub fn Features::all() -> Self
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Location {
   filename : String?
   start : Pos
   end : Pos
-} derive(Eq, @debug.Debug)
-pub fn Location::to_json(Self) -> Json
+}
+pub fn Location::to_json(Self) -> @json.Json
 pub fn[T] Location::to_value(Self) -> Value[T]
-pub impl ToJson for Location
+pub impl @json.ToJson for Location
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Pos {
   offset : Int32
   line : Int32
   column : Int32
-} derive(Eq, @debug.Debug)
-pub fn Pos::to_json(Self) -> Json
-pub impl ToJson for Pos
+}
+pub fn Pos::to_json(Self) -> @json.Json
+pub impl @json.ToJson for Pos
 
 pub struct PosCache {
   input : String
@@ -149,11 +159,12 @@ pub fn PosCache::location(Self, Int32, Int32) -> Location
 pub fn PosCache::new(String, filename? : String) -> Self
 pub fn PosCache::pos(Self, Int32) -> Pos
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Slot[T] {
   Failed
   Pos(Int32)
   Val(Value[T])
-} derive(Eq, @debug.Debug)
+}
 
 pub(all) struct State[T] {
   input : String
@@ -176,18 +187,20 @@ pub fn[T] State::new(String, options~ : Map[String, Value[T]], features~ : Featu
 pub fn[T] State::rule_expects(Self[T], Expectation) -> Unit
 pub fn[T] State::trace(Self[T], TraceType, String, Int32, result? : Slot[T]) -> Unit raise
 
+#derive(Eq, @debug.Debug)
 pub(all) struct TraceEvent[T] {
   type_ : TraceType
   rule : String
   result : Value[T]?
   location : Location
-} derive(Eq, @debug.Debug)
+}
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TraceType {
   RuleEnter
   RuleMatch
   RuleFail
-} derive(Eq, @debug.Debug)
+}
 pub fn TraceType::name(Self) -> String
 
 pub(all) struct Tracer[T] {
@@ -195,6 +208,7 @@ pub(all) struct Tracer[T] {
 }
 pub fn[T] Tracer::default(log? : (String) -> Unit) -> Self[T]
 
+#derive(Eq, @debug.Debug)
 pub(all) enum Value[T] {
   Undefined
   Null
@@ -204,14 +218,14 @@ pub(all) enum Value[T] {
   Arr(Array[Value[T]])
   Obj(Map[String, Value[T]])
   Custom(T)
-} derive(Eq, @debug.Debug)
+}
 pub fn[T] Value::as_arr(Self[T]) -> Array[Self[T]]?
 pub fn[T] Value::as_str(Self[T]) -> String?
 pub fn[T] Value::js_string(Self[T]) -> String
-pub fn[T] Value::to_json_with(Self[T], (T) -> Json) -> Json
+pub fn[T] Value::to_json_with(Self[T], (T) -> @json.Json) -> @json.Json
 pub fn[T] Value::truthy(Self[T]) -> Bool
 pub impl[T] Truthy for Value[T]
-pub impl[T : ToJson] ToJson for Value[T]
+pub impl[T : @json.ToJson] @json.ToJson for Value[T]
 
 // Type aliases
 pub type ActionFn[T] = (ActionContext[T]) -> Value[T] raise

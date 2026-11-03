@@ -4,6 +4,7 @@
 ///
 /// `expected` and `found` are `None` for errors raised through `error()`,
 /// like the `null` fields of PEG.js' `peg$SyntaxError`.
+#derive(Debug)
 pub(all) suberror SyntaxError {
   SyntaxError(
     message~ : String,
@@ -11,7 +12,7 @@ pub(all) suberror SyntaxError {
     found~ : String?,
     location~ : Location
   )
-} derive(Debug)
+}
 
 ///|
 pub impl Show for SyntaxError with fn output(self, logger) {
@@ -41,9 +42,10 @@ pub impl ToJson for SyntaxError with fn to_json(self) {
 ///|
 /// Raised when `parse` is asked to start from a rule that is not in the
 /// grammar's allowed start rules.
+#derive(Debug)
 pub(all) suberror InvalidStartRule {
   InvalidStartRule(String)
-} derive(Debug)
+}
 
 ///|
 pub impl Show for InvalidStartRule with fn output(self, logger) {
@@ -56,9 +58,10 @@ pub impl Show for InvalidStartRule with fn output(self, logger) {
 ///|
 /// Raised when an action calls a helper disabled by the `features` option
 /// (in PEG.js the helper is simply undefined).
+#derive(Debug)
 pub(all) suberror FeatureDisabled {
   FeatureDisabled(String)
-} derive(Debug)
+}
 
 ///|
 pub impl Show for FeatureDisabled with fn output(self, logger) {
@@ -70,9 +73,10 @@ pub impl Show for FeatureDisabled with fn output(self, logger) {
 ///|
 /// Raised when an action refers to a label that is not in scope (a
 /// `ReferenceError` in PEG.js-generated JavaScript).
+#derive(Debug)
 pub(all) suberror ReferenceError {
   ReferenceError(String)
-} derive(Debug)
+}
 
 ///|
 pub impl Show for ReferenceError with fn output(self, logger) {

@@ -3,20 +3,21 @@ package "bobzhang/peg/internal/fixture"
 
 import {
   "bobzhang/peg/runtime",
+  "moonbitlang/core/json",
 }
 
 // Values
-pub fn error_json(Error) -> Json
+pub fn error_json(Error) -> @json.Json
 
 pub let meta_cases : Array[(String, Bool, String)]
 
-pub fn normalize(Json) -> Json
+pub fn normalize(@json.Json) -> @json.Json
 
-pub fn outcome(() -> @runtime.Value[Unit] raise) -> Json
+pub fn outcome(() -> @runtime.Value[Unit] raise) -> @json.Json
 
 pub fn parse_options(String) -> Map[String, @runtime.Value[Unit]]
 
-pub fn value_of_json(Json) -> @runtime.Value[Unit]
+pub fn value_of_json(@json.Json) -> @runtime.Value[Unit]
 
 // Errors
 
