@@ -3,6 +3,7 @@
 ///
 /// A `Session` may carry a different numbering; generated programs record
 /// the table they were produced with.
+#derive(Eq, Debug)
 pub(all) struct Opcodes {
   push_empty_string : Int32
   push_undefined : Int32
@@ -37,7 +38,7 @@ pub(all) struct Opcodes {
   silent_fails_off : Int32
   expect_ns_begin : Int32
   expect_ns_end : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 /// The standard PEG.js opcode numbering.

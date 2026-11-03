@@ -1,10 +1,11 @@
 ///|
 /// A character class constant (`classes[i]` of the abstract machine).
+#derive(Eq, Debug)
 pub(all) struct ClassConst {
   parts : Array[@runtime.ClassPart]
   inverted : Bool
   ignore_case : Bool
-} derive(Eq, Debug)
+}
 
 ///|
 pub impl ToJson for ClassConst with fn to_json(self) {
@@ -18,11 +19,12 @@ pub impl ToJson for ClassConst with fn to_json(self) {
 ///|
 /// An action, predicate or initializer code block (`functions[i]`).
 /// Deduplicated on (predicate, params, body), exactly as PEG.js does.
+#derive(Eq, Debug)
 pub(all) struct FunctionConst {
   predicate : Bool
   params : Array[String]
   body : String
-} derive(Eq, Debug)
+}
 
 ///|
 pub impl ToJson for FunctionConst with fn to_json(self) {
@@ -60,15 +62,17 @@ pub fn expectation_const_json(e : @runtime.Expectation) -> Json {
 
 ///|
 /// The compiled form of one rule.
+#derive(Eq, Debug)
 pub(all) struct RuleCode {
   name : String
   bytecode : Array[Int32]
-} derive(Eq, Debug)
+}
 
 ///|
 /// Everything the parsing machine needs: per-rule bytecode plus the constant
 /// tables it indexes. Produced by the compiler, consumed by the VM and by the
 /// code generator.
+#derive(Debug)
 pub(all) struct Program {
   opcodes : Opcodes
   rules : Array[RuleCode]
@@ -85,7 +89,7 @@ pub(all) struct Program {
   /// Whether rule enter/match/fail events are traced (the `trace` option).
   trace : Bool
   features : @runtime.Features
-} derive(Debug)
+}
 
 ///|
 pub fn Program::rule_index(self : Program, name : String) -> Int32? {

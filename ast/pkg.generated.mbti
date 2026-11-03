@@ -5,6 +5,7 @@ import {
   "bobzhang/peg/bytecode",
   "bobzhang/peg/runtime",
   "moonbitlang/core/debug",
+  "moonbitlang/core/json",
 }
 
 // Values
@@ -12,14 +13,16 @@ import {
 // Errors
 
 // Types and methods
+#derive(@debug.Debug)
 pub(all) struct Comment {
   text : String
   multiline : Bool
   location : @runtime.Location
-} derive(@debug.Debug)
-pub fn Comment::to_json(Self) -> Json
-pub impl ToJson for Comment
+}
+pub fn Comment::to_json(Self) -> @json.Json
+pub impl @json.ToJson for Comment
 
+#derive(@debug.Debug)
 pub(all) struct Grammar {
   mut initializer : Initializer?
   mut rules : Array[Rule]
@@ -30,21 +33,23 @@ pub(all) struct Grammar {
   mut expectations : Array[@runtime.Expectation]?
   mut functions : Array[@bytecode.FunctionConst]?
   mut code : String?
-} derive(@debug.Debug)
+}
 pub fn Grammar::always_consumes_on_success(Self, Node) -> Bool
 pub fn Grammar::find_rule(Self, String) -> Rule?
 pub fn Grammar::index_of_rule(Self, String) -> Int32
 pub fn Grammar::new(Initializer?, Array[Rule], Array[(Int32, Comment)]?, @runtime.Location) -> Self
-pub fn Grammar::to_json(Self) -> Json
-pub impl ToJson for Grammar
+pub fn Grammar::to_json(Self) -> @json.Json
+pub impl @json.ToJson for Grammar
 
+#derive(@debug.Debug)
 pub(all) struct Initializer {
   code : String
   location : @runtime.Location
-} derive(@debug.Debug)
-pub fn Initializer::to_json(Self) -> Json
-pub impl ToJson for Initializer
+}
+pub fn Initializer::to_json(Self) -> @json.Json
+pub impl @json.ToJson for Initializer
 
+#derive(@debug.Debug)
 pub(all) enum Kind {
   Named(name~ : String, Node)
   Choice(Array[Node])
@@ -64,20 +69,22 @@ pub(all) enum Kind {
   Literal(value~ : String, ignore_case~ : Bool)
   Class(parts~ : Array[@runtime.ClassPart], inverted~ : Bool, ignore_case~ : Bool)
   Any
-} derive(@debug.Debug)
+}
 
+#derive(@debug.Debug)
 pub(all) struct Node {
   mut kind : Kind
   location : @runtime.Location
   mut match_result : Int32?
-} derive(@debug.Debug)
+}
 pub fn Node::children(Self) -> ArrayView[Self]
 pub fn Node::expression(Self) -> Self?
 pub fn Node::new(Kind, @runtime.Location) -> Self
-pub fn Node::to_json(Self) -> Json
+pub fn Node::to_json(Self) -> @json.Json
 pub fn Node::type_name(Self) -> String
-pub impl ToJson for Node
+pub impl @json.ToJson for Node
 
+#derive(@debug.Debug)
 pub(all) struct Rule {
   mut name : String
   mut expression : Node
@@ -85,10 +92,10 @@ pub(all) struct Rule {
   mut report_failures : Bool?
   mut match_result : Int32?
   mut bytecode : Array[Int32]?
-} derive(@debug.Debug)
+}
 pub fn Rule::new(String, Node, @runtime.Location) -> Self
-pub fn Rule::to_json(Self) -> Json
-pub impl ToJson for Rule
+pub fn Rule::to_json(Self) -> @json.Json
+pub impl @json.ToJson for Rule
 
 // Type aliases
 pub using @runtime {type ClassPart}

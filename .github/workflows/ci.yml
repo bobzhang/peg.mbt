@@ -8,18 +8,19 @@ on:
 
 jobs:
   test:
-    name: test (${{ matrix.os }})
+    name: test (${{ matrix.os }}, ${{ matrix.moonbit }})
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
+        moonbit: [latest, pre-release]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Install MoonBit
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "${{ matrix.moonbit }}"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Toolchain versions
@@ -52,7 +53,11 @@ jobs:
     # Every generated file (fixtures, frozen meta-grammar program, Unicode
     # tables, generated parsers) must be reproducible from the pinned
     # reference PEG.js implementation.
-    name: generated files match reference PEG.js
+    name: generated files match reference PEG.js (${{ matrix.moonbit }})
+    strategy:
+      fail-fast: false
+      matrix:
+        moonbit: [latest, pre-release]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,7 +68,7 @@ jobs:
 
       - name: Install MoonBit
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- "${{ matrix.moonbit }}"
           echo "$HOME/.moon/bin" >> "$GITHUB_PATH"
 
       - name: Regenerate

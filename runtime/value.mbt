@@ -5,6 +5,7 @@
 /// `.` yield `Str`, sequences and repetitions yield `Arr`, `?` yields `Null`
 /// on failure and predicates yield `Undefined`. `Custom` carries application
 /// payloads produced by actions.
+#derive(Eq, Debug)
 pub(all) enum Value[T] {
   Undefined
   Null
@@ -14,7 +15,7 @@ pub(all) enum Value[T] {
   Arr(Array[Value[T]])
   Obj(Map[String, Value[T]])
   Custom(T)
-} derive(Eq, Debug)
+}
 
 ///|
 /// JavaScript truthiness, used for semantic predicates.

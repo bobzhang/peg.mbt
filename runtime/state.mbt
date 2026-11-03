@@ -5,15 +5,17 @@
 ///|
 /// A slot of the parsing machine's stack: a value, a saved input position or
 /// the `peg$FAILED` marker. Actions never observe `Failed` or `Pos`.
+#derive(Eq, Debug)
 pub(all) enum Slot[T] {
   Failed
   Pos(Int32)
   Val(Value[T])
-} derive(Eq, Debug)
+}
 
 ///|
 /// Which helpers the generated parser provides (the PEG.js `features`
 /// option). Disabled action helpers raise `FeatureDisabled`.
+#derive(Eq, Debug)
 pub(all) struct Features {
   text : Bool
   offset : Bool
@@ -23,7 +25,7 @@ pub(all) struct Features {
   error : Bool
   filename : Bool
   default_tracer : Bool
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn Features::all() -> Features {
@@ -40,11 +42,12 @@ pub fn Features::all() -> Features {
 }
 
 ///|
+#derive(Eq, Debug)
 pub(all) enum TraceType {
   RuleEnter
   RuleMatch
   RuleFail
-} derive(Eq, Debug)
+}
 
 ///|
 pub fn TraceType::name(self : TraceType) -> String {
@@ -56,12 +59,13 @@ pub fn TraceType::name(self : TraceType) -> String {
 }
 
 ///|
+#derive(Eq, Debug)
 pub(all) struct TraceEvent[T] {
   type_ : TraceType
   rule : String
   result : Value[T]?
   location : Location
-} derive(Eq, Debug)
+}
 
 ///|
 /// Receives rule enter/match/fail events when tracing is enabled.
