@@ -128,7 +128,7 @@ char
       / "r" { Str("\r") }
       / "t" { Str("\t") }
       / "u" digits:$(HEXDIG HEXDIG HEXDIG HEXDIG) {
-          Str(@runtime.string_of_code_units([@string.parse_int(text_of(digits), base=16)]))
+          Str(@runtime.string_of_code_units([@string.parse_int(text_of(digits), radix=16)]))
         }
     )
     { sequence }
