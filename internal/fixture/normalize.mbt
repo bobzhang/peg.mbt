@@ -87,9 +87,9 @@ pub fn error_json(e : Error) -> Json {
   match e {
     @runtime.SyntaxError(_) as e => e.to_json()
     @runtime.ReferenceError(_) as e =>
-      { "name": "ReferenceError", "message": e.to_string() }
+      { "name": "ReferenceError", "message": Show::to_string(e) }
     @runtime.InvalidStartRule(_) as e =>
-      { "name": "Error", "message": e.to_string() }
+      { "name": "Error", "message": Show::to_string(e) }
     Failure(_) => {}
     e => { "name": "unexpected", "message": "\{e}" }
   }
