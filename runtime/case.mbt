@@ -108,7 +108,7 @@ fn is_final_sigma(s : StringView, i : Int32) -> Bool {
 ///|
 /// `String.prototype.toLowerCase` as implemented by V8.
 pub fn js_to_lower(s : StringView) -> String {
-  let sb = StringBuilder(size_hint=s.length())
+  let sb = StringBuilder(capacity=s.length())
   for i = 0; i < s.length(); {
     let (cp, w) = code_point_at(s, i)
     if cp < 0x80 {
@@ -194,7 +194,7 @@ pub fn js_compare(a : String, b : String) -> Int32 {
 /// produce lone surrogates, which JavaScript strings (and PEG.js grammars)
 /// may contain.
 pub fn string_of_code_units(units : ArrayView[Int32]) -> String {
-  let sb = StringBuilder(size_hint=units.length())
+  let sb = StringBuilder(capacity=units.length())
   for u in units {
     sb.write_char(u.unsafe_to_char())
   }

@@ -10,7 +10,7 @@ pub(all) suberror SyntaxError {
     message~ : String,
     expected~ : Array[Expectation]?,
     found~ : String?,
-    location~ : Location
+    location~ : Location,
   )
 }
 
