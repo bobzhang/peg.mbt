@@ -83,7 +83,7 @@ fn peg_actions(ctx : @runtime.ActionContext[Unit]) -> PegActions raise {
     f18: fn(digits : PegValue) -> PegValue raise {
       Str(
         @runtime.string_of_code_units([
-          @string.parse_int(text_of(digits), base=16),
+          @string.parse_int(text_of(digits), radix=16),
         ]),
       )
     },
