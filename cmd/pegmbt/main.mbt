@@ -11,7 +11,7 @@ async fn fail_with(message : String) -> Unit {
 }
 
 ///|
-async fn main {
+async fn main_async() -> Unit {
   let args = @env.args()
   let command = @cli.parse_args(args[1:].to_owned(), read_file~) catch {
     e => {
@@ -56,4 +56,9 @@ async fn main {
       }
     }
   }
+}
+
+///|
+fn main {
+  @async.run_async_main(main_async)
 }
