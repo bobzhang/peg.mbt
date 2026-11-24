@@ -61,7 +61,10 @@ function jsonMultiline(v, indent) {
       : JSON.stringify(x);
     return JSON.stringify(k) + ": " + body;
   });
-  return mbtMultiline("{\n" + fields.join(",\n") + "\n}", indent);
+  // Escape JSON line separators so the resulting MoonBit source is valid.
+  const text = ("{\n" + fields.join(",\n") + "\n}")
+    .replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
+  return mbtMultiline(text, indent);
 }
 function unique(records, key) {
   const seen = new Map();

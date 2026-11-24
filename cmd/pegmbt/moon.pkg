@@ -4,7 +4,6 @@ import {
   "bobzhang/peg/codegen",
   "moonbitlang/x/fs",
   "moonbitlang/x/sys",
-  "moonbitlang/async",
   "moonbitlang/async/stdio",
   "moonbitlang/core/env",
 }
