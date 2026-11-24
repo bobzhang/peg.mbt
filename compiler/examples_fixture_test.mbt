@@ -2623,8 +2623,8 @@ let example_javascript_program : String =
   #|  "\n",
   #|  "\r\n",
   #|  "\r",
-  #|  " ",
-  #|  " ",
+  #|  "\u2028",
+  #|  "\u2029",
   #|  "/*",
   #|  "*/",
   #|  "//",
@@ -2734,7 +2734,7 @@ let example_javascript_program : String =
   #|  "|="
   #|],
   #|"classes": [
-  #|  {"value":["\n","\r"," "," "],"inverted":false,"ignoreCase":false},
+  #|  {"value":["\n","\r","\u2028","\u2029"],"inverted":false,"ignoreCase":false},
   #|  {"value":[["0","9"]],"inverted":false,"ignoreCase":false},
   #|  {"value":[["1","9"]],"inverted":false,"ignoreCase":false},
   #|  {"value":["+","-"],"inverted":false,"ignoreCase":false},
@@ -2761,7 +2761,7 @@ let example_javascript_program : String =
   #|"expectations": [
   #|  {"type":"any"},
   #|  {"type":"rule","value":"whitespace"},
-  #|  {"type":"class","value":["\n","\r"," "," "],"inverted":false,"ignoreCase":false},
+  #|  {"type":"class","value":["\n","\r","\u2028","\u2029"],"inverted":false,"ignoreCase":false},
   #|  {"type":"rule","value":"end of line"},
   #|  {"type":"rule","value":"comment"},
   #|  {"type":"literal","value":"/*","ignoreCase":false},
