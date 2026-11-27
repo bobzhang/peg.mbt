@@ -7,7 +7,7 @@ fn read_file(file : String) -> String raise {
 ///|
 async fn fail_with(message : String) -> Unit {
   @stdio.stderr.write(message + "\n")
-  @sys.exit(1)
+  @env.exit(1)
 }
 
 ///|
