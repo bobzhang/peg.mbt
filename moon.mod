@@ -15,6 +15,6 @@ description = "A MoonBit port of PEG.js: parser generator for MoonBit"
 warnings = "-implicit_impl_as_method"
 
 import {
-  "moonbitlang/x@0.5.5",
-  "moonbitlang/async@0.22.4",
+  "moonbitlang/x@0.5.9",
+  "moonbitlang/async@0.22.10",
 }
